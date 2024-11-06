@@ -32,9 +32,12 @@ public abstract class ReadOnlySequenceTest<T>
     private void Sequence(ReadOnlySequence<T> sequence)
     {
         var position = sequence.Start;
+
+        var i = 0;
+
         while (sequence.TryGet(ref position, out var memory))
         {
-            ReadMemory(memory, position);
+            ReadMemory(memory, i++);
 
             if (position.GetObject() == null) break;
         }
@@ -42,5 +45,5 @@ public abstract class ReadOnlySequenceTest<T>
 
     protected abstract IEnumerable<ReadOnlyMemory<T>> GetMemories();
 
-    protected abstract void ReadMemory(ReadOnlyMemory<T> memory, SequencePosition position);
+    protected abstract void ReadMemory(ReadOnlyMemory<T> memory, int index);
 }
