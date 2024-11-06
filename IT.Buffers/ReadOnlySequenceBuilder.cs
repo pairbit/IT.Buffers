@@ -21,11 +21,13 @@ public class ReadOnlySequenceBuilder<T>
         _list = new(capacity);
     }
 
+#if NET6_0_OR_GREATER
     public void EnsureCapacity(int capacity)
     {
         _pool.EnsureCapacity(capacity);
         _list.EnsureCapacity(capacity);
     }
+#endif
 
     public void Add(ReadOnlyMemory<T> buffer, bool returnToPool = false)
     {
