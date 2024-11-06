@@ -28,8 +28,10 @@ public class SequenceSegment<T> : ReadOnlySequenceSegment<T>
             if (MemoryMarshal.TryGetArray(Memory, out var segment))
             {
                 var array = segment.Array;
-                if (array != null) ArrayPool<T>.Shared.Return(array,
-                    clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                if (array != null && array.Length > 0)
+                {
+                    ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                }
             }
         }
         Memory = default;
