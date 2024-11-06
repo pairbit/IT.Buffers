@@ -6,31 +6,43 @@ namespace IT.Buffers;
 
 public class ReadOnlySequenceBuilder<T>
 {
-    private readonly Stack<SequenceSegment<T>> segmentPool;
-    private readonly List<SequenceSegment<T>> list;
+    private readonly Stack<SequenceSegment<T>> _pool;
+    private readonly List<SequenceSegment<T>> _list;
 
     public ReadOnlySequenceBuilder()
     {
-        list = new();
-        segmentPool = new Stack<SequenceSegment<T>>();
+        _pool = new Stack<SequenceSegment<T>>();
+        _list = [];
+    }
+
+    public ReadOnlySequenceBuilder(int poolCapacity = 0, int capacity = 0)
+    {
+        _pool = new Stack<SequenceSegment<T>>(poolCapacity);
+        _list = new(capacity);
+    }
+
+    public void EnsureCapacity(int capacity)
+    {
+        _pool.EnsureCapacity(capacity);
+        _list.EnsureCapacity(capacity);
     }
 
     public void Add(ReadOnlyMemory<T> buffer, bool returnToPool)
     {
-        if (!segmentPool.TryPop(out var segment))
+        if (!_pool.TryPop(out var segment))
         {
             segment = new SequenceSegment<T>();
         }
 
         segment.SetBuffer(buffer, returnToPool);
-        list.Add(segment);
+        _list.Add(segment);
     }
 
     public bool TryGetSingleMemory(out ReadOnlyMemory<T> memory)
     {
-        if (list.Count == 1)
+        if (_list.Count == 1)
         {
-            memory = list[0].Memory;
+            memory = _list[0].Memory;
             return true;
         }
         memory = default;
@@ -39,37 +51,39 @@ public class ReadOnlySequenceBuilder<T>
 
     public ReadOnlySequence<T> Build()
     {
-        if (list.Count == 0)
-        {
-            return ReadOnlySequence<T>.Empty;
-        }
+        if (_list.Count == 0) return ReadOnlySequence<T>.Empty;
 
-        if (list.Count == 1)
-        {
-            return new ReadOnlySequence<T>(list[0].Memory);
-        }
+        if (_list.Count == 1) return new ReadOnlySequence<T>(_list[0].Memory);
 
         long running = 0;
 #if NET7_0_OR_GREATER
-        var span = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(list);
+        var span = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_list);
         for (int i = 0; i < span.Length; i++)
         {
             var next = i < span.Length - 1 ? span[i + 1] : null;
-            span[i].SetRunningIndexAndNext(running, next);
-            running += span[i].Memory.Length;
+
+            var segment = span[i];
+
+            segment.SetRunningIndexAndNext(running, next);
+
+            running += segment.Memory.Length;
         }
         var firstSegment = span[0];
         var lastSegment = span[span.Length - 1];
 #else
-        var span = list;
-        for (int i = 0; i < span.Count; i++)
+        var list = _list;
+        for (int i = 0; i < list.Count; i++)
         {
-            var next = i < span.Count - 1 ? span[i + 1] : null;
-            span[i].SetRunningIndexAndNext(running, next);
-            running += span[i].Memory.Length;
+            var next = i < list.Count - 1 ? list[i + 1] : null;
+
+            var segment = list[i];
+
+            segment.SetRunningIndexAndNext(running, next);
+
+            running += segment.Memory.Length;
         }
-        var firstSegment = span[0];
-        var lastSegment = span[span.Count - 1];
+        var firstSegment = list[0];
+        var lastSegment = list[list.Count - 1];
 #endif
         return new ReadOnlySequence<T>(firstSegment, 0, lastSegment, lastSegment.Memory.Length);
     }
@@ -77,15 +91,15 @@ public class ReadOnlySequenceBuilder<T>
     public void Reset()
     {
 #if NET7_0_OR_GREATER
-        var span = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(list);
+        var segments = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_list);
 #else
-        var span = list;
+        var segments = _list;
 #endif
-        foreach (var item in span)
+        foreach (var segment in segments)
         {
-            item.Reset();
-            segmentPool.Push(item);
+            segment.Reset();
+            _pool.Push(segment);
         }
-        list.Clear();
+        _list.Clear();
     }
 }
