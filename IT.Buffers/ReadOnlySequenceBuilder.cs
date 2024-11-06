@@ -27,7 +27,7 @@ public class ReadOnlySequenceBuilder<T>
         _list.EnsureCapacity(capacity);
     }
 
-    public void Add(ReadOnlyMemory<T> buffer, bool returnToPool)
+    public void Add(ReadOnlyMemory<T> buffer, bool returnToPool = false)
     {
         if (!_pool.TryPop(out var segment))
         {
@@ -58,9 +58,10 @@ public class ReadOnlySequenceBuilder<T>
         long running = 0;
 #if NET7_0_OR_GREATER
         var span = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_list);
+        var lastIndex = span.Length - 1;
         for (int i = 0; i < span.Length; i++)
         {
-            var next = i < span.Length - 1 ? span[i + 1] : null;
+            var next = i < lastIndex ? span[i + 1] : null;
 
             var segment = span[i];
 
@@ -69,12 +70,13 @@ public class ReadOnlySequenceBuilder<T>
             running += segment.Memory.Length;
         }
         var firstSegment = span[0];
-        var lastSegment = span[span.Length - 1];
+        var lastSegment = span[lastIndex];
 #else
         var list = _list;
+        var lastIndex = list.Count - 1;
         for (int i = 0; i < list.Count; i++)
         {
-            var next = i < list.Count - 1 ? list[i + 1] : null;
+            var next = i < lastIndex ? list[i + 1] : null;
 
             var segment = list[i];
 
@@ -83,7 +85,7 @@ public class ReadOnlySequenceBuilder<T>
             running += segment.Memory.Length;
         }
         var firstSegment = list[0];
-        var lastSegment = list[list.Count - 1];
+        var lastSegment = list[lastIndex];
 #endif
         return new ReadOnlySequence<T>(firstSegment, 0, lastSegment, lastSegment.Memory.Length);
     }
