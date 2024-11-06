@@ -61,14 +61,10 @@ public class ReadOnlySequenceBuilder<T>
 #if NET7_0_OR_GREATER
         var span = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_list);
         var lastIndex = span.Length - 1;
-        for (int i = 0; i < span.Length; i++)
+        for (int i = 0; i < lastIndex; i++)
         {
-            var next = i < lastIndex ? span[i + 1] : null;
-
             var segment = span[i];
-
-            segment.SetRunningIndexAndNext(running, next);
-
+            segment.SetRunningIndexAndNext(running, span[i + 1]);
             running += segment.Memory.Length;
         }
         var firstSegment = span[0];
@@ -76,19 +72,16 @@ public class ReadOnlySequenceBuilder<T>
 #else
         var list = _list;
         var lastIndex = list.Count - 1;
-        for (int i = 0; i < list.Count; i++)
+        for (int i = 0; i < lastIndex; i++)
         {
-            var next = i < lastIndex ? list[i + 1] : null;
-
             var segment = list[i];
-
-            segment.SetRunningIndexAndNext(running, next);
-
+            segment.SetRunningIndexAndNext(running, list[i + 1]);
             running += segment.Memory.Length;
         }
         var firstSegment = list[0];
         var lastSegment = list[lastIndex];
 #endif
+        lastSegment.SetRunningIndexAndNext(running, null);
         return new ReadOnlySequence<T>(firstSegment, 0, lastSegment, lastSegment.Memory.Length);
     }
 
