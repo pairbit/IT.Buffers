@@ -15,9 +15,9 @@ public class ReadOnlySequenceBuilder<T>
         _list = [];
     }
 
-    public ReadOnlySequenceBuilder(int poolCapacity = 0, int capacity = 0)
+    public ReadOnlySequenceBuilder(int capacity)
     {
-        _pool = new Stack<SequenceSegment<T>>(poolCapacity);
+        _pool = new Stack<SequenceSegment<T>>(capacity);
         _list = new(capacity);
     }
 

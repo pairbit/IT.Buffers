@@ -7,11 +7,13 @@ public class ReadOnlySequenceBuilderPool<T>
 {
     private static readonly ConcurrentQueue<ReadOnlySequenceBuilder<T>> _queue = new();
 
-    public static ReadOnlySequenceBuilder<T> Rent()
+    public static ReadOnlySequenceBuilder<T> Rent(int capacity = 0)
     {
         if (_queue.TryDequeue(out var builder)) return builder;
 
-        return new ReadOnlySequenceBuilder<T>();
+        return capacity == 0
+            ? new ReadOnlySequenceBuilder<T>()
+            : new ReadOnlySequenceBuilder<T>(capacity);
     }
 
     public static void Return(ReadOnlySequenceBuilder<T> builder)

@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace IT.Buffers;
 
-public class SequenceSegment<T> : ReadOnlySequenceSegment<T>
+internal class SequenceSegment<T> : ReadOnlySequenceSegment<T>
 {
     private bool _returnToPool;
 
