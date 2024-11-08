@@ -9,7 +9,13 @@ public class ReadOnlySequenceBuilderPool<T>
 
     public static ReadOnlySequenceBuilder<T> Rent(int capacity = 0)
     {
-        if (_queue.TryDequeue(out var builder)) return builder;
+        if (_queue.TryDequeue(out var builder))
+        {
+#if NET6_0_OR_GREATER
+            if (capacity > 0) builder.EnsureCapacity(capacity);
+#endif
+            return builder;
+        }
 
         return capacity == 0
             ? new ReadOnlySequenceBuilder<T>()
