@@ -22,7 +22,7 @@ public struct FixedArrayBufferWriter<T> : IBufferWriter<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Memory<T> GetMemory(int sizeHint = 0)
+    public readonly Memory<T> GetMemory(int sizeHint = 0)
     {
         var memory = _buffer.AsMemory(_written);
         if (memory.Length >= sizeHint) return memory;
@@ -31,7 +31,7 @@ public struct FixedArrayBufferWriter<T> : IBufferWriter<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Span<T> GetSpan(int sizeHint = 0)
+    public readonly Span<T> GetSpan(int sizeHint = 0)
     {
         var span = _buffer.AsSpan(_written);
         if (span.Length >= sizeHint) return span;
@@ -39,7 +39,7 @@ public struct FixedArrayBufferWriter<T> : IBufferWriter<T>
         throw new InvalidOperationException("invalid sizeHint");
     }
 
-    public T[] GetFilledBuffer()
+    public readonly T[] GetFilledBuffer()
     {
         if (_written != _buffer.Length) throw new InvalidOperationException("Not filled buffer");
 
