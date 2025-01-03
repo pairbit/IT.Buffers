@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 
-namespace IT.Buffers;
+namespace IT.Buffers.Pool;
 
 public class ReadOnlySequenceBuilderPool<T>
 {
