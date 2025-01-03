@@ -1,0 +1,47 @@
+name: .NET
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            3.1.x
+            6.0.x
+            7.0.x
+            8.0.x
+    
+      - name: Restore
+        run: dotnet restore IT.Buffers.sln
+    
+      - name: Build
+        run: dotnet build IT.Buffers.sln --configuration Release --no-restore 
+    
+      - name: Test
+        run: dotnet test IT.Buffers.Tests/IT.Buffers.Tests.csproj --configuration Release --no-restore
+
+  publish:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish IT.Buffers
+        uses: pairbit/publish-nuget@v2.6.1
+        with:
+            PROJECT_FILE_PATH: IT.Buffers/IT.Buffers.csproj
+            NUGET_KEY: ${{secrets.NUGET}}
+            TAG_COMMIT: true
