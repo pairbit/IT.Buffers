@@ -49,7 +49,7 @@ public class ReadOnlySequenceBuilder<T>
         if (segments > 1)
         {
 #if NET6_0_OR_GREATER
-            EnsureCapacity(segments);
+            _list.EnsureCapacity(_list.Count + segments);
 #endif
 
             var segmentLength = memory.Length / segments;
@@ -118,6 +118,9 @@ public class ReadOnlySequenceBuilder<T>
         var segments = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_list);
 #else
         var segments = _list;
+#endif
+#if NET6_0_OR_GREATER
+        _pool.EnsureCapacity(_list.Count);
 #endif
         foreach (var segment in segments)
         {
