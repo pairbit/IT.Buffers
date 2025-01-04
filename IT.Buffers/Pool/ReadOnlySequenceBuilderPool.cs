@@ -11,9 +11,7 @@ public class ReadOnlySequenceBuilderPool<T>
     {
         if (_queue.TryDequeue(out var builder))
         {
-#if NET6_0_OR_GREATER
             if (capacity > 0) builder.EnsureCapacity(capacity);
-#endif
             return builder;
         }
 

@@ -19,12 +19,11 @@ public class ReadOnlySequenceBuilder<T>
         _list = new(capacity);
     }
 
-#if NET6_0_OR_GREATER
     public void EnsureCapacity(int capacity)
     {
-        _list.EnsureCapacity(capacity);
+        if (capacity > _list.Capacity)
+            _list.Capacity = capacity;
     }
-#endif
 
     public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, bool returnToPool = false)
     {
@@ -126,7 +125,7 @@ public class ReadOnlySequenceBuilder<T>
 #if NET6_0_OR_GREATER
         else
         {
-            pool.EnsureCapacity(pool.Count + _list.Count);
+            pool.EnsureCapacity(_list.Capacity);
         }
 #endif
         foreach (var segment in segments)
