@@ -6,32 +6,29 @@ namespace IT.Buffers;
 
 public class ReadOnlySequenceBuilder<T>
 {
-    private readonly Stack<SequenceSegment<T>> _pool;
+    private Stack<SequenceSegment<T>>? _pool;
     private readonly List<SequenceSegment<T>> _list;
 
     public ReadOnlySequenceBuilder()
     {
-        _pool = new Stack<SequenceSegment<T>>();
         _list = [];
     }
 
     public ReadOnlySequenceBuilder(int capacity)
     {
-        _pool = new Stack<SequenceSegment<T>>(capacity);
         _list = new(capacity);
     }
 
 #if NET6_0_OR_GREATER
     public void EnsureCapacity(int capacity)
     {
-        _pool.EnsureCapacity(capacity);
         _list.EnsureCapacity(capacity);
     }
 #endif
 
     public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, bool returnToPool = false)
     {
-        if (!_pool.TryPop(out var segment))
+        if (_pool == null || !_pool.TryPop(out var segment))
         {
             segment = new SequenceSegment<T>();
         }
@@ -114,18 +111,28 @@ public class ReadOnlySequenceBuilder<T>
 
     public void Reset()
     {
+        if (_list.Count == 0) return;
+
 #if NET7_0_OR_GREATER
         var segments = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_list);
 #else
         var segments = _list;
 #endif
+        var pool = _pool;
+        if (pool == null)
+        {
+            pool = _pool = new Stack<SequenceSegment<T>>(_list.Capacity);
+        }
 #if NET6_0_OR_GREATER
-        _pool.EnsureCapacity(_list.Count);
+        else
+        {
+            pool.EnsureCapacity(pool.Count + _list.Count);
+        }
 #endif
         foreach (var segment in segments)
         {
             segment.Reset();
-            _pool.Push(segment);
+            pool.Push(segment);
         }
         _list.Clear();
     }
