@@ -29,15 +29,42 @@ public class ReadOnlySequenceBuilder<T>
     }
 #endif
 
-    public void Add(ReadOnlyMemory<T> buffer, bool returnToPool = false)
+    public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, bool returnToPool = false)
     {
         if (!_pool.TryPop(out var segment))
         {
             segment = new SequenceSegment<T>();
         }
 
-        segment.SetBuffer(buffer, returnToPool);
+        segment.SetBuffer(memory, returnToPool);
         _list.Add(segment);
+
+        return this;
+    }
+
+    public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, int segments)
+    {
+        if (segments < 0) throw new ArgumentOutOfRangeException(nameof(segments));
+
+        if (segments > 1)
+        {
+#if NET6_0_OR_GREATER
+            EnsureCapacity(segments);
+#endif
+
+            var segmentLength = memory.Length / segments;
+
+            for (int i = segments - 2; i >= 0; i--)
+            {
+                Add(memory.Slice(0, segmentLength));
+
+                memory = memory.Slice(segmentLength);
+            }
+        }
+
+        Add(memory);
+
+        return this;
     }
 
     public bool TryGetSingleMemory(out ReadOnlyMemory<T> memory)
