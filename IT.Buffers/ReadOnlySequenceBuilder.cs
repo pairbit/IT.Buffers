@@ -44,9 +44,7 @@ public class ReadOnlySequenceBuilder<T>
 
         if (segments > 1)
         {
-#if NET6_0_OR_GREATER
             _list.EnsureCapacity(_list.Count + segments);
-#endif
 
             var segmentLength = memory.Length / segments;
 
