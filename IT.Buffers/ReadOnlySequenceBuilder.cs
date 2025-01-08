@@ -38,21 +38,24 @@ public class ReadOnlySequenceBuilder<T>
         return this;
     }
 
-    public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, int segments)
+    public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, int maxSegments)
     {
-        if (segments < 0) throw new ArgumentOutOfRangeException(nameof(segments));
+        if (maxSegments <= 0) throw new ArgumentOutOfRangeException(nameof(maxSegments));
+
+        var length = memory.Length;
+        var segments = length < maxSegments ? length : maxSegments;
 
         if (segments > 1)
         {
             _list.EnsureCapacity(_list.Count + segments);
 
-            var segmentLength = memory.Length / segments;
+            var segmentLength = length / segments;
 
             for (int i = segments - 2; i >= 0; i--)
             {
-                Add(memory.Slice(0, segmentLength));
+                Add(memory[..segmentLength]);
 
-                memory = memory.Slice(segmentLength);
+                memory = memory[segmentLength..];
             }
         }
 
