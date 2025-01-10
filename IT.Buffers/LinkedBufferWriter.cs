@@ -62,7 +62,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
         if (_nextBufferSize >= sizeHint)
         {
             next = new BufferSegment<T>(_nextBufferSize);
-            _nextBufferSize = BufferSize.GetDoubleCapacity(_nextBufferSize);
+            _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
         else
         {
@@ -97,7 +97,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
         if (_nextBufferSize >= sizeHint)
         {
             next = new BufferSegment<T>(_nextBufferSize);
-            _nextBufferSize = BufferSize.GetDoubleCapacity(_nextBufferSize);
+            _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
         else
         {
