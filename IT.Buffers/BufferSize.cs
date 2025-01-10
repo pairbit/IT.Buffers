@@ -3,6 +3,8 @@
 public static class BufferSize
 {
     public const int Min = 256;
+    public const int KB_4 = 4096;
+    public const int KB_256 = 262144;
     public const int Max = 0X7FFFFFC7;
     public const int MaxHalf = Max / 2;
 

@@ -42,21 +42,21 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public T[] DangerousGetFirstBuffer() => _firstBuffer;
 
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     public Memory<T> GetMemory(int sizeHint = 0)
     {
+        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        if (sizeHint == 0) sizeHint = BufferSize.Min;
+
         if (_current.IsNull)
         {
-            // use _firstBuffer
             var free = _firstBuffer.Length - _firstBufferWritten;
-            if (free != 0 && sizeHint <= free)
-            {
-                return _firstBuffer.AsMemory(_firstBufferWritten);
-            }
+            if (free >= sizeHint) return _firstBuffer.AsMemory(_firstBufferWritten);
         }
         else
         {
-            var buffer = _current.FreeMemory;
-            if (buffer.Length > sizeHint) return buffer;
+            var freeMemory = _current.FreeMemory;
+            if (freeMemory.Length >= sizeHint) return freeMemory;
         }
 
         BufferSegment<T> next;
@@ -80,19 +80,18 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
 
     public Span<T> GetSpan(int sizeHint = 0)
     {
+        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        if (sizeHint == 0) sizeHint = BufferSize.Min;
+
         if (_current.IsNull)
         {
-            // use _firstBuffer
             var free = _firstBuffer.Length - _firstBufferWritten;
-            if (free != 0 && sizeHint <= free)
-            {
-                return _firstBuffer.AsSpan(_firstBufferWritten);
-            }
+            if (free >= sizeHint) return _firstBuffer.AsSpan(_firstBufferWritten);
         }
         else
         {
-            var buffer = _current.FreeSpan;
-            if (buffer.Length > sizeHint) return buffer;
+            var freeSpan = _current.FreeSpan;
+            if (freeSpan.Length >= sizeHint) return freeSpan;
         }
 
         BufferSegment<T> next;
