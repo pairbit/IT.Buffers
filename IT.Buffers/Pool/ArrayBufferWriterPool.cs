@@ -26,7 +26,7 @@ public static class ArrayBufferWriterPool<T>
         return writer;
     }
 
-    public static ArrayBufferWriter<T> Rent(int capacity = 256)
+    public static ArrayBufferWriter<T> Rent(int capacity = BufferSize.Min)
     {
         if (_queue.TryDequeue(out var writer))
         {

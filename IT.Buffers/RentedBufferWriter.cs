@@ -7,24 +7,20 @@ namespace IT.Buffers;
 
 public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 {
-    public const int MinimumBufferSize = 256;
-    public const int MaximumBufferSize = 0X7FFFFFC7;
-
     private T[]? _rentedBuffer;
     private int _index;
 
-#if NET
-    static RentedBufferWriter()
+    public RentedBufferWriter()
     {
-        Debug.Assert(MaximumBufferSize == Array.MaxLength);
+        _rentedBuffer = ArrayPool<T>.Shared.Rent(BufferSize.Min);
+        _index = 0;
     }
-#endif
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public RentedBufferWriter(int initialCapacity = 0)
+    public RentedBufferWriter(int initialCapacity)
     {
         if (initialCapacity < 0) throw new ArgumentOutOfRangeException(nameof(initialCapacity));
-        if (initialCapacity == 0) initialCapacity = MinimumBufferSize;
+        if (initialCapacity == 0) initialCapacity = BufferSize.Min;
 
         _rentedBuffer = ArrayPool<T>.Shared.Rent(initialCapacity);
         _index = 0;
@@ -127,12 +123,21 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     }
 
     /// <exception cref="InvalidOperationException"></exception>
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public void Initialize(int initialCapacity = 0)
+    public void Initialize()
     {
-        if (_rentedBuffer != null) throw new InvalidOperationException("not return");
+        if (_rentedBuffer != null) throw new InvalidOperationException("buffer not returned");
+
+        _rentedBuffer = ArrayPool<T>.Shared.Rent(BufferSize.Min);
+        _index = 0;
+    }
+
+    /// <exception cref="InvalidOperationException"></exception>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public void Initialize(int initialCapacity)
+    {
+        if (_rentedBuffer != null) throw new InvalidOperationException("buffer not returned");
         if (initialCapacity < 0) throw new ArgumentOutOfRangeException(nameof(initialCapacity));
-        if (initialCapacity == 0) initialCapacity = MinimumBufferSize;
+        if (initialCapacity == 0) initialCapacity = BufferSize.Min;
 
         _rentedBuffer = ArrayPool<T>.Shared.Rent(initialCapacity);
         _index = 0;
@@ -178,16 +183,16 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
-        if (sizeHint == 0) sizeHint = MinimumBufferSize;
+        if (sizeHint == 0) sizeHint = BufferSize.Min;
 
         int currentLength = _rentedBuffer.Length;
         int availableSpace = currentLength - _index;
 
         // If we've reached ~1GB written, grow to the maximum buffer
         // length to avoid incessant minimal growths causing perf issues.
-        if (_index >= MaximumBufferSize / 2)
+        if (_index >= BufferSize.MaxHalf)
         {
-            sizeHint = Math.Max(sizeHint, MaximumBufferSize - currentLength);
+            sizeHint = Math.Max(sizeHint, BufferSize.Max - currentLength);
         }
 
         if (sizeHint > availableSpace)
@@ -196,12 +201,12 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
             int newSize = currentLength + growBy;
 
-            if ((uint)newSize > MaximumBufferSize)
+            if ((uint)newSize > BufferSize.Max)
             {
                 newSize = currentLength + sizeHint;
-                if ((uint)newSize > MaximumBufferSize)
+                if ((uint)newSize > BufferSize.Max)
                 {
-                    throw new OutOfMemoryException($"Size {(uint)newSize} > {MaximumBufferSize}");
+                    throw new OutOfMemoryException($"Size {(uint)newSize} > {BufferSize.Max}");
                 }
             }
 

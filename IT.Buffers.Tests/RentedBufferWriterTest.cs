@@ -1,17 +1,22 @@
-﻿namespace IT.Buffers.Tests;
+﻿using IT.Buffers.Pool;
+
+namespace IT.Buffers.Tests;
 
 public class RentedBufferWriterTest
 {
     [Test]
     public void Test()
     {
-        using var buffer = new RentedBufferWriter<byte>();
+        var buffer = RentedBufferWriterPool<byte>.Rent();
+
         Test(buffer);
+
+        RentedBufferWriterPool<byte>.Return(buffer);
     }
 
     private void Test(RentedBufferWriter<byte> bufferWriter)
     {
-        var capacity = RentedBufferWriter<byte>.MinimumBufferSize;
+        var capacity = BufferSize.Min;
 
         Assert.That(bufferWriter.Capacity, Is.EqualTo(capacity));
         Assert.That(bufferWriter.FreeCapacity, Is.EqualTo(capacity));
