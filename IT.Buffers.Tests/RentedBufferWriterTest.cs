@@ -41,6 +41,39 @@ public class RentedBufferWriterTest
         Random.Shared.NextBytes(span);
         bufferWriter.Advance(span.Length);
 
-        
+        Assert.That(bufferWriter.Capacity, Is.EqualTo(capacity));
+        Assert.That(bufferWriter.WrittenCount, Is.EqualTo(capacity));
+
+        bufferWriter.ResetWrittenCount();
+
+        Assert.That(bufferWriter.Capacity, Is.EqualTo(capacity));
+        Assert.That(bufferWriter.WrittenCount, Is.EqualTo(0));
+
+        var newSpan = bufferWriter.GetSpan();
+
+        Assert.That(newSpan.Slice(span.Length).SequenceEqual(span), Is.True);
+
+        bufferWriter.Clear();
+
+        Assert.That(newSpan.Slice(span.Length).SequenceEqual(span), Is.True);
+
+        newSpan = bufferWriter.GetSpan(bufferWriter.Capacity + 1);
+
+        Assert.That(newSpan.Slice(span.Length).SequenceEqual(span), Is.False);
+
+        Assert.Throws<InvalidOperationException>(() => bufferWriter.Initialize(2));
+
+        bufferWriter.Return();
+
+        Assert.Throws<ObjectDisposedException>(() =>
+        {
+            var c = bufferWriter.Capacity;
+        });
+
+        bufferWriter.Initialize(3);
+
+        Assert.That(bufferWriter.Capacity, Is.EqualTo(16));
+
+        bufferWriter.Return();
     }
 }
