@@ -1,6 +1,6 @@
-﻿using System;
+﻿using IT.Buffers.Extensions;
+using System;
 using System.Buffers;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace IT.Buffers;
@@ -30,7 +30,7 @@ internal class SequenceSegment<T> : ReadOnlySequenceSegment<T>
                 var array = segment.Array;
                 if (array != null && array.Length > 0)
                 {
-                    ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                    ArrayPool<T>.Shared.ReturnAndClear(array);
                 }
             }
         }

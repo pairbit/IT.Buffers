@@ -1,7 +1,7 @@
-﻿using System;
+﻿using IT.Buffers.Extensions;
+using System;
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
@@ -110,7 +110,7 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     {
         var rentedBuffer = _rentedBuffer ?? throw Disposed();
         _rentedBuffer = null;
-        ArrayPool<T>.Shared.Return(rentedBuffer, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+        ArrayPool<T>.Shared.ReturnAndClear(rentedBuffer);
     }
 
     public void Dispose()
@@ -119,7 +119,7 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
         if (rentedBuffer == null) return;
 
         _rentedBuffer = null;
-        ArrayPool<T>.Shared.Return(rentedBuffer, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+        ArrayPool<T>.Shared.ReturnAndClear(rentedBuffer);
     }
 
     /// <exception cref="InvalidOperationException"></exception>
@@ -219,7 +219,7 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
             oldBuffer.AsSpan(0, _index).CopyTo(_rentedBuffer);
 
-            ArrayPool<T>.Shared.Return(oldBuffer, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+            ArrayPool<T>.Shared.ReturnAndClear(oldBuffer);
         }
 
         Debug.Assert(_rentedBuffer.Length - _index > 0);
