@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IT.Buffers.Internal;
+using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;

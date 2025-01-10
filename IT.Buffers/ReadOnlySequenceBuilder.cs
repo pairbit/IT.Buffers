@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IT.Buffers.Internal;
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 
@@ -32,7 +33,7 @@ public class ReadOnlySequenceBuilder<T>
             segment = new SequenceSegment<T>();
         }
 
-        segment.SetBuffer(memory, returnToPool);
+        segment.SetMemory(memory, returnToPool);
         _list.Add(segment);
 
         return this;

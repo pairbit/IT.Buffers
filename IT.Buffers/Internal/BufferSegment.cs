@@ -2,7 +2,7 @@
 using System.Buffers;
 using System.Runtime.CompilerServices;
 
-namespace IT.Buffers;
+namespace IT.Buffers.Internal;
 
 internal struct BufferSegment
 {

@@ -3,13 +3,13 @@ using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
 
-namespace IT.Buffers;
+namespace IT.Buffers.Internal;
 
 internal class SequenceSegment<T> : ReadOnlySequenceSegment<T>
 {
     private bool _returnToPool;
 
-    public void SetBuffer(ReadOnlyMemory<T> memory, bool returnToPool)
+    public void SetMemory(ReadOnlyMemory<T> memory, bool returnToPool = false)
     {
         Memory = memory;
         _returnToPool = returnToPool;
