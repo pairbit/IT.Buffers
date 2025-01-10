@@ -12,6 +12,8 @@ public struct FixedBufferWriter<T> : IBufferWriter<T>
 
     public FixedBufferWriter(T[] buffer)
     {
+        if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+
         _buffer = buffer;
         _written = 0;
     }
