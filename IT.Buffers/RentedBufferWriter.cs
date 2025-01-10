@@ -12,7 +12,7 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     private T[]? _rentedBuffer;
     private int _index;
 
-#if NET && DEBUG
+#if NET
     static RentedBufferWriter()
     {
         Debug.Assert(MaximumBufferSize == Array.MaxLength);
@@ -146,10 +146,9 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
     private void ClearHelper()
     {
-#if DEBUG
         Debug.Assert(_rentedBuffer != null);
         Debug.Assert(_index <= _rentedBuffer.Length);
-#endif
+
         _rentedBuffer.AsSpan(0, _index).Clear();
         _index = 0;
     }
@@ -200,10 +199,8 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
             oldBufferAsSpan.Clear();
             ArrayPool<T>.Shared.Return(oldBuffer);
         }
-#if DEBUG
         Debug.Assert(_rentedBuffer.Length - _index > 0);
         Debug.Assert(_rentedBuffer.Length - _index >= sizeHint);
-#endif
     }
 
     private static ObjectDisposedException Disposed() => new(nameof(RentedBufferWriter<T>));
