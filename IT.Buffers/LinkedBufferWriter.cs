@@ -10,17 +10,17 @@ using System.Threading.Tasks;
 
 namespace IT.Buffers;
 
-public class LinkedBufferWriter : IBufferWriter<byte>
+public class LinkedBufferWriter<T> : IBufferWriter<T>
 {
     const int InitialBufferSize = 262144; // 256K(32768, 65536, 131072, 262144)
-    private static readonly byte[] _noUseFirstBufferSentinel = new byte[0];
+    private static readonly T[] _noUseFirstBufferSentinel = new T[0];
 
-    private List<BufferSegment> _buffers; // add freezed _buffer.
+    private readonly List<BufferSegment<T>> _buffers; // add freezed _buffer.
 
-    private byte[] _firstBuffer; // cache _firstBuffer to avoid call ArrayPoo.Rent/Return
+    private readonly T[] _firstBuffer; // cache _firstBuffer to avoid call ArrayPoo.Rent/Return
     private int _firstBufferWritten;
 
-    private BufferSegment _current;
+    private BufferSegment<T> _current;
     private int _nextBufferSize;
 
     private long _written;
@@ -31,8 +31,8 @@ public class LinkedBufferWriter : IBufferWriter<byte>
 
     public LinkedBufferWriter(bool useFirstBuffer)
     {
-        _buffers = new List<BufferSegment>();
-        _firstBuffer = useFirstBuffer ? new byte[InitialBufferSize] : _noUseFirstBufferSentinel;
+        _buffers = new List<BufferSegment<T>>();
+        _firstBuffer = useFirstBuffer ? new T[InitialBufferSize] : _noUseFirstBufferSentinel;
         _firstBufferWritten = 0;
         _current = default;
         _nextBufferSize = InitialBufferSize;
@@ -40,9 +40,9 @@ public class LinkedBufferWriter : IBufferWriter<byte>
     }
 
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    public byte[] DangerousGetFirstBuffer() => _firstBuffer;
+    public T[] DangerousGetFirstBuffer() => _firstBuffer;
 
-    public Memory<byte> GetMemory(int sizeHint = 0)
+    public Memory<T> GetMemory(int sizeHint = 0)
     {
         if (_current.IsNull)
         {
@@ -59,15 +59,15 @@ public class LinkedBufferWriter : IBufferWriter<byte>
             if (buffer.Length > sizeHint) return buffer;
         }
 
-        BufferSegment next;
+        BufferSegment<T> next;
         if (sizeHint <= _nextBufferSize)
         {
-            next = new BufferSegment(_nextBufferSize);
+            next = new BufferSegment<T>(_nextBufferSize);
             _nextBufferSize = BufferSize.GetDoubleCapacity(_nextBufferSize);
         }
         else
         {
-            next = new BufferSegment(sizeHint);
+            next = new BufferSegment<T>(sizeHint);
         }
 
         if (_current.WrittenCount != 0)
@@ -78,7 +78,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
         return next.FreeMemory;
     }
 
-    public Span<byte> GetSpan(int sizeHint = 0)
+    public Span<T> GetSpan(int sizeHint = 0)
     {
         if (_current.IsNull)
         {
@@ -95,15 +95,15 @@ public class LinkedBufferWriter : IBufferWriter<byte>
             if (buffer.Length > sizeHint) return buffer;
         }
 
-        BufferSegment next;
+        BufferSegment<T> next;
         if (sizeHint <= _nextBufferSize)
         {
-            next = new BufferSegment(_nextBufferSize);
+            next = new BufferSegment<T>(_nextBufferSize);
             _nextBufferSize = BufferSize.GetDoubleCapacity(_nextBufferSize);
         }
         else
         {
-            next = new BufferSegment(sizeHint);
+            next = new BufferSegment<T>(sizeHint);
         }
 
         if (_current.WrittenCount != 0)
@@ -134,11 +134,11 @@ public class LinkedBufferWriter : IBufferWriter<byte>
         _written += count;
     }
 
-    public byte[] ToArrayAndReset()
+    public T[] ToArrayAndReset()
     {
-        if (_written == 0) return Array.Empty<byte>();
+        if (_written == 0) return Array.Empty<T>();
 
-        var result = new byte[_written];
+        var result = new T[_written];
         var dest = result.AsSpan();
 
         if (UseFirstBuffer)
@@ -172,7 +172,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
     }
 
     public void WriteToAndReset<TBufferWriter>(in TBufferWriter writer)
-        where TBufferWriter : IBufferWriter<byte>
+        where TBufferWriter : IBufferWriter<T>
     {
         if (_written == 0) return;
 
@@ -223,6 +223,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
         ResetCore();
     }
 
+    /*
     public async ValueTask WriteToAndResetAsync(Stream stream, CancellationToken cancellationToken)
     {
         if (_written == 0) return;
@@ -249,6 +250,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
 
         ResetCore();
     }
+    */
 
     public Enumerator GetEnumerator() => new(this);
 
@@ -279,14 +281,14 @@ public class LinkedBufferWriter : IBufferWriter<byte>
         _nextBufferSize = InitialBufferSize;
     }
 
-    public struct Enumerator : IEnumerator<Memory<byte>>
+    public struct Enumerator : IEnumerator<Memory<T>>
     {
-        private readonly LinkedBufferWriter _parent;
+        private readonly LinkedBufferWriter<T> _parent;
         private State _state;
-        private Memory<byte> _current;
-        private List<BufferSegment>.Enumerator _buffersEnumerator;
+        private Memory<T> _current;
+        private List<BufferSegment<T>>.Enumerator _buffersEnumerator;
 
-        public Enumerator(LinkedBufferWriter parent)
+        public Enumerator(LinkedBufferWriter<T> parent)
         {
             _parent = parent;
             _state = default;
@@ -294,7 +296,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
             _buffersEnumerator = default;
         }
 
-        public readonly Memory<byte> Current => _current;
+        public readonly Memory<T> Current => _current;
 
         readonly object IEnumerator.Current => throw new NotSupportedException();
 

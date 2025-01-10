@@ -2,20 +2,20 @@
 
 namespace IT.Buffers.Pool;
 
-public class LinkedBufferWriterPool
+public class LinkedBufferWriterPool<T>
 {
-    private static readonly ConcurrentQueue<LinkedBufferWriter> _queue = new();
+    private static readonly ConcurrentQueue<LinkedBufferWriter<T>> _queue = new();
 
-    public static LinkedBufferWriter Rent()
+    public static LinkedBufferWriter<T> Rent()
     {
         if (_queue.TryDequeue(out var writer))
         {
             return writer;
         }
-        return new LinkedBufferWriter(useFirstBuffer: false);
+        return new LinkedBufferWriter<T>(useFirstBuffer: false);
     }
 
-    public static void Return(LinkedBufferWriter writer)
+    public static void Return(LinkedBufferWriter<T> writer)
     {
         writer.Reset();
         _queue.Enqueue(writer);
