@@ -1,6 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 
-namespace IT.Buffers.Pool;
+namespace IT.Buffers;
 
 public class LinkedBufferWriterPool<T>
 {
@@ -20,6 +21,8 @@ public class LinkedBufferWriterPool<T>
 
     public static void Return(LinkedBufferWriter<T> writer)
     {
+        if (writer == null) throw new ArgumentNullException(nameof(writer));
+
         writer.Reset();
         _queue.Enqueue(writer);
     }

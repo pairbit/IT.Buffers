@@ -1,6 +1,4 @@
-﻿using IT.Buffers.Pool;
-
-namespace IT.Buffers.Tests;
+﻿namespace IT.Buffers.Tests;
 
 public class RentedBufferWriterTest
 {

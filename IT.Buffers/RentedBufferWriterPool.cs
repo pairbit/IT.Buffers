@@ -1,6 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 
-namespace IT.Buffers.Pool;
+namespace IT.Buffers;
 
 public static class RentedBufferWriterPool<T>
 {
@@ -19,6 +20,8 @@ public static class RentedBufferWriterPool<T>
 
     public static void Return(RentedBufferWriter<T> writer)
     {
+        if (writer == null) throw new ArgumentNullException(nameof(writer));
+
         writer.Dispose();
         _queue.Enqueue(writer);
     }

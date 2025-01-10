@@ -1,5 +1,4 @@
-﻿using IT.Buffers.Pool;
-using System.Buffers;
+﻿using System.Buffers;
 
 namespace IT.Buffers.Tests;
 

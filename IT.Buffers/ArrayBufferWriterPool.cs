@@ -1,7 +1,8 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 
-namespace IT.Buffers.Pool;
+namespace IT.Buffers;
 
 public static class ArrayBufferWriterPool<T>
 {
@@ -23,6 +24,8 @@ public static class ArrayBufferWriterPool<T>
 
     public static void Return(ArrayBufferWriter<T> writer)
     {
+        if (writer == null) throw new ArgumentNullException(nameof(writer));
+
 #if NET8_0_OR_GREATER
         writer.ResetWrittenCount();
 #else
