@@ -30,7 +30,10 @@ internal struct BufferSegment
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int count)
     {
-        _written += count;
+        var written = _written + count;
+        if (written > _buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
+
+        _written = written;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

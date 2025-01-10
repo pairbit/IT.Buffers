@@ -7,23 +7,23 @@ namespace IT.Buffers;
 
 public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 {
-    private T[]? _rentedBuffer;
-    private int _index;
+    private T[]? _buffer;
+    private int _written;
 
     public RentedBufferWriter()
     {
-        _rentedBuffer = ArrayPool<T>.Shared.Rent(BufferSize.Min);
-        _index = 0;
+        _buffer = ArrayPool<T>.Shared.Rent(BufferSize.Min);
+        _written = 0;
     }
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public RentedBufferWriter(int initialCapacity)
+    public RentedBufferWriter(int capacity)
     {
-        if (initialCapacity < 0) throw new ArgumentOutOfRangeException(nameof(initialCapacity));
-        if (initialCapacity == 0) initialCapacity = BufferSize.Min;
+        if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
+        if (capacity == 0) capacity = BufferSize.Min;
 
-        _rentedBuffer = ArrayPool<T>.Shared.Rent(initialCapacity);
-        _index = 0;
+        _buffer = ArrayPool<T>.Shared.Rent(capacity);
+        _written = 0;
     }
 
     /// <exception cref="ObjectDisposedException"></exception>
@@ -31,11 +31,11 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     {
         get
         {
-            if (_rentedBuffer == null) throw Disposed();
+            if (_buffer == null) throw Disposed();
 
-            Debug.Assert(_index <= _rentedBuffer.Length);
+            Debug.Assert(_written <= _buffer.Length);
 
-            return _rentedBuffer.AsMemory(0, _index);
+            return _buffer.AsMemory(0, _written);
         }
     }
 
@@ -44,11 +44,11 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     {
         get
         {
-            if (_rentedBuffer == null) throw Disposed();
+            if (_buffer == null) throw Disposed();
 
-            Debug.Assert(_index <= _rentedBuffer.Length);
+            Debug.Assert(_written <= _buffer.Length);
 
-            return _rentedBuffer.AsSpan(0, _index);
+            return _buffer.AsSpan(0, _written);
         }
     }
 
@@ -57,9 +57,9 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     {
         get
         {
-            if (_rentedBuffer == null) throw Disposed();
+            if (_buffer == null) throw Disposed();
 
-            return _index;
+            return _written;
         }
     }
 
@@ -68,9 +68,9 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     {
         get
         {
-            if (_rentedBuffer == null) throw Disposed();
+            if (_buffer == null) throw Disposed();
 
-            return _rentedBuffer.Length;
+            return _buffer.Length;
         }
     }
 
@@ -79,81 +79,81 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     {
         get
         {
-            if (_rentedBuffer == null) throw Disposed();
+            if (_buffer == null) throw Disposed();
 
-            return _rentedBuffer.Length - _index;
+            return _buffer.Length - _written;
         }
     }
 
     /// <exception cref="ObjectDisposedException"></exception>
     public void Clear()
     {
-        var rentedBuffer = _rentedBuffer ?? throw Disposed();
+        var buffer = _buffer ?? throw Disposed();
 
-        Debug.Assert(rentedBuffer != null);
-        Debug.Assert(_index <= rentedBuffer.Length);
+        Debug.Assert(buffer != null);
+        Debug.Assert(_written <= buffer.Length);
 
-        rentedBuffer.AsSpan(0, _index).Clear();
-        _index = 0;
+        buffer.AsSpan(0, _written).Clear();
+        _written = 0;
     }
 
     /// <exception cref="ObjectDisposedException"></exception>
     public void ResetWrittenCount()
     {
-        if (_rentedBuffer == null) throw Disposed();
+        if (_buffer == null) throw Disposed();
 
-        _index = 0;
+        _written = 0;
     }
 
     /// <exception cref="ObjectDisposedException"></exception>
     public void Return()
     {
-        var rentedBuffer = _rentedBuffer ?? throw Disposed();
-        _rentedBuffer = null;
-        ArrayPool<T>.Shared.ReturnAndClear(rentedBuffer);
+        var buffer = _buffer ?? throw Disposed();
+        _buffer = null;
+        ArrayPool<T>.Shared.ReturnAndClear(buffer);
     }
 
     public void Dispose()
     {
-        var rentedBuffer = _rentedBuffer;
-        if (rentedBuffer == null) return;
+        var buffer = _buffer;
+        if (buffer == null) return;
 
-        _rentedBuffer = null;
-        ArrayPool<T>.Shared.ReturnAndClear(rentedBuffer);
+        _buffer = null;
+        ArrayPool<T>.Shared.ReturnAndClear(buffer);
     }
 
     /// <exception cref="InvalidOperationException"></exception>
     public void Initialize()
     {
-        if (_rentedBuffer != null) throw new InvalidOperationException("buffer not returned");
+        if (_buffer != null) throw new InvalidOperationException("buffer not returned");
 
-        _rentedBuffer = ArrayPool<T>.Shared.Rent(BufferSize.Min);
-        _index = 0;
+        _buffer = ArrayPool<T>.Shared.Rent(BufferSize.Min);
+        _written = 0;
     }
 
     /// <exception cref="InvalidOperationException"></exception>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public void Initialize(int initialCapacity)
+    public void Initialize(int capacity)
     {
-        if (_rentedBuffer != null) throw new InvalidOperationException("buffer not returned");
-        if (initialCapacity < 0) throw new ArgumentOutOfRangeException(nameof(initialCapacity));
-        if (initialCapacity == 0) initialCapacity = BufferSize.Min;
+        if (_buffer != null) throw new InvalidOperationException("buffer not returned");
+        if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
+        if (capacity == 0) capacity = BufferSize.Min;
 
-        _rentedBuffer = ArrayPool<T>.Shared.Rent(initialCapacity);
-        _index = 0;
+        _buffer = ArrayPool<T>.Shared.Rent(capacity);
+        _written = 0;
     }
 
     /// <exception cref="ObjectDisposedException"></exception>
     public void Advance(int count)
     {
-        if (_rentedBuffer == null) throw Disposed();
+        if (_buffer == null) throw Disposed();
 
-        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
 
-        if (_index > _rentedBuffer.Length - count)
-            throw new ArgumentOutOfRangeException(nameof(count));
+        var written = _written + count;
+        if (written > _buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
 
-        _index += count;
+        _written = written;
     }
 
     /// <exception cref="ObjectDisposedException"></exception>
@@ -162,7 +162,7 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     public Memory<T> GetMemory(int sizeHint = 0)
     {
         CheckAndResizeBuffer(sizeHint);
-        return _rentedBuffer.AsMemory(_index);
+        return _buffer.AsMemory(_written);
     }
 
     /// <exception cref="ObjectDisposedException"></exception>
@@ -171,7 +171,7 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     public Span<T> GetSpan(int sizeHint = 0)
     {
         CheckAndResizeBuffer(sizeHint);
-        return _rentedBuffer.AsSpan(_index);
+        return _buffer.AsSpan(_written);
     }
 
     /// <exception cref="ObjectDisposedException"></exception>
@@ -179,18 +179,18 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     /// <exception cref="OutOfMemoryException"></exception>
     private void CheckAndResizeBuffer(int sizeHint)
     {
-        if (_rentedBuffer == null) throw Disposed();
+        if (_buffer == null) throw Disposed();
 
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
         if (sizeHint == 0) sizeHint = BufferSize.Min;
 
-        int currentLength = _rentedBuffer.Length;
-        int availableSpace = currentLength - _index;
+        int currentLength = _buffer.Length;
+        int availableSpace = currentLength - _written;
 
         // If we've reached ~1GB written, grow to the maximum buffer
         // length to avoid incessant minimal growths causing perf issues.
-        if (_index >= BufferSize.MaxHalf)
+        if (_written >= BufferSize.MaxHalf)
         {
             sizeHint = Math.Max(sizeHint, BufferSize.Max - currentLength);
         }
@@ -210,20 +210,20 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
                 }
             }
 
-            T[] oldBuffer = _rentedBuffer;
+            T[] oldBuffer = _buffer;
 
-            _rentedBuffer = ArrayPool<T>.Shared.Rent(newSize);
+            _buffer = ArrayPool<T>.Shared.Rent(newSize);
 
-            Debug.Assert(oldBuffer.Length >= _index);
-            Debug.Assert(_rentedBuffer.Length >= _index);
+            Debug.Assert(oldBuffer.Length >= _written);
+            Debug.Assert(_buffer.Length >= _written);
 
-            oldBuffer.AsSpan(0, _index).CopyTo(_rentedBuffer);
+            oldBuffer.AsSpan(0, _written).CopyTo(_buffer);
 
             ArrayPool<T>.Shared.ReturnAndClear(oldBuffer);
         }
 
-        Debug.Assert(_rentedBuffer.Length - _index > 0);
-        Debug.Assert(_rentedBuffer.Length - _index >= sizeHint);
+        Debug.Assert(_buffer.Length - _written > 0);
+        Debug.Assert(_buffer.Length - _written >= sizeHint);
     }
 
     private static ObjectDisposedException Disposed() => new(nameof(RentedBufferWriter<T>));

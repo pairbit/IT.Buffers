@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Buffers;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
@@ -31,18 +30,22 @@ public struct FixedBufferWriter<T> : IBufferWriter<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int count)
     {
-        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
 
-        if (_written > _buffer.Length - count) throw new ArgumentOutOfRangeException(nameof(count));
+        var written = _written + count;
+        if (written > _buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
 
-        _written += count;
+        _written = written;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly Memory<T> GetMemory(int sizeHint = 0)
     {
+        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        if (sizeHint == 0) sizeHint = BufferSize.Min;
+
         var memory = _buffer.AsMemory(_written);
-        if (memory.Length > sizeHint) return memory;
+        if (memory.Length >= sizeHint) return memory;
 
         throw new InvalidOperationException("invalid sizeHint");
     }
@@ -50,8 +53,11 @@ public struct FixedBufferWriter<T> : IBufferWriter<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly Span<T> GetSpan(int sizeHint = 0)
     {
+        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        if (sizeHint == 0) sizeHint = BufferSize.Min;
+
         var span = _buffer.AsSpan(_written);
-        if (span.Length > sizeHint) return span;
+        if (span.Length >= sizeHint) return span;
 
         throw new InvalidOperationException("invalid sizeHint");
     }

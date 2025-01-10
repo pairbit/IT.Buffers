@@ -23,11 +23,11 @@ public class LinkedBufferWriter : IBufferWriter<byte>
     private BufferSegment _current;
     private int _nextBufferSize;
 
-    private int _totalWritten;
+    private long _written;
 
-    public int TotalWritten => _totalWritten;
+    public long WrittenCount => _written;
 
-    bool UseFirstBuffer => _firstBuffer != _noUseFirstBufferSentinel;
+    private bool UseFirstBuffer => _firstBuffer != _noUseFirstBufferSentinel;
 
     public LinkedBufferWriter(bool useFirstBuffer)
     {
@@ -36,9 +36,10 @@ public class LinkedBufferWriter : IBufferWriter<byte>
         _firstBufferWritten = 0;
         _current = default;
         _nextBufferSize = InitialBufferSize;
-        _totalWritten = 0;
+        _written = 0;
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public byte[] DangerousGetFirstBuffer() => _firstBuffer;
 
     public Memory<byte> GetMemory(int sizeHint = 0)
@@ -116,22 +117,28 @@ public class LinkedBufferWriter : IBufferWriter<byte>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int count)
     {
+        if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
+
         if (_current.IsNull)
         {
-            _firstBufferWritten += count;
+            var firstBufferWritten = _firstBufferWritten + count;
+            if (firstBufferWritten > _firstBuffer.Length)
+                throw new ArgumentOutOfRangeException(nameof(count));
+
+            _firstBufferWritten = firstBufferWritten;
         }
         else
         {
             _current.Advance(count);
         }
-        _totalWritten += count;
+        _written += count;
     }
 
     public byte[] ToArrayAndReset()
     {
-        if (_totalWritten == 0) return Array.Empty<byte>();
+        if (_written == 0) return Array.Empty<byte>();
 
-        var result = new byte[_totalWritten];
+        var result = new byte[_written];
         var dest = result.AsSpan();
 
         if (UseFirstBuffer)
@@ -167,7 +174,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
     public void WriteToAndReset<TBufferWriter>(in TBufferWriter writer)
         where TBufferWriter : IBufferWriter<byte>
     {
-        if (_totalWritten == 0) return;
+        if (_written == 0) return;
 
         if (UseFirstBuffer)
         {
@@ -218,7 +225,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
 
     public async ValueTask WriteToAndResetAsync(Stream stream, CancellationToken cancellationToken)
     {
-        if (_totalWritten == 0) return;
+        if (_written == 0) return;
 
         if (UseFirstBuffer)
         {
@@ -251,7 +258,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
     {
-        if (_totalWritten == 0) return;
+        if (_written == 0) return;
 #if NET6_0_OR_GREATER
         foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
 #else
@@ -270,7 +277,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
     {
         _firstBufferWritten = 0;
         _buffers.Clear();
-        _totalWritten = 0;
+        _written = 0;
         _current = default;
         _nextBufferSize = InitialBufferSize;
     }
