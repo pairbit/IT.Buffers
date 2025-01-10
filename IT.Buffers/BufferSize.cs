@@ -12,4 +12,14 @@ public static class BufferSize
         System.Diagnostics.Debug.Assert(Max == System.Array.MaxLength);
     }
 #endif
+
+    public static int GetDoubleCapacity(int size)
+    {
+        var newSize = unchecked(size * 2);
+        if ((uint)newSize > Max)
+        {
+            newSize = Max;
+        }
+        return newSize;
+    }
 }

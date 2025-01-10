@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,123 +13,139 @@ namespace IT.Buffers;
 public class LinkedBufferWriter : IBufferWriter<byte>
 {
     const int InitialBufferSize = 262144; // 256K(32768, 65536, 131072, 262144)
-    static readonly byte[] noUseFirstBufferSentinel = new byte[0];
+    private static readonly byte[] _noUseFirstBufferSentinel = new byte[0];
 
-    List<BufferSegment> buffers; // add freezed _buffer.
+    private List<BufferSegment> _buffers; // add freezed _buffer.
 
-    byte[] firstBuffer; // cache firstBuffer to avoid call ArrayPoo.Rent/Return
-    int firstBufferWritten;
+    private byte[] _firstBuffer; // cache _firstBuffer to avoid call ArrayPoo.Rent/Return
+    private int _firstBufferWritten;
 
-    BufferSegment current;
-    int nextBufferSize;
+    private BufferSegment _current;
+    private int _nextBufferSize;
 
-    int totalWritten;
+    private int _totalWritten;
 
-    public int TotalWritten => totalWritten;
-    bool UseFirstBuffer => firstBuffer != noUseFirstBufferSentinel;
+    public int TotalWritten => _totalWritten;
+
+    bool UseFirstBuffer => _firstBuffer != _noUseFirstBufferSentinel;
 
     public LinkedBufferWriter(bool useFirstBuffer)
     {
-        this.buffers = new List<BufferSegment>();
-        this.firstBuffer = useFirstBuffer
-            ? new byte[InitialBufferSize]
-            : noUseFirstBufferSentinel;
-        this.firstBufferWritten = 0;
-        this.current = default;
-        this.nextBufferSize = InitialBufferSize;
-        this.totalWritten = 0;
+        _buffers = new List<BufferSegment>();
+        _firstBuffer = useFirstBuffer ? new byte[InitialBufferSize] : _noUseFirstBufferSentinel;
+        _firstBufferWritten = 0;
+        _current = default;
+        _nextBufferSize = InitialBufferSize;
+        _totalWritten = 0;
     }
 
-    public byte[] DangerousGetFirstBuffer() => firstBuffer;
+    public byte[] DangerousGetFirstBuffer() => _firstBuffer;
 
     public Memory<byte> GetMemory(int sizeHint = 0)
     {
-        // MemoryPack don't use GetMemory.
-        throw new NotSupportedException();
-    }
-
-    public Span<byte> GetSpan(int sizeHint = 0)
-    {
-        if (current.IsNull)
+        if (_current.IsNull)
         {
-            // use firstBuffer
-            var free = firstBuffer.Length - firstBufferWritten;
+            // use _firstBuffer
+            var free = _firstBuffer.Length - _firstBufferWritten;
             if (free != 0 && sizeHint <= free)
             {
-                return firstBuffer.AsSpan(firstBufferWritten);
+                return _firstBuffer.AsMemory(_firstBufferWritten);
             }
         }
         else
         {
-            var buffer = current.FreeSpan;
-            if (buffer.Length > sizeHint)
-            {
-                return buffer;
-            }
+            var buffer = _current.FreeMemory;
+            if (buffer.Length > sizeHint) return buffer;
         }
 
         BufferSegment next;
-        if (sizeHint <= nextBufferSize)
+        if (sizeHint <= _nextBufferSize)
         {
-            next = new BufferSegment(nextBufferSize);
-            nextBufferSize = NewArrayCapacity(nextBufferSize);
+            next = new BufferSegment(_nextBufferSize);
+            _nextBufferSize = BufferSize.GetDoubleCapacity(_nextBufferSize);
         }
         else
         {
             next = new BufferSegment(sizeHint);
         }
 
-        if (current.WrittenCount != 0)
+        if (_current.WrittenCount != 0)
         {
-            buffers.Add(current);
+            _buffers.Add(_current);
         }
-        current = next;
-        return next.FreeSpan;
+        _current = next;
+        return next.FreeMemory;
     }
 
-    private static int NewArrayCapacity(int size)
+    public Span<byte> GetSpan(int sizeHint = 0)
     {
-        var newSize = unchecked(size * 2);
-        if ((uint)newSize > BufferSize.Max)
+        if (_current.IsNull)
         {
-            newSize = BufferSize.Max;
+            // use _firstBuffer
+            var free = _firstBuffer.Length - _firstBufferWritten;
+            if (free != 0 && sizeHint <= free)
+            {
+                return _firstBuffer.AsSpan(_firstBufferWritten);
+            }
         }
-        return newSize;
+        else
+        {
+            var buffer = _current.FreeSpan;
+            if (buffer.Length > sizeHint) return buffer;
+        }
+
+        BufferSegment next;
+        if (sizeHint <= _nextBufferSize)
+        {
+            next = new BufferSegment(_nextBufferSize);
+            _nextBufferSize = BufferSize.GetDoubleCapacity(_nextBufferSize);
+        }
+        else
+        {
+            next = new BufferSegment(sizeHint);
+        }
+
+        if (_current.WrittenCount != 0)
+        {
+            _buffers.Add(_current);
+        }
+        _current = next;
+        return next.FreeSpan;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int count)
     {
-        if (current.IsNull)
+        if (_current.IsNull)
         {
-            firstBufferWritten += count;
+            _firstBufferWritten += count;
         }
         else
         {
-            current.Advance(count);
+            _current.Advance(count);
         }
-        totalWritten += count;
+        _totalWritten += count;
     }
 
     public byte[] ToArrayAndReset()
     {
-        if (totalWritten == 0) return Array.Empty<byte>();
+        if (_totalWritten == 0) return Array.Empty<byte>();
 
-        var result = new byte[totalWritten];
+        var result = new byte[_totalWritten];
         var dest = result.AsSpan();
 
         if (UseFirstBuffer)
         {
-            firstBuffer.AsSpan(0, firstBufferWritten).CopyTo(dest);
-            dest = dest.Slice(firstBufferWritten);
+            _firstBuffer.AsSpan(0, _firstBufferWritten).CopyTo(dest);
+            dest = dest.Slice(_firstBufferWritten);
         }
 
-        if (buffers.Count > 0)
+        if (_buffers.Count > 0)
         {
-#if NET7_0_OR_GREATER
-            foreach (ref var item in CollectionsMarshal.AsSpan(buffers))
+#if NET6_0_OR_GREATER
+            foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
 #else
-            foreach (var item in buffers)
+            foreach (var item in _buffers)
 #endif
             {
                 item.WrittenSpan.CopyTo(dest);
@@ -139,38 +154,90 @@ public class LinkedBufferWriter : IBufferWriter<byte>
             }
         }
 
-        if (!current.IsNull)
+        if (!_current.IsNull)
         {
-            current.WrittenSpan.CopyTo(dest);
-            current.Clear();
+            _current.WrittenSpan.CopyTo(dest);
+            _current.Clear();
         }
 
         ResetCore();
         return result;
     }
 
-    public async ValueTask WriteToAndResetAsync(Stream stream, CancellationToken cancellationToken)
+    public void WriteToAndReset<TBufferWriter>(in TBufferWriter writer)
+        where TBufferWriter : IBufferWriter<byte>
     {
-        if (totalWritten == 0) return;
+        if (_totalWritten == 0) return;
 
         if (UseFirstBuffer)
         {
-            await stream.WriteAsync(firstBuffer.AsMemory(0, firstBufferWritten), cancellationToken).ConfigureAwait(false);
+            var written = _firstBufferWritten;
+
+            var span = writer.GetSpan(written);
+
+            _firstBuffer.AsSpan(0, written).CopyTo(span[..written]);
+
+            writer.Advance(written);
         }
 
-        if (buffers.Count > 0)
+        if (_buffers.Count > 0)
         {
-            foreach (var item in buffers)
+#if NET6_0_OR_GREATER
+            foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+#else
+            foreach (var item in _buffers)
+#endif
+            {
+                var written = item.WrittenCount;
+                
+                var span = writer.GetSpan(written);
+
+                item.WrittenSpan.CopyTo(span[..written]);
+
+                writer.Advance(written);
+
+                item.Clear(); // reset
+            }
+        }
+
+        if (!_current.IsNull)
+        {
+            var written = _current.WrittenCount;
+
+            var span = writer.GetSpan(written);
+
+            _current.WrittenSpan.CopyTo(span[..written]);
+
+            writer.Advance(_current.WrittenCount);
+
+            _current.Clear();
+        }
+
+        ResetCore();
+    }
+
+    public async ValueTask WriteToAndResetAsync(Stream stream, CancellationToken cancellationToken)
+    {
+        if (_totalWritten == 0) return;
+
+        if (UseFirstBuffer)
+        {
+            await stream.WriteAsync(_firstBuffer.AsMemory(0, _firstBufferWritten), cancellationToken).ConfigureAwait(false);
+        }
+
+        if (_buffers.Count > 0)
+        {
+            foreach (var item in _buffers)
             {
                 await stream.WriteAsync(item.WrittenMemory, cancellationToken).ConfigureAwait(false);
                 item.Clear(); // reset
             }
         }
 
-        if (!current.IsNull)
+        if (!_current.IsNull)
         {
-            await stream.WriteAsync(current.WrittenMemory, cancellationToken).ConfigureAwait(false);
-            current.Clear();
+            await stream.WriteAsync(_current.WrittenMemory, cancellationToken).ConfigureAwait(false);
+            _current.Clear();
         }
 
         ResetCore();
@@ -181,31 +248,31 @@ public class LinkedBufferWriter : IBufferWriter<byte>
         return new Enumerator(this);
     }
 
-    // reset without list's BufferSegment element
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void ResetCore()
-    {
-        firstBufferWritten = 0;
-        buffers.Clear();
-        totalWritten = 0;
-        current = default;
-        nextBufferSize = InitialBufferSize;
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
     {
-        if (totalWritten == 0) return;
+        if (_totalWritten == 0) return;
 #if NET6_0_OR_GREATER
-        foreach (ref var item in CollectionsMarshal.AsSpan(buffers))
+        foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
 #else
-        foreach (var item in buffers)
+        foreach (var item in _buffers)
 #endif
         {
             item.Clear();
         }
-        current.Clear();
+        _current.Clear();
         ResetCore();
+    }
+
+    // reset without list's BufferSegment element
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ResetCore()
+    {
+        _firstBufferWritten = 0;
+        _buffers.Clear();
+        _totalWritten = 0;
+        _current = default;
+        _nextBufferSize = InitialBufferSize;
     }
 
     public struct Enumerator : IEnumerator<Memory<byte>>
@@ -239,7 +306,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
 
                 if (parent.UseFirstBuffer)
                 {
-                    current = parent.firstBuffer.AsMemory(0, parent.firstBufferWritten);
+                    current = parent._firstBuffer.AsMemory(0, parent._firstBufferWritten);
                     return true;
                 }
             }
@@ -248,7 +315,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
             {
                 state = State.BuffersIterate;
 
-                buffersEnumerator = parent.buffers.GetEnumerator();
+                buffersEnumerator = parent._buffers.GetEnumerator();
             }
 
             if (state == State.BuffersIterate)
@@ -267,7 +334,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
             {
                 state = State.End;
 
-                current = parent.current.WrittenMemory;
+                current = parent._current.WrittenMemory;
                 return true;
             }
 
