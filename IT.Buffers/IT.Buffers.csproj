@@ -7,7 +7,7 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Company />
-    <Description>ReadOnlySequenceBuilder, FixedBufferWriter, RentedBufferWriter</Description>
+    <Description>ReadOnlySequenceBuilder, FixedBufferWriter, RentedBufferWriter, LinkedBufferWriter</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/pairbit/IT.Buffers</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
