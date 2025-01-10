@@ -1,5 +1,7 @@
 ﻿#if NETSTANDARD2_1
 
+using IT.Buffers;
+
 namespace System.Collections.Generic;
 
 internal static class xList
@@ -25,7 +27,7 @@ internal static class xList
 
         // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
         // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-        if ((uint)newcapacity > 0X7FFFFFC7) newcapacity = 0X7FFFFFC7;
+        if ((uint)newcapacity > BufferSize.Max) newcapacity = BufferSize.Max;
 
         // If the computed capacity is still less than specified, set to the original argument.
         // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
