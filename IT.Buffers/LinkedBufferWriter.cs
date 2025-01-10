@@ -3,21 +3,19 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace IT.Buffers;
 
 public class LinkedBufferWriter<T> : IBufferWriter<T>
 {
-    const int InitialBufferSize = 262144; // 256K(32768, 65536, 131072, 262144)
+    //const int InitialBufferSize = 262144; // 256K(32768, 65536, 131072, 262144)
     private static readonly T[] _noUseFirstBufferSentinel = new T[0];
 
-    private readonly List<BufferSegment<T>> _buffers; // add freezed _buffer.
+    private readonly int _initialBufferSize;
+    private readonly List<BufferSegment<T>> _buffers;
 
-    private readonly T[] _firstBuffer; // cache _firstBuffer to avoid call ArrayPoo.Rent/Return
+    private readonly T[] _firstBuffer;
     private int _firstBufferWritten;
 
     private BufferSegment<T> _current;
@@ -29,13 +27,14 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
 
     private bool UseFirstBuffer => _firstBuffer != _noUseFirstBufferSentinel;
 
-    public LinkedBufferWriter(bool useFirstBuffer)
+    public LinkedBufferWriter(int initialBufferSize = BufferSize.KB_256, bool useFirstBuffer = false)
     {
         _buffers = new List<BufferSegment<T>>();
-        _firstBuffer = useFirstBuffer ? new T[InitialBufferSize] : _noUseFirstBufferSentinel;
+        _firstBuffer = useFirstBuffer ? new T[initialBufferSize] : _noUseFirstBufferSentinel;
         _firstBufferWritten = 0;
         _current = default;
-        _nextBufferSize = InitialBufferSize;
+        _initialBufferSize = initialBufferSize;
+        _nextBufferSize = initialBufferSize;
         _written = 0;
     }
 
@@ -46,7 +45,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
     public Memory<T> GetMemory(int sizeHint = 0)
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
-        if (sizeHint == 0) sizeHint = BufferSize.Min;
+        if (sizeHint == 0) sizeHint = 1;
 
         if (_current.IsNull)
         {
@@ -60,7 +59,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
         }
 
         BufferSegment<T> next;
-        if (sizeHint <= _nextBufferSize)
+        if (_nextBufferSize >= sizeHint)
         {
             next = new BufferSegment<T>(_nextBufferSize);
             _nextBufferSize = BufferSize.GetDoubleCapacity(_nextBufferSize);
@@ -81,7 +80,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
     public Span<T> GetSpan(int sizeHint = 0)
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
-        if (sizeHint == 0) sizeHint = BufferSize.Min;
+        if (sizeHint == 0) sizeHint = 1;
 
         if (_current.IsNull)
         {
@@ -95,7 +94,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
         }
 
         BufferSegment<T> next;
-        if (sizeHint <= _nextBufferSize)
+        if (_nextBufferSize >= sizeHint)
         {
             next = new BufferSegment<T>(_nextBufferSize);
             _nextBufferSize = BufferSize.GetDoubleCapacity(_nextBufferSize);
@@ -277,7 +276,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
         _buffers.Clear();
         _written = 0;
         _current = default;
-        _nextBufferSize = InitialBufferSize;
+        _nextBufferSize = _initialBufferSize;
     }
 
     public struct Enumerator : IEnumerator<Memory<T>>

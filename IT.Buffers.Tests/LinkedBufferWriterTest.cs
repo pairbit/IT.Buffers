@@ -5,7 +5,7 @@ public class LinkedBufferWriterTest
     [Test]
     public void Test()
     {
-        var writer = new LinkedBufferWriter<byte>(false);
+        var writer = new LinkedBufferWriter<byte>();
         
 
     }

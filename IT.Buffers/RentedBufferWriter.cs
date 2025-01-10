@@ -183,7 +183,7 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
-        if (sizeHint == 0) sizeHint = BufferSize.Min;
+        if (sizeHint == 0) sizeHint = 1;
 
         int currentLength = _buffer.Length;
         int availableSpace = currentLength - _written;

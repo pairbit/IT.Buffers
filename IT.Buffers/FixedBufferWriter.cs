@@ -42,7 +42,7 @@ public struct FixedBufferWriter<T> : IBufferWriter<T>
     public readonly Memory<T> GetMemory(int sizeHint = 0)
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
-        if (sizeHint == 0) sizeHint = BufferSize.Min;
+        if (sizeHint == 0) sizeHint = 1;
 
         var memory = _buffer.AsMemory(_written);
         if (memory.Length >= sizeHint) return memory;
@@ -54,7 +54,7 @@ public struct FixedBufferWriter<T> : IBufferWriter<T>
     public readonly Span<T> GetSpan(int sizeHint = 0)
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
-        if (sizeHint == 0) sizeHint = BufferSize.Min;
+        if (sizeHint == 0) sizeHint = 1;
 
         var span = _buffer.AsSpan(_written);
         if (span.Length >= sizeHint) return span;
