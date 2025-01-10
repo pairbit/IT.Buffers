@@ -18,6 +18,8 @@ internal struct BufferSegment<T>
 
     public readonly int WrittenCount => _written;
 
+    public readonly int Capacity => _buffer.Length;
+
     public readonly Memory<T> FreeMemory => _buffer.AsMemory(_written);
 
     public readonly Span<T> FreeSpan => _buffer.AsSpan(_written);

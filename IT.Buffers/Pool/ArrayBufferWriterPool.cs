@@ -1,30 +1,11 @@
-﻿using System;
-using System.Buffers;
+﻿using System.Buffers;
 using System.Collections.Concurrent;
 
 namespace IT.Buffers.Pool;
 
 public static class ArrayBufferWriterPool<T>
 {
-    [ThreadStatic]
-    private static ArrayBufferWriter<T>? _writer;
-
     private static readonly ConcurrentQueue<ArrayBufferWriter<T>> _queue = new();
-
-    public static ArrayBufferWriter<T> GetThreadStaticInstance()
-    {
-        var writer = _writer;
-        if (writer == null)
-        {
-            writer = _writer = new ArrayBufferWriter<T>();
-        }
-#if NET8_0_OR_GREATER
-        writer.ResetWrittenCount();
-#else
-        writer.Clear();
-#endif
-        return writer;
-    }
 
     public static ArrayBufferWriter<T> Rent(int capacity = BufferSize.Min)
     {

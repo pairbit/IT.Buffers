@@ -12,13 +12,13 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
     //const int InitialBufferSize = 262144; // 256K(32768, 65536, 131072, 262144)
     private static readonly T[] _noUseFirstBufferSentinel = new T[0];
 
-    private readonly int _initialBufferSize;
     private readonly List<BufferSegment<T>> _buffers;
 
     private readonly T[] _firstBuffer;
     private int _firstBufferWritten;
 
     private BufferSegment<T> _current;
+    private int _initialBufferSize;
     private int _nextBufferSize;
 
     private long _written;
@@ -266,6 +266,12 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
         }
         _current.Clear();
         ResetCore();
+    }
+
+    internal void SetInitialBufferSize(int initialBufferSize)
+    {
+        _initialBufferSize = initialBufferSize;
+        _nextBufferSize = initialBufferSize;
     }
 
     // reset without list's BufferSegment element
