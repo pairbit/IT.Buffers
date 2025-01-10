@@ -196,7 +196,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
 #endif
             {
                 var written = item.WrittenCount;
-                
+
                 var span = writer.GetSpan(written);
 
                 item.WrittenSpan.CopyTo(span[..written]);
@@ -250,10 +250,7 @@ public class LinkedBufferWriter : IBufferWriter<byte>
         ResetCore();
     }
 
-    public Enumerator GetEnumerator()
-    {
-        return new Enumerator(this);
-    }
+    public Enumerator GetEnumerator() => new(this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
@@ -284,64 +281,64 @@ public class LinkedBufferWriter : IBufferWriter<byte>
 
     public struct Enumerator : IEnumerator<Memory<byte>>
     {
-        LinkedBufferWriter parent;
-        State state;
-        Memory<byte> current;
-        List<BufferSegment>.Enumerator buffersEnumerator;
+        private readonly LinkedBufferWriter _parent;
+        private State _state;
+        private Memory<byte> _current;
+        private List<BufferSegment>.Enumerator _buffersEnumerator;
 
         public Enumerator(LinkedBufferWriter parent)
         {
-            this.parent = parent;
-            this.state = default;
-            this.current = default;
-            this.buffersEnumerator = default;
+            _parent = parent;
+            _state = default;
+            _current = default;
+            _buffersEnumerator = default;
         }
 
-        public Memory<byte> Current => current;
+        public readonly Memory<byte> Current => _current;
 
-        object IEnumerator.Current => throw new NotSupportedException();
+        readonly object IEnumerator.Current => throw new NotSupportedException();
 
-        public void Dispose()
+        public readonly void Dispose()
         {
         }
 
         public bool MoveNext()
         {
-            if (state == State.FirstBuffer)
+            if (_state == State.FirstBuffer)
             {
-                state = State.BuffersInit;
+                _state = State.BuffersInit;
 
-                if (parent.UseFirstBuffer)
+                if (_parent.UseFirstBuffer)
                 {
-                    current = parent._firstBuffer.AsMemory(0, parent._firstBufferWritten);
+                    _current = _parent._firstBuffer.AsMemory(0, _parent._firstBufferWritten);
                     return true;
                 }
             }
 
-            if (state == State.BuffersInit)
+            if (_state == State.BuffersInit)
             {
-                state = State.BuffersIterate;
+                _state = State.BuffersIterate;
 
-                buffersEnumerator = parent._buffers.GetEnumerator();
+                _buffersEnumerator = _parent._buffers.GetEnumerator();
             }
 
-            if (state == State.BuffersIterate)
+            if (_state == State.BuffersIterate)
             {
-                if (buffersEnumerator.MoveNext())
+                if (_buffersEnumerator.MoveNext())
                 {
-                    current = buffersEnumerator.Current.WrittenMemory;
+                    _current = _buffersEnumerator.Current.WrittenMemory;
                     return true;
                 }
 
-                buffersEnumerator.Dispose();
-                state = State.Current;
+                _buffersEnumerator.Dispose();
+                _state = State.Current;
             }
 
-            if (state == State.Current)
+            if (_state == State.Current)
             {
-                state = State.End;
+                _state = State.End;
 
-                current = parent._current.WrittenMemory;
+                _current = _parent._current.WrittenMemory;
                 return true;
             }
 
@@ -350,7 +347,9 @@ public class LinkedBufferWriter : IBufferWriter<byte>
 
         public void Reset()
         {
-            throw new NotSupportedException();
+            _state = default;
+            _current = default;
+            _buffersEnumerator = default;
         }
 
         enum State
