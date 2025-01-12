@@ -9,13 +9,14 @@ public static class RentedBufferWriterPool<T>
 
     public static RentedBufferWriter<T> Rent(int capacity = 0)
     {
-        if (_queue.TryDequeue(out var writer))
+        if (!_queue.TryDequeue(out var writer))
         {
-            writer.Initialize(capacity);
-            return writer;
+            writer = new RentedBufferWriter<T>();
         }
 
-        return new RentedBufferWriter<T>(capacity);
+        writer.GetSpan(capacity);
+
+        return writer;
     }
 
     public static void Return(RentedBufferWriter<T> writer)

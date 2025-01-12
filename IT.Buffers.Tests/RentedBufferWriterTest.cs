@@ -18,7 +18,7 @@ public class RentedBufferWriterTest
 
         Assert.That(bufferWriter.Capacity, Is.EqualTo(capacity));
         Assert.That(bufferWriter.FreeCapacity, Is.EqualTo(capacity));
-        Assert.That(bufferWriter.WrittenCount, Is.EqualTo(0));
+        Assert.That(bufferWriter.Written, Is.EqualTo(0));
         Assert.That(bufferWriter.WrittenMemory.Length, Is.EqualTo(0));
 
         var span = bufferWriter.GetSpan();
@@ -30,7 +30,7 @@ public class RentedBufferWriterTest
 
         Assert.That(bufferWriter.Capacity, Is.EqualTo(capacity));
         Assert.That(bufferWriter.FreeCapacity, Is.EqualTo(0));
-        Assert.That(bufferWriter.WrittenCount, Is.EqualTo(span.Length));
+        Assert.That(bufferWriter.Written, Is.EqualTo(span.Length));
         Assert.That(bufferWriter.WrittenMemory.Length, Is.EqualTo(span.Length));
 
         span = bufferWriter.GetSpan();
@@ -38,25 +38,21 @@ public class RentedBufferWriterTest
         capacity *= 2;
 
         Assert.That(bufferWriter.Capacity, Is.EqualTo(capacity));
-        Assert.That(bufferWriter.FreeCapacity, Is.EqualTo(capacity - bufferWriter.WrittenCount));
-        Assert.That(span.Length, Is.EqualTo(capacity - bufferWriter.WrittenCount));
+        Assert.That(bufferWriter.FreeCapacity, Is.EqualTo(capacity - bufferWriter.Written));
+        Assert.That(span.Length, Is.EqualTo(capacity - bufferWriter.Written));
 
         Random.Shared.NextBytes(span);
         bufferWriter.Advance(span.Length);
 
         Assert.That(bufferWriter.Capacity, Is.EqualTo(capacity));
-        Assert.That(bufferWriter.WrittenCount, Is.EqualTo(capacity));
+        Assert.That(bufferWriter.Written, Is.EqualTo(capacity));
 
-        bufferWriter.ResetWrittenCount();
+        bufferWriter.ResetWritten();
 
         Assert.That(bufferWriter.Capacity, Is.EqualTo(capacity));
-        Assert.That(bufferWriter.WrittenCount, Is.EqualTo(0));
+        Assert.That(bufferWriter.Written, Is.EqualTo(0));
 
         var newSpan = bufferWriter.GetSpan();
-
-        Assert.That(newSpan.Slice(span.Length).SequenceEqual(span), Is.True);
-
-        bufferWriter.Clear();
 
         Assert.That(newSpan.Slice(span.Length).SequenceEqual(span), Is.True);
 
@@ -64,19 +60,12 @@ public class RentedBufferWriterTest
 
         Assert.That(newSpan.Slice(span.Length).SequenceEqual(span), Is.False);
 
-        Assert.Throws<InvalidOperationException>(() => bufferWriter.Initialize(2));
+        bufferWriter.Dispose();
 
-        bufferWriter.Return();
+        Assert.That(bufferWriter.Capacity, Is.EqualTo(0));
 
-        Assert.Throws<ObjectDisposedException>(() =>
-        {
-            var c = bufferWriter.Capacity;
-        });
-
-        bufferWriter.Initialize(3);
+        newSpan = bufferWriter.GetSpan();
 
         Assert.That(bufferWriter.Capacity, Is.EqualTo(16));
-
-        bufferWriter.Return();
     }
 }
