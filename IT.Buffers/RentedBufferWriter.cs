@@ -159,6 +159,8 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
                 ArrayPool<T>.Shared.ReturnAndClear(oldBuffer);
             }
+
+            Debug.Assert(buffer.Length > capacity);
         }
 
         Debug.Assert(buffer.Length - written > 0);
