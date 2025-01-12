@@ -117,7 +117,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
         else
         {
             next = new BufferSegment<T>(sizeHint);
-            if (nextBufferSize == 0) _nextBufferSize = next.Capacity;
+            if (nextBufferSize == 0) _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
 
         if (_current.Written != 0)
