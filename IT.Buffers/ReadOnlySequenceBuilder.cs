@@ -39,7 +39,7 @@ public class ReadOnlySequenceBuilder<T>
         return this;
     }
 
-    public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, int maxSegments)
+    public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, int maxSegments, bool returnToPool = false)
     {
         if (maxSegments <= 0) throw new ArgumentOutOfRangeException(nameof(maxSegments));
 
@@ -60,7 +60,7 @@ public class ReadOnlySequenceBuilder<T>
             }
         }
 
-        Add(memory);
+        Add(memory, returnToPool);
 
         return this;
     }
