@@ -83,7 +83,7 @@ public class ReadOnlySequenceBuilder<T>
         if (_list.Count == 1) return new ReadOnlySequence<T>(_list[0].Memory);
 
         long running = 0;
-#if NET7_0_OR_GREATER
+#if NET6_0_OR_GREATER
         var span = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_list);
         var lastIndex = span.Length - 1;
         for (int i = 0; i < lastIndex; i++)
@@ -114,7 +114,7 @@ public class ReadOnlySequenceBuilder<T>
     {
         if (_list.Count == 0) return;
 
-#if NET7_0_OR_GREATER
+#if NET6_0_OR_GREATER
         var segments = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_list);
 #else
         var segments = _list;
