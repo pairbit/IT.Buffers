@@ -5,12 +5,12 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public struct FixedBufferWriter<T> : IBufferWriter<T>
+public struct ValueFixedBufferWriter<T> : IBufferWriter<T>
 {
     private readonly T[] _buffer;
     private int _written;
 
-    public FixedBufferWriter(T[] buffer)
+    public ValueFixedBufferWriter(T[] buffer)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 
@@ -22,7 +22,7 @@ public struct FixedBufferWriter<T> : IBufferWriter<T>
 
     public readonly ReadOnlySpan<T> WrittenSpan => _buffer.AsSpan(0, _written);
 
-    public readonly int WrittenCount => _written;
+    public readonly int Written => _written;
 
     public readonly int Capacity => _buffer.Length;
 
@@ -72,7 +72,7 @@ public struct FixedBufferWriter<T> : IBufferWriter<T>
         _written = 0;
     }
 
-    public void ResetWrittenCount() => _written = 0;
+    public void ResetWritten() => _written = 0;
 
     public readonly T[] GetFilledBuffer()
     {
