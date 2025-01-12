@@ -11,7 +11,7 @@ public class LinkedBufferWriterPool<T>
     {
         if (_queue.TryDequeue(out var writer))
         {
-            if (bufferSize > 0) writer.SetInitialBufferSize(bufferSize);
+            if (bufferSize > 0) writer.GetSpan(bufferSize);
             return writer;
         }
         return bufferSize == 0

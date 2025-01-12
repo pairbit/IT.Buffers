@@ -18,7 +18,6 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
     private int _firstBufferWritten;
 
     private BufferSegment<T> _current;
-    private int _initialBufferSize;
     private int _nextBufferSize;
 
     private long _written;
@@ -27,14 +26,13 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
     private bool UseFirstBuffer => _firstBuffer != _noUseFirstBufferSentinel;
 
-    public LinkedBufferWriter(int initialBufferSize = BufferSize.KB_256, bool useFirstBuffer = false)
+    public LinkedBufferWriter(int bufferSize = BufferSize.KB_256, bool useFirstBuffer = false)
     {
         _buffers = new List<BufferSegment<T>>();
-        _firstBuffer = useFirstBuffer ? new T[initialBufferSize] : _noUseFirstBufferSentinel;
+        _firstBuffer = useFirstBuffer ? new T[bufferSize] : _noUseFirstBufferSentinel;
         _firstBufferWritten = 0;
         _current = default;
-        _initialBufferSize = initialBufferSize;
-        _nextBufferSize = initialBufferSize;
+        _nextBufferSize = bufferSize;
         _written = 0;
     }
 
@@ -59,14 +57,16 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
         }
 
         BufferSegment<T> next;
-        if (_nextBufferSize >= sizeHint)
+        var nextBufferSize = _nextBufferSize;
+        if (nextBufferSize >= sizeHint)
         {
-            next = new BufferSegment<T>(_nextBufferSize);
+            next = new BufferSegment<T>(nextBufferSize);
             _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
         else
         {
             next = new BufferSegment<T>(sizeHint);
+            if (nextBufferSize == 0) _nextBufferSize = next.Capacity;
         }
 
         if (_current.Written != 0)
@@ -94,14 +94,16 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
         }
 
         BufferSegment<T> next;
-        if (_nextBufferSize >= sizeHint)
+        var nextBufferSize = _nextBufferSize;
+        if (nextBufferSize >= sizeHint)
         {
-            next = new BufferSegment<T>(_nextBufferSize);
+            next = new BufferSegment<T>(nextBufferSize);
             _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
         else
         {
             next = new BufferSegment<T>(sizeHint);
+            if (nextBufferSize == 0) _nextBufferSize = next.Capacity;
         }
 
         if (_current.Written != 0)
@@ -268,12 +270,6 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
         ResetCore();
     }
 
-    internal void SetInitialBufferSize(int initialBufferSize)
-    {
-        _initialBufferSize = initialBufferSize;
-        _nextBufferSize = initialBufferSize;
-    }
-
     // reset without list's BufferSegment element
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ResetCore()
@@ -282,7 +278,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
         _buffers.Clear();
         _written = 0;
         _current = default;
-        _nextBufferSize = _initialBufferSize;
+        _nextBufferSize = 0;
     }
 
     public struct Enumerator : IEnumerator<Memory<T>>
