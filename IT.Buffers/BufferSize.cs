@@ -21,8 +21,8 @@ public static class BufferSize
     public const int KB_256 = 262144;//2^18
     public const int KB_512 = 524288;//2^19
     public const int MB = 1048576;//2^20
-    public const int Max = 0X7FFFFFC7;
-    public const int MaxHalf = Max / 2;
+    public const int Max = 0X7FFFFFC7;//2147483591 = 2^31 - 57
+    public const int MaxHalf = Max / 2;//1073741795
 
 #if NET
     static BufferSize()
