@@ -5,18 +5,18 @@ using System.Diagnostics;
 
 namespace IT.Buffers;
 
-public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
+public struct ValueRentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 {
     private T[] _buffer;
     private int _written;
 
-    public RentedBufferWriter()
+    public ValueRentedBufferWriter()
     {
         _buffer = [];
         _written = 0;
     }
 
-    public ReadOnlyMemory<T> WrittenMemory
+    public readonly ReadOnlyMemory<T> WrittenMemory
     {
         get
         {
@@ -26,7 +26,7 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
         }
     }
 
-    public ReadOnlySpan<T> WrittenSpan
+    public readonly ReadOnlySpan<T> WrittenSpan
     {
         get
         {
@@ -36,11 +36,11 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
         }
     }
 
-    public int Written => _written;
+    public readonly int Written => _written;
 
-    public int Capacity => _buffer.Length;
+    public readonly int Capacity => _buffer.Length;
 
-    public int FreeCapacity
+    public readonly int FreeCapacity
     {
         get
         {

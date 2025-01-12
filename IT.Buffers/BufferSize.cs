@@ -1,4 +1,9 @@
-﻿namespace IT.Buffers;
+﻿using System.Buffers;
+using System.Diagnostics;
+using System;
+using IT.Buffers.Extensions;
+
+namespace IT.Buffers;
 
 public static class BufferSize
 {
@@ -34,5 +39,67 @@ public static class BufferSize
             newSize = Max;
         }
         return newSize;
+    }
+
+    internal static void CheckAndResizeBuffer<T>(ref T[] buffer, int written, int sizeHint)
+    {
+        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        if (sizeHint == 0) sizeHint = 1;
+
+        int capacity = buffer.Length;
+
+        Debug.Assert(capacity >= written);
+
+        int freeCapacity = capacity - written;
+
+        // If we've reached ~1GB written, grow to the maximum buffer
+        // length to avoid incessant minimal growths causing perf issues.
+        if (written >= MaxHalf)
+        {
+            sizeHint = Math.Max(sizeHint, Max - capacity);
+        }
+
+        if (sizeHint > freeCapacity)
+        {
+            int growBy = Math.Max(sizeHint, capacity);
+
+            int newSize = capacity + growBy;
+
+            if ((uint)newSize > Max)
+            {
+                newSize = capacity + sizeHint;
+                if ((uint)newSize > Max)
+                {
+                    throw new OutOfMemoryException($"Size {(uint)newSize} > {Max}");
+                }
+            }
+
+            if (capacity == 0)
+            {
+                Debug.Assert(written == 0);
+
+                buffer = ArrayPool<T>.Shared.Rent(newSize);
+
+                Debug.Assert(buffer.Length >= written);
+            }
+            else
+            {
+                T[] oldBuffer = buffer;
+
+                buffer = ArrayPool<T>.Shared.Rent(newSize);
+
+                Debug.Assert(buffer.Length >= written);
+
+                if (written > 0)
+                    oldBuffer.AsSpan(0, written).CopyTo(buffer);
+
+                ArrayPool<T>.Shared.ReturnAndClear(oldBuffer);
+            }
+
+            Debug.Assert(buffer.Length > capacity);
+        }
+
+        Debug.Assert(buffer.Length - written > 0);
+        Debug.Assert(buffer.Length - written >= sizeHint);
     }
 }
