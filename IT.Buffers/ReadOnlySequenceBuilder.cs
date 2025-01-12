@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace IT.Buffers;
 
-public class ReadOnlySequenceBuilder<T>
+public sealed class ReadOnlySequenceBuilder<T> : IDisposable
 {
     private Stack<SequenceSegment<T>>? _pool;
     private readonly List<SequenceSegment<T>> _list;
@@ -110,7 +110,7 @@ public class ReadOnlySequenceBuilder<T>
         return new ReadOnlySequence<T>(firstSegment, 0, lastSegment, lastSegment.Memory.Length);
     }
 
-    public void Reset()
+    public void Dispose()
     {
         if (_list.Count == 0) return;
 

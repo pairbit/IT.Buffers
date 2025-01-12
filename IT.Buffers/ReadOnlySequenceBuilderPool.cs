@@ -24,7 +24,7 @@ public class ReadOnlySequenceBuilderPool<T>
     {
         if (builder == null) throw new ArgumentNullException(nameof(builder));
 
-        builder.Reset();
+        builder.Dispose();
         _queue.Enqueue(builder);
     }
 }
