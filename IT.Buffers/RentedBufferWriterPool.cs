@@ -7,14 +7,14 @@ public static class RentedBufferWriterPool<T>
 {
     private static readonly ConcurrentQueue<RentedBufferWriter<T>> _queue = new();
 
-    public static RentedBufferWriter<T> Rent(int capacity = 0)
+    public static RentedBufferWriter<T> Rent(int minimumSegmentSize = 0)
     {
         if (!_queue.TryDequeue(out var writer))
         {
             writer = new RentedBufferWriter<T>();
         }
 
-        writer.GetSpan(capacity);
+        writer.GetSpan(minimumSegmentSize == 0 ? BufferSize.Min : minimumSegmentSize);
 
         return writer;
     }

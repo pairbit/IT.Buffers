@@ -141,7 +141,10 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
             if (capacity == 0)
             {
                 Debug.Assert(written == 0);
-                _buffer = ArrayPool<T>.Shared.Rent(newSize);
+
+                buffer = _buffer = ArrayPool<T>.Shared.Rent(newSize);
+
+                Debug.Assert(buffer.Length >= written);
             }
             else
             {
@@ -151,7 +154,8 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
                 Debug.Assert(buffer.Length >= written);
 
-                oldBuffer.AsSpan(0, written).CopyTo(buffer);
+                if (written > 0)
+                    oldBuffer.AsSpan(0, written).CopyTo(buffer);
 
                 ArrayPool<T>.Shared.ReturnAndClear(oldBuffer);
             }
