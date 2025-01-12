@@ -10,9 +10,6 @@ namespace IT.Buffers;
 
 public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
 {
-    //const int InitialBufferSize = 262144; // 256K(32768, 65536, 131072, 262144)
-    private static readonly T[] _noUseFirstBufferSentinel = new T[0];
-
     private readonly List<BufferSegment<T>> _buffers;
 
     private readonly T[] _firstBuffer;
@@ -27,12 +24,24 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
     public long WrittenLong => _written;
 
-    private bool UseFirstBuffer => _firstBuffer != _noUseFirstBufferSentinel;
+    private bool UseFirstBuffer => _firstBuffer.Length > 0;
 
-    public LinkedBufferWriter(int bufferSize = BufferSize.KB_256, bool useFirstBuffer = false)
+    public LinkedBufferWriter()
     {
         _buffers = new List<BufferSegment<T>>();
-        _firstBuffer = useFirstBuffer ? new T[bufferSize] : _noUseFirstBufferSentinel;
+        _firstBuffer = [];
+        _firstBufferWritten = 0;
+        _current = default;
+        _nextBufferSize = 0;
+        _written = 0;
+    }
+
+    public LinkedBufferWriter(int bufferSize, bool useFirstBuffer = false)
+    {
+        if (bufferSize < 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
+
+        _buffers = new List<BufferSegment<T>>();
+        _firstBuffer = useFirstBuffer && bufferSize > 0 ? new T[bufferSize] : [];
         _firstBufferWritten = 0;
         _current = default;
         _nextBufferSize = bufferSize;

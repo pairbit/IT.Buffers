@@ -5,7 +5,7 @@ public class LinkedBufferWriterTest
     [Test]
     public void Test()
     {
-        var writer = LinkedBufferWriterPool<byte>.Rent(1);
+        var writer = LinkedBufferWriterPool<byte>.Rent();
 
         try
         {
