@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers.Internal;
 
-internal struct BufferSegment<T>
+internal struct BufferSegment<T> : IDisposable
 {
     private T[] _buffer;
     private int _written;
@@ -16,7 +16,7 @@ internal struct BufferSegment<T>
 
     public readonly Span<T> WrittenSpan => _buffer.AsSpan(0, _written);
 
-    public readonly int WrittenCount => _written;
+    public readonly int Written => _written;
 
     public readonly int Capacity => _buffer.Length;
 
@@ -40,13 +40,14 @@ internal struct BufferSegment<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Clear()
+    public void Dispose()
     {
-        if (_buffer != null)
+        var buffer = _buffer;
+        if (buffer != null)
         {
-            ArrayPool<T>.Shared.ReturnAndClear(_buffer);
+            _buffer = null!;
+            _written = 0;
+            ArrayPool<T>.Shared.ReturnAndClear(buffer);
         }
-        _buffer = null!;
-        _written = 0;
     }
 }

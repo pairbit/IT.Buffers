@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public class LinkedBufferWriter<T> : IBufferWriter<T>
+public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
 {
     //const int InitialBufferSize = 262144; // 256K(32768, 65536, 131072, 262144)
     private static readonly T[] _noUseFirstBufferSentinel = new T[0];
@@ -69,7 +69,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
             next = new BufferSegment<T>(sizeHint);
         }
 
-        if (_current.WrittenCount != 0)
+        if (_current.Written != 0)
         {
             _buffers.Add(_current);
         }
@@ -104,7 +104,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
             next = new BufferSegment<T>(sizeHint);
         }
 
-        if (_current.WrittenCount != 0)
+        if (_current.Written != 0)
         {
             _buffers.Add(_current);
         }
@@ -132,7 +132,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
         _written += count;
     }
 
-    public T[] ToArrayAndReset()
+    public T[] ToArrayAndDispose()
     {
         if (_written == 0) return Array.Empty<T>();
 
@@ -154,22 +154,22 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
 #endif
             {
                 item.WrittenSpan.CopyTo(dest);
-                dest = dest.Slice(item.WrittenCount);
-                item.Clear(); // reset _buffer-segment in this loop to avoid iterate twice for Reset
+                dest = dest.Slice(item.Written);
+                item.Dispose(); // reset _buffer-segment in this loop to avoid iterate twice for Reset
             }
         }
 
         if (!_current.IsNull)
         {
             _current.WrittenSpan.CopyTo(dest);
-            _current.Clear();
+            _current.Dispose();
         }
 
         ResetCore();
         return result;
     }
 
-    public void WriteToAndReset<TBufferWriter>(in TBufferWriter writer)
+    public void WriteAndDispose<TBufferWriter>(in TBufferWriter writer)
         where TBufferWriter : IBufferWriter<T>
     {
         if (_written == 0) return;
@@ -193,7 +193,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
             foreach (var item in _buffers)
 #endif
             {
-                var written = item.WrittenCount;
+                var written = item.Written;
 
                 var span = writer.GetSpan(written);
 
@@ -201,21 +201,21 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
 
                 writer.Advance(written);
 
-                item.Clear(); // reset
+                item.Dispose(); // reset
             }
         }
 
         if (!_current.IsNull)
         {
-            var written = _current.WrittenCount;
+            var written = _current.Written;
 
             var span = writer.GetSpan(written);
 
             _current.WrittenSpan.CopyTo(span[..written]);
 
-            writer.Advance(_current.WrittenCount);
+            writer.Advance(_current.Written);
 
-            _current.Clear();
+            _current.Dispose();
         }
 
         ResetCore();
@@ -236,14 +236,14 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
             foreach (var item in _buffers)
             {
                 await stream.WriteAsync(item.WrittenMemory, cancellationToken).ConfigureAwait(false);
-                item.Clear(); // reset
+                item.Dispose(); // reset
             }
         }
 
         if (!_current.IsNull)
         {
             await stream.WriteAsync(_current.WrittenMemory, cancellationToken).ConfigureAwait(false);
-            _current.Clear();
+            _current.Dispose();
         }
 
         ResetCore();
@@ -253,7 +253,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
     public Enumerator GetEnumerator() => new(this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Reset()
+    public void Dispose()
     {
         if (_written == 0) return;
 #if NET6_0_OR_GREATER
@@ -262,9 +262,9 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>
         foreach (var item in _buffers)
 #endif
         {
-            item.Clear();
+            item.Dispose();
         }
-        _current.Clear();
+        _current.Dispose();
         ResetCore();
     }
 

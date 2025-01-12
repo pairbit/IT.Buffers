@@ -23,7 +23,7 @@ public class LinkedBufferWriterPool<T>
     {
         if (writer == null) throw new ArgumentNullException(nameof(writer));
 
-        writer.Reset();
+        writer.Dispose();
         _queue.Enqueue(writer);
     }
 }
