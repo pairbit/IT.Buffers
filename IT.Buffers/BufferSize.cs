@@ -1,7 +1,7 @@
-﻿using System.Buffers;
-using System.Diagnostics;
+﻿using IT.Buffers.Extensions;
 using System;
-using IT.Buffers.Extensions;
+using System.Buffers;
+using System.Diagnostics;
 
 namespace IT.Buffers;
 
