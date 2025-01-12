@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace IT.Buffers;
 
-public struct ValueRentedBufferWriter<T> : IBufferWriter<T>, IDisposable
+public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
     private T[] _buffer;
     private int _written;
@@ -37,6 +37,8 @@ public struct ValueRentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     }
 
     public readonly int Written => _written;
+
+    readonly long IAdvancedBufferWriter<T>.WrittenLong => _written;
 
     public readonly int Capacity => _buffer.Length;
 
