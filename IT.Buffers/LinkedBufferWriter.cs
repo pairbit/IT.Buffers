@@ -3,6 +3,7 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
@@ -86,8 +87,10 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
         if (_current.IsNull)
         {
-            var free = _firstBuffer.Length - _firstBufferWritten;
-            if (free >= sizeHint) return _firstBuffer.AsSpan(_firstBufferWritten);
+            Debug.Assert(_firstBuffer.Length >= _firstBufferWritten);
+
+            var freeCapacity = _firstBuffer.Length - _firstBufferWritten;
+            if (freeCapacity >= sizeHint) return _firstBuffer.AsSpan(_firstBufferWritten);
         }
         else
         {

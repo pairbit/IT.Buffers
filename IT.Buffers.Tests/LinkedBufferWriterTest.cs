@@ -7,6 +7,18 @@ public class LinkedBufferWriterTest
     {
         var writer = LinkedBufferWriterPool<byte>.Rent(1);
 
+        try
+        {
+            Test(writer);
+        }
+        finally
+        {
+            LinkedBufferWriterPool<byte>.Return(writer);
+        }
+    }
+
+    private void Test(LinkedBufferWriter<byte> writer)
+    {
         var span = writer.GetSpan();
 
         Random.Shared.NextBytes(span);
@@ -18,7 +30,5 @@ public class LinkedBufferWriterTest
         Random.Shared.NextBytes(span);
 
         writer.Advance(span.Length);
-
-        LinkedBufferWriterPool<byte>.Return(writer);
     }
 }

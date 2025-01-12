@@ -7,9 +7,14 @@ public class RentedBufferWriterTest
     {
         var buffer = RentedBufferWriterPool<byte>.Rent();
 
-        Test(buffer);
-
-        RentedBufferWriterPool<byte>.Return(buffer);
+        try
+        {
+            Test(buffer);
+        }
+        finally
+        {
+            RentedBufferWriterPool<byte>.Return(buffer);
+        }
     }
 
     private void Test(RentedBufferWriter<byte> bufferWriter)
