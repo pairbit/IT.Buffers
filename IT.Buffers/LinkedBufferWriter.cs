@@ -22,7 +22,9 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
     private long _written;
 
-    public long WrittenCount => _written;
+    public int Written => checked((int)_written);
+
+    public long WrittenLong => _written;
 
     private bool UseFirstBuffer => _firstBuffer != _noUseFirstBufferSentinel;
 
