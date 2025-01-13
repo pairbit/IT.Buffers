@@ -14,11 +14,12 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     {
         get
         {
-            if (_buffer == null) return default;
+            var buffer = _buffer;
+            if (buffer == null) return default;
 
-            Debug.Assert(_buffer.Length >= _written);
+            Debug.Assert(buffer.Length >= _written);
 
-            return _buffer.AsMemory(0, _written);
+            return buffer.AsMemory(0, _written);
         }
     }
 
@@ -26,11 +27,12 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     {
         get
         {
-            if (_buffer == null) return default;
+            var buffer = _buffer;
+            if (buffer == null) return default;
 
-            Debug.Assert(_buffer.Length >= _written);
+            Debug.Assert(buffer.Length >= _written);
 
-            return _buffer.AsSpan(0, _written);
+            return buffer.AsSpan(0, _written);
         }
     }
 
@@ -38,17 +40,25 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     readonly long IAdvancedBufferWriter<T>.WrittenLong => _written;
 
-    public readonly int Capacity => _buffer == null ? 0 : _buffer.Length;
+    public readonly int Capacity
+    {
+        get
+        {
+            var buffer = _buffer;
+            return buffer == null ? 0 : buffer.Length;
+        }
+    }
 
     public readonly int FreeCapacity
     {
         get
         {
-            if (_buffer == null) return 0;
+            var buffer = _buffer;
+            if (buffer == null) return 0;
 
-            Debug.Assert(_buffer.Length >= _written);
+            Debug.Assert(buffer.Length >= _written);
 
-            return _buffer.Length - _written;
+            return buffer.Length - _written;
         }
     }
 
@@ -79,11 +89,11 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public void Advance(int count)
     {
-        if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
-        if (_buffer == null) throw new ArgumentOutOfRangeException(nameof(count));
+        var buffer = _buffer;
+        if (buffer == null || count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
 
         var written = _written + count;
-        if (written > _buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
+        if (written > buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
 
         _written = written;
     }
