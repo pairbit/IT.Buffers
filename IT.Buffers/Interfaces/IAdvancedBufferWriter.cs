@@ -1,11 +1,7 @@
-﻿/*
-using System;
+﻿using System;
 using System.Buffers;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace IT.Buffers;
+namespace IT.Buffers.Interfaces;
 
 public interface IAdvancedBufferWriter<T> : IBufferWriter<T>
 {
@@ -15,9 +11,10 @@ public interface IAdvancedBufferWriter<T> : IBufferWriter<T>
 
     bool TryWrite(Span<T> span);
 
-    void Write<TBufferWriter>(in TBufferWriter writer) where TBufferWriter : IBufferWriter<T>;
+    void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>;
 }
 
+/*
 public interface ISimpleBufferWriter<T> : IAdvancedBufferWriter<T>
 {
     ReadOnlyMemory<T> WrittenMemory { get; }

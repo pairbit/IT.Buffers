@@ -1,11 +1,12 @@
 ﻿using IT.Buffers.Extensions;
+using IT.Buffers.Interfaces;
 using System;
 using System.Buffers;
 using System.Diagnostics;
 
 namespace IT.Buffers;
 
-public struct ValueRentedBufferWriter<T> : IBufferWriter<T>, IDisposable
+public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
     private T[]? _buffer;
     private int _written;
@@ -38,7 +39,7 @@ public struct ValueRentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
     public readonly int Written => _written;
 
-    //readonly long IAdvancedBufferWriter<T>.WrittenLong => _written;
+    readonly long IAdvancedBufferWriter<T>.WrittenLong => _written;
 
     public readonly int Capacity
     {
@@ -61,14 +62,6 @@ public struct ValueRentedBufferWriter<T> : IBufferWriter<T>, IDisposable
             return buffer.Length - _written;
         }
     }
-
-    //public void Clear()
-    //{
-    //    Debug.Assert(_buffer.Length >= _written);
-
-    //    _buffer.AsSpan(0, _written).Clear();
-    //    _written = 0;
-    //}
 
     public void ResetWritten()
     {
@@ -116,5 +109,33 @@ public struct ValueRentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 
         BufferSize.CheckAndResizeBuffer(ref _buffer, _written, sizeHint);
         return _buffer.AsSpan(_written);
+    }
+
+    public readonly bool TryWrite(Span<T> span)
+    {
+        var written = _written;
+        if (span.Length < written) return false;
+
+        var buffer = _buffer;
+        if (buffer != null && written > 0)
+        {
+            Debug.Assert(buffer.Length >= written);
+
+            buffer.AsSpan(0, written).CopyTo(span);
+        }
+
+        return true;
+    }
+
+    public readonly void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+    {
+        var buffer = _buffer;
+        var written = _written;
+        if (buffer != null && written > 0)
+        {
+            Debug.Assert(buffer.Length >= written);
+
+            xBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(buffer, 0, written));
+        }
     }
 }
