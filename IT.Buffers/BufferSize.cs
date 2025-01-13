@@ -102,4 +102,19 @@ public static class BufferSize
         Debug.Assert(buffer.Length - written > 0);
         Debug.Assert(buffer.Length - written >= sizeHint);
     }
+
+    internal static T[] RentBuffer<T>(int sizeHint)
+    {
+        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        if (sizeHint == 0) sizeHint = 1;
+
+        if (sizeHint > Max) throw new OutOfMemoryException($"Size {sizeHint} > {Max}");
+
+        var buffer = ArrayPool<T>.Shared.Rent(sizeHint);
+
+        Debug.Assert(buffer.Length > 0);
+        Debug.Assert(buffer.Length >= sizeHint);
+
+        return buffer;
+    }
 }

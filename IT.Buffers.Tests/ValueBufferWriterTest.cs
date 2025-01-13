@@ -5,7 +5,7 @@ public class ValueBufferWriterTest
     [Test]
     public void Test()
     {
-        var writer = new ValueRentedBufferWriter<byte>();
+        ValueRentedBufferWriter<byte> writer = default;
 
         try
         {

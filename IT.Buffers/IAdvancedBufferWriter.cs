@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,9 +17,20 @@ public interface IAdvancedBufferWriter<T> : IBufferWriter<T>
     //void Write<TBufferWriter>(in TBufferWriter writer) where TBufferWriter : IBufferWriter<T>;
 }
 
-internal interface IByteAdvancedBufferWriter : IAdvancedBufferWriter<byte>
-{
-    void Write(Stream stream);
+//public interface ISimpleBufferWriter<T> : IAdvancedBufferWriter<T>
+//{
+//    ReadOnlyMemory<T> WrittenMemory { get; }
 
-    ValueTask WriteAsync(Stream stream, CancellationToken cancellationToken);
-}
+//    ReadOnlySpan<T> WrittenSpan { get; }
+     
+//    int Capacity { get; }
+
+//    int FreeCapacity { get; }
+//}
+
+//internal interface IByteAdvancedBufferWriter : IAdvancedBufferWriter<byte>
+//{
+//    void Write(Stream stream);
+
+//    ValueTask WriteAsync(Stream stream, CancellationToken cancellationToken);
+//}

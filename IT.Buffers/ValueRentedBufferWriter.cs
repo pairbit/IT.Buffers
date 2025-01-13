@@ -7,19 +7,15 @@ namespace IT.Buffers;
 
 public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
-    private T[] _buffer;
+    private T[]? _buffer;
     private int _written;
-
-    public ValueRentedBufferWriter()
-    {
-        _buffer = [];
-        _written = 0;
-    }
 
     public readonly ReadOnlyMemory<T> WrittenMemory
     {
         get
         {
+            if (_buffer == null) return default;
+
             Debug.Assert(_buffer.Length >= _written);
 
             return _buffer.AsMemory(0, _written);
@@ -30,6 +26,8 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     {
         get
         {
+            if (_buffer == null) return default;
+
             Debug.Assert(_buffer.Length >= _written);
 
             return _buffer.AsSpan(0, _written);
@@ -40,12 +38,14 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     readonly long IAdvancedBufferWriter<T>.WrittenLong => _written;
 
-    public readonly int Capacity => _buffer.Length;
+    public readonly int Capacity => _buffer == null ? 0 : _buffer.Length;
 
     public readonly int FreeCapacity
     {
         get
         {
+            if (_buffer == null) return 0;
+
             Debug.Assert(_buffer.Length >= _written);
 
             return _buffer.Length - _written;
@@ -68,9 +68,9 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     public void Dispose()
     {
         var buffer = _buffer;
-        if (buffer.Length > 0)
+        if (buffer != null)
         {
-            _buffer = [];
+            _buffer = null;
             _written = 0;
             ArrayPool<T>.Shared.ReturnAndClear(buffer);
         }
@@ -80,6 +80,7 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     public void Advance(int count)
     {
         if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (_buffer == null) throw new ArgumentOutOfRangeException(nameof(count));
 
         var written = _written + count;
         if (written > _buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
@@ -91,6 +92,8 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     /// <exception cref="OutOfMemoryException"></exception>
     public Memory<T> GetMemory(int sizeHint = 0)
     {
+        if (_buffer == null) return _buffer = BufferSize.RentBuffer<T>(sizeHint);
+
         BufferSize.CheckAndResizeBuffer(ref _buffer, _written, sizeHint);
         return _buffer.AsMemory(_written);
     }
@@ -99,6 +102,8 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     /// <exception cref="OutOfMemoryException"></exception>
     public Span<T> GetSpan(int sizeHint = 0)
     {
+        if (_buffer == null) return _buffer = BufferSize.RentBuffer<T>(sizeHint);
+
         BufferSize.CheckAndResizeBuffer(ref _buffer, _written, sizeHint);
         return _buffer.AsSpan(_written);
     }
