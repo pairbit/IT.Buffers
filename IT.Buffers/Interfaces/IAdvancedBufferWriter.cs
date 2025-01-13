@@ -9,6 +9,8 @@ public interface IAdvancedBufferWriter<T> : IBufferWriter<T>
 
     long WrittenLong { get; }
 
+    //void ResetWritten();
+
     bool TryWrite(Span<T> span);
 
     void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>;

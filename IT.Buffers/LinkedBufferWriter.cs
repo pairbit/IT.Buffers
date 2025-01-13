@@ -1,4 +1,5 @@
-﻿using IT.Buffers.Internal;
+﻿using IT.Buffers.Interfaces;
+using IT.Buffers.Internal;
 using System;
 using System.Buffers;
 using System.Collections;
@@ -8,9 +9,9 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
+public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
-    public static BufferPool<LinkedBufferWriter<T>> Pool => 
+    public static BufferPool<LinkedBufferWriter<T>> Pool =>
         BufferPool<LinkedBufferWriter<T>>.Shared;
 
     private readonly List<BufferSegment<T>> _buffers;
@@ -151,6 +152,43 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
         _written += count;
     }
 
+    public bool TryWrite(Span<T> span)
+    {
+        var written = _written;
+        if (span.Length < written) return false;
+
+        if (UseFirstBuffer)
+        {
+            _firstBuffer.AsSpan(0, _firstBufferWritten).CopyTo(span);
+            span = span[_firstBufferWritten..];
+        }
+
+        if (_buffers.Count > 0)
+        {
+#if NET6_0_OR_GREATER
+            foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+#else
+            foreach (var item in _buffers)
+#endif
+            {
+                item.WrittenSpan.CopyTo(span);
+                span = span[item.Written..];
+            }
+        }
+
+        if (!_current.IsNull)
+        {
+            _current.WrittenSpan.CopyTo(span);
+        }
+
+        return true;
+    }
+
+    public void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+    {
+        throw new NotImplementedException();
+    }
+
     public T[] ToArrayAndDispose()
     {
         if (_written == 0) return Array.Empty<T>();
@@ -188,7 +226,7 @@ public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
         return result;
     }
 
-    public void WriteAndDispose<TBufferWriter>(in TBufferWriter writer)
+    public void WriteAndDispose<TBufferWriter>(ref TBufferWriter writer)
         where TBufferWriter : IBufferWriter<T>
     {
         if (_written == 0) return;
