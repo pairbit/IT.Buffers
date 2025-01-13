@@ -121,21 +121,21 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
 #else
         var segments = _list;
 #endif
-        var pool = _stack;
-        if (pool == null)
+        var stack = _stack;
+        if (stack == null)
         {
-            pool = _stack = new Stack<SequenceSegment<T>>(_list.Capacity);
+            stack = _stack = new Stack<SequenceSegment<T>>(_list.Capacity);
         }
 #if NET6_0_OR_GREATER
         else
         {
-            pool.EnsureCapacity(_list.Capacity);
+            stack.EnsureCapacity(_list.Capacity);
         }
 #endif
         foreach (var segment in segments)
         {
             segment.Reset();
-            pool.Push(segment);
+            stack.Push(segment);
         }
         _list.Clear();
     }
