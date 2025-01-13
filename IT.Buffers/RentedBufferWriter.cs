@@ -1,11 +1,12 @@
 ﻿using IT.Buffers.Extensions;
+using IT.Buffers.Interfaces;
 using System;
 using System.Buffers;
 using System.Diagnostics;
 
 namespace IT.Buffers;
 
-public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
+public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
     public static BufferPool<RentedBufferWriter<T>> Pool
         => BufferPool<RentedBufferWriter<T>>.Shared;
@@ -40,6 +41,8 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     }
 
     public int Written => _written;
+
+    long IAdvancedBufferWriter<T>.WrittenLong => _written;
 
     public int Capacity => _buffer.Length;
 
@@ -102,5 +105,31 @@ public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
     {
         BufferSize.CheckAndResizeBuffer(ref _buffer, _written, sizeHint);
         return _buffer.AsSpan(_written);
+    }
+
+    public bool TryWrite(Span<T> span)
+    {
+        var written = _written;
+        if (span.Length < written) return false;
+
+        if (written > 0)
+        {
+            Debug.Assert(_buffer.Length >= written);
+
+            _buffer.AsSpan(0, written).CopyTo(span);
+        }
+
+        return true;
+    }
+
+    public void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+    {
+        var written = _written;
+        if (written > 0)
+        {
+            Debug.Assert(_buffer.Length >= written);
+
+            xBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(_buffer, 0, written));
+        }
     }
 }
