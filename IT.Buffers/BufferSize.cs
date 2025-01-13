@@ -15,6 +15,7 @@ public static class BufferSize
     public const int KB_16 = 16384;//2^14
     public const int KB_32 = 32768;//2^15
     public const int KB_64 = 65536;//2^16
+    public const int KB_80 = 81920;
     public const int KB_83 = 84992;
     public const int LOH = 85000;
     public const int KB_128 = 131072;//2^17

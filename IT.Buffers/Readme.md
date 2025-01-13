@@ -4,4 +4,4 @@
 [![GitHub Actions](https://img.shields.io/github/actions/workflow/status/pairbit/IT.Buffers/dotnet.yml)](https://github.com/pairbit/IT.Buffers/actions)
 [![GitHub Releases](https://img.shields.io/github/release/pairbit/IT.Buffers.svg)](https://github.com/pairbit/IT.Buffers/releases)
 
-ReadOnlySequenceBuilder, FixedBufferWriter, RentedBufferWriter, LinkedBufferWriter
+ReadOnlySequenceBuilder, ValueFixedBufferWriter, RentedBufferWriter, LinkedBufferWriter
