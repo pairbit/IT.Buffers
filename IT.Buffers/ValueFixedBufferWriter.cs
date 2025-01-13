@@ -86,9 +86,7 @@ public struct ValueFixedBufferWriter<T> : IBufferWriter<T>
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
-        var buffer = _buffer;
-        if (buffer == null) throw new InvalidOperationException("buffer is empty");
-
+        var buffer = _buffer ?? throw new InvalidOperationException("buffer is empty");
         if (sizeHint == 0) sizeHint = 1;
 
         var memory = buffer.AsMemory(_written);
@@ -102,9 +100,7 @@ public struct ValueFixedBufferWriter<T> : IBufferWriter<T>
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
-        var buffer = _buffer;
-        if (buffer == null) throw new InvalidOperationException("buffer is empty");
-
+        var buffer = _buffer ?? throw new InvalidOperationException("buffer is empty");
         if (sizeHint == 0) sizeHint = 1;
 
         var span = buffer.AsSpan(_written);
