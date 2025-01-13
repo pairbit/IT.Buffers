@@ -7,7 +7,9 @@ namespace IT.Buffers;
 
 public sealed class ReadOnlySequenceBuilder<T> : IDisposable
 {
-    private Stack<SequenceSegment<T>>? _pool;
+    public static readonly BufferPool<ReadOnlySequenceBuilder<T>> Pool = new();
+
+    private Stack<SequenceSegment<T>>? _stack;
     private readonly List<SequenceSegment<T>> _list;
 
     public ReadOnlySequenceBuilder()
@@ -28,7 +30,7 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
 
     public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, bool returnToPool = false)
     {
-        if (_pool == null || !_pool.TryPop(out var segment))
+        if (_stack == null || !_stack.TryPop(out var segment))
         {
             segment = new SequenceSegment<T>();
         }
@@ -119,10 +121,10 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
 #else
         var segments = _list;
 #endif
-        var pool = _pool;
+        var pool = _stack;
         if (pool == null)
         {
-            pool = _pool = new Stack<SequenceSegment<T>>(_list.Capacity);
+            pool = _stack = new Stack<SequenceSegment<T>>(_list.Capacity);
         }
 #if NET6_0_OR_GREATER
         else

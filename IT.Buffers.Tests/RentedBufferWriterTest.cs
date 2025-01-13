@@ -5,7 +5,7 @@ public class RentedBufferWriterTest
     [Test]
     public void Test()
     {
-        var buffer = RentedBufferWriterPool<byte>.Rent();
+        var buffer = RentedBufferWriter<byte>.Pool.Rent();
 
         try
         {
@@ -13,21 +13,20 @@ public class RentedBufferWriterTest
         }
         finally
         {
-            RentedBufferWriterPool<byte>.Return(buffer);
+            RentedBufferWriter<byte>.Pool.Return(buffer);
         }
     }
 
     private void Test(RentedBufferWriter<byte> bufferWriter)
     {
-        var capacity = BufferSize.Min;
-
-        Assert.That(bufferWriter.Capacity, Is.EqualTo(capacity));
-        Assert.That(bufferWriter.FreeCapacity, Is.EqualTo(capacity));
+        Assert.That(bufferWriter.Capacity, Is.EqualTo(0));
+        Assert.That(bufferWriter.FreeCapacity, Is.EqualTo(0));
         Assert.That(bufferWriter.Written, Is.EqualTo(0));
         Assert.That(bufferWriter.WrittenMemory.Length, Is.EqualTo(0));
 
         var span = bufferWriter.GetSpan();
 
+        var capacity = 16;
         Assert.That(span.Length, Is.EqualTo(capacity));
 
         Random.Shared.NextBytes(span);

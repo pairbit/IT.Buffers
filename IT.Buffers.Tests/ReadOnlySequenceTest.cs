@@ -7,7 +7,7 @@ public abstract class ReadOnlySequenceTest<T>
     [Test]
     public void Test()
     {
-        var builder = ReadOnlySequenceBuilderPool<T>.Rent();
+        var builder = ReadOnlySequenceBuilder<T>.Pool.Rent();
         
 		try
 		{
@@ -15,7 +15,7 @@ public abstract class ReadOnlySequenceTest<T>
         }
 		finally
 		{
-            ReadOnlySequenceBuilderPool<T>.Return(builder);
+            ReadOnlySequenceBuilder<T>.Pool.Return(builder);
         }
     }
 

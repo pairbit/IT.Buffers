@@ -1,36 +1,27 @@
-﻿using System;
+﻿using IT.Buffers.Interfaces;
+using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 
 namespace IT.Buffers;
 
-public static class ArrayBufferWriterPool<T>
+public class ArrayBufferWriterPool<T> : IBufferPool<ArrayBufferWriter<T>>
 {
-    private static readonly ConcurrentQueue<ArrayBufferWriter<T>> _queue = new();
+    public static readonly ArrayBufferWriterPool<T> Shared = new();
 
-    public static ArrayBufferWriter<T> Rent(int capacity = BufferSize.Min)
+    private readonly ConcurrentQueue<ArrayBufferWriter<T>> _queue = new();
+
+    public ArrayBufferWriter<T> Rent() => _queue.TryDequeue(out var buffer) ? buffer : new ArrayBufferWriter<T>();
+
+    public void Return(ArrayBufferWriter<T> buffer)
     {
-        if (_queue.TryDequeue(out var writer))
-        {
-            //resize
-            if (capacity > 0) writer.GetMemory(capacity);
-            return writer;
-        }
-
-        return capacity == 0
-            ? new ArrayBufferWriter<T>()
-            : new ArrayBufferWriter<T>(capacity);
-    }
-
-    public static void Return(ArrayBufferWriter<T> writer)
-    {
-        if (writer == null) throw new ArgumentNullException(nameof(writer));
+        if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 
 #if NET8_0_OR_GREATER
-        writer.ResetWrittenCount();
+        buffer.ResetWrittenCount();
 #else
-        writer.Clear();
+        buffer.Clear();
 #endif
-        _queue.Enqueue(writer);
+        _queue.Enqueue(buffer);
     }
 }

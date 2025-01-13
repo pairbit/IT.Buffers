@@ -7,6 +7,8 @@ namespace IT.Buffers;
 
 public sealed class RentedBufferWriter<T> : IBufferWriter<T>, IDisposable
 {
+    public static readonly BufferPool<RentedBufferWriter<T>> Pool = new();
+
     private T[] _buffer;
     private int _written;
 
