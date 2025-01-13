@@ -6,6 +6,8 @@ namespace IT.Buffers;
 
 public class BufferPool<TBuffer> : IBufferPool<TBuffer> where TBuffer : class, IDisposable, new()
 {
+    public static readonly BufferPool<TBuffer> Shared = new();
+
     private readonly ConcurrentQueue<TBuffer> _queue = new();
 
     public TBuffer Rent() => _queue.TryDequeue(out var buffer) ? buffer : new TBuffer();

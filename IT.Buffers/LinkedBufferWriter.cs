@@ -10,7 +10,8 @@ namespace IT.Buffers;
 
 public class LinkedBufferWriter<T> : IBufferWriter<T>, IDisposable
 {
-    public static readonly BufferPool<LinkedBufferWriter<T>> Pool = new();
+    public static BufferPool<LinkedBufferWriter<T>> Pool => 
+        BufferPool<LinkedBufferWriter<T>>.Shared;
 
     private readonly List<BufferSegment<T>> _buffers;
 

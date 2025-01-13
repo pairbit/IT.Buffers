@@ -7,7 +7,8 @@ namespace IT.Buffers;
 
 public sealed class ReadOnlySequenceBuilder<T> : IDisposable
 {
-    public static readonly BufferPool<ReadOnlySequenceBuilder<T>> Pool = new();
+    public static BufferPool<ReadOnlySequenceBuilder<T>> Pool
+        => BufferPool<ReadOnlySequenceBuilder<T>>.Shared;
 
     private Stack<SequenceSegment<T>>? _stack;
     private readonly List<SequenceSegment<T>> _list;
