@@ -1,11 +1,13 @@
-﻿using System;
+﻿using IT.Buffers.Extensions;
+using IT.Buffers.Interfaces;
+using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public struct ValueFixedBufferWriter<T> : IBufferWriter<T>
+public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
 {
     private readonly T[]? _buffer;
     private int _written;
@@ -45,6 +47,8 @@ public struct ValueFixedBufferWriter<T> : IBufferWriter<T>
     }
 
     public readonly int Written => _written;
+
+    readonly long IAdvancedBufferWriter<T>.WrittenLong => _written;
 
     public readonly int Capacity
     {
@@ -110,4 +114,32 @@ public struct ValueFixedBufferWriter<T> : IBufferWriter<T>
     }
 
     public void ResetWritten() => _written = 0;
+
+    public readonly bool TryWrite(Span<T> span)
+    {
+        var written = _written;
+        if (span.Length < written) return false;
+
+        var buffer = _buffer;
+        if (buffer != null && written > 0)
+        {
+            Debug.Assert(buffer.Length >= written);
+
+            buffer.AsSpan(0, written).CopyTo(span);
+        }
+
+        return true;
+    }
+
+    public readonly void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+    {
+        var buffer = _buffer;
+        var written = _written;
+        if (buffer != null && written > 0)
+        {
+            Debug.Assert(buffer.Length >= written);
+
+            xBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(buffer, 0, written));
+        }
+    }
 }
