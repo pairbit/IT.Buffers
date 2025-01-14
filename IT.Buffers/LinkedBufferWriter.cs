@@ -15,15 +15,15 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
     public static BufferPool<LinkedBufferWriter<T>> Pool =>
         BufferPool<LinkedBufferWriter<T>>.Shared;
 
-    private readonly List<BufferSegment<T>> _buffers;
+    internal readonly List<BufferSegment<T>> _buffers;
 
-    private readonly T[] _firstBuffer;
-    private int _firstBufferWritten;
+    internal readonly T[] _firstBuffer;
+    internal int _firstBufferWritten;
 
-    private BufferSegment<T> _current;
+    internal BufferSegment<T> _current;
     private int _nextBufferSize;
 
-    private long _written;
+    internal long _written;
     //private int _writtenSegments;
 
     public int Written => checked((int)_written);
@@ -314,35 +314,6 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
         ResetCore();
     }
 
-    /*
-    public async ValueTask WriteToAndResetAsync(Stream stream, CancellationToken cancellationToken)
-    {
-        if (_written == 0) return;
-
-        if (UseFirstBuffer)
-        {
-            await stream.WriteAsync(_firstBuffer.AsMemory(0, _firstBufferWritten), cancellationToken).ConfigureAwait(false);
-        }
-
-        if (_buffers.Count > 0)
-        {
-            foreach (var item in _buffers)
-            {
-                await stream.WriteAsync(item.WrittenMemory, cancellationToken).ConfigureAwait(false);
-                item.Dispose(); // reset
-            }
-        }
-
-        if (!_current.IsNull)
-        {
-            await stream.WriteAsync(_current.WrittenMemory, cancellationToken).ConfigureAwait(false);
-            _current.Dispose();
-        }
-
-        ResetCore();
-    }
-    */
-
     public Enumerator GetEnumerator() => new(this);
 
     void IDisposable.Dispose() => Reset();
@@ -366,7 +337,7 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 
     // reset without list's BufferSegment element
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ResetCore()
+    internal void ResetCore()
     {
         _firstBufferWritten = 0;
         _buffers.Clear();
