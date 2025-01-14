@@ -241,7 +241,7 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public bool TryWriteAndDispose(Span<T> span)
+    public bool TryWriteAndReset(Span<T> span)
     {
         var written = _written;
         if (span.Length < written) return false;
@@ -283,7 +283,7 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
         return true;
     }
 
-    public void WriteAndDispose<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+    public void WriteAndReset<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
     {
         if (_written == 0) return;
 
@@ -345,10 +345,13 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 
     public Enumerator GetEnumerator() => new(this);
 
+    void IDisposable.Dispose() => Reset();
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Dispose()
+    public void Reset()
     {
         if (_written == 0) return;
+
 #if NET6_0_OR_GREATER
         foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
 #else
