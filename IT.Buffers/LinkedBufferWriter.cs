@@ -72,6 +72,8 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 
         if (_current.IsNull)
         {
+            Debug.Assert(_firstBuffer.Length >= _firstBufferWritten);
+
             var free = _firstBuffer.Length - _firstBufferWritten;
             if (free >= sizeHint) return _firstBuffer.AsMemory(_firstBufferWritten);
         }
