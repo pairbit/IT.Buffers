@@ -32,8 +32,6 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 
     public long WrittenLong => _written;
 
-    private bool UseFirstBuffer => _firstBuffer.Length > 0;
-
     private ReadOnlySpan<T> FirstBufferWrittenSpan
     {
         get
@@ -403,9 +401,11 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
             {
                 _state = State.BuffersInit;
 
-                if (_parent.UseFirstBuffer)
+                var firstBufferWritten = _parent._firstBufferWritten;
+                if (firstBufferWritten > 0)
                 {
-                    _current = _parent._firstBuffer.AsMemory(0, _parent._firstBufferWritten);
+                    Debug.Assert(_parent._firstBuffer.Length >= firstBufferWritten);
+                    _current = _parent._firstBuffer.AsMemory(0, firstBufferWritten);
                     return true;
                 }
             }
@@ -432,9 +432,11 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
             if (_state == State.Current)
             {
                 _state = State.End;
-
-                _current = _parent._current.WrittenMemory;
-                return true;
+                if (_parent._current.Written > 0)
+                {
+                    _current = _parent._current.WrittenMemory;
+                    return true;
+                }
             }
 
             return false;
