@@ -29,6 +29,7 @@ public static class xLinkedBufferWriter
                 item.Dispose();
             }
         }
+
         var current = writer._current;
         if (!current.IsNull)
         {
