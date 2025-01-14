@@ -14,7 +14,7 @@ internal struct BufferSegment<T> : IDisposable
 
     public readonly Memory<T> WrittenMemory => _buffer.AsMemory(0, _written);
 
-    public readonly Span<T> WrittenSpan => _buffer.AsSpan(0, _written);
+    public readonly ReadOnlySpan<T> WrittenSpan => _buffer.AsSpan(0, _written);
 
     public readonly int Written => _written;
 

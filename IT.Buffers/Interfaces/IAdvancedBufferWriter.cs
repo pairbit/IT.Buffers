@@ -7,7 +7,7 @@ public interface IAdvancedBufferWriter<T> : IBufferWriter<T>
 {
     int Written { get; }
 
-    void ResetWritten();
+    //void ResetWritten();
 
     bool TryWrite(Span<T> span);
 
@@ -18,9 +18,9 @@ public interface ILongAdvancedBufferWriter<T> : IAdvancedBufferWriter<T>
 {
     long WrittenLong { get; }
 
-    int WrittenSegments { get; }
+    //int WrittenSegments { get; }
 
-    Memory<T> GetWrittenMemory(int segment = 0);
+    //Memory<T> GetWrittenMemory(int segment = 0);
 }
 
 /*

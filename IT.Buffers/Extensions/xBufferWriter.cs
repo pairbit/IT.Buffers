@@ -14,7 +14,7 @@ public static class xBufferWriter
         int destlen, len;
         do
         {
-            dest = writer.GetSpan();
+            dest = writer.GetSpan(1);
 
             destlen = dest.Length;
             if (destlen == 0) throw new ArgumentOutOfRangeException(nameof(writer));

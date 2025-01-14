@@ -1,4 +1,5 @@
-﻿using IT.Buffers.Interfaces;
+﻿using IT.Buffers.Extensions;
+using IT.Buffers.Interfaces;
 using IT.Buffers.Internal;
 using System;
 using System.Buffers;
@@ -23,15 +24,24 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
     private int _nextBufferSize;
 
     private long _written;
-    private int _writtenSegments;
+    //private int _writtenSegments;
 
     public int Written => checked((int)_written);
 
-    public int WrittenSegments => _writtenSegments;
+    //public int WrittenSegments => _writtenSegments;
 
     public long WrittenLong => _written;
 
     private bool UseFirstBuffer => _firstBuffer.Length > 0;
+
+    private ReadOnlySpan<T> FirstBufferWrittenSpan
+    {
+        get
+        {
+            Debug.Assert(_firstBuffer.Length >= _firstBufferWritten);
+            return new ReadOnlySpan<T>(_firstBuffer, 0, _firstBufferWritten);
+        }
+    }
 
     public LinkedBufferWriter()
     {
@@ -58,11 +68,11 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public T[] DangerousGetFirstBuffer() => _firstBuffer;
 
-    public void ResetWritten()
-    {
-        _written = 0;
-        _firstBufferWritten = 0;
-    }
+    //public void ResetWritten()
+    //{
+    //    _written = 0;
+    //    _firstBufferWritten = 0;
+    //}
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public Memory<T> GetMemory(int sizeHint = 0)
@@ -175,10 +185,14 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 
         if (written > 0)
         {
-            if (UseFirstBuffer)
+            var firstBuffer = _firstBuffer;
+            var firstBufferWritten = _firstBufferWritten;
+            if (firstBufferWritten > 0)
             {
-                _firstBuffer.AsSpan(0, _firstBufferWritten).CopyTo(span);
-                span = span[_firstBufferWritten..];
+                Debug.Assert(firstBuffer.Length >= firstBufferWritten);
+
+                firstBuffer.AsSpan(0, firstBufferWritten).CopyTo(span);
+                span = span[firstBufferWritten..];
             }
 
             if (_buffers.Count > 0)
@@ -205,7 +219,24 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 
     public void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
     {
-        throw new NotImplementedException();
+        xBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
+
+        if (_buffers.Count > 0)
+        {
+#if NET6_0_OR_GREATER
+            foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+#else
+            foreach (var item in _buffers)
+#endif
+            {
+                xBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
+            }
+        }
+
+        if (!_current.IsNull)
+        {
+            xBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
+        }
     }
 
     public bool TryWriteAndDispose(Span<T> span)
@@ -252,16 +283,7 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
     {
         if (_written == 0) return;
 
-        if (UseFirstBuffer)
-        {
-            var written = _firstBufferWritten;
-
-            var span = writer.GetSpan(written);
-
-            _firstBuffer.AsSpan(0, written).CopyTo(span[..written]);
-
-            writer.Advance(written);
-        }
+        xBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
 
         if (_buffers.Count > 0)
         {
@@ -271,13 +293,7 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
             foreach (var item in _buffers)
 #endif
             {
-                var written = item.Written;
-
-                var span = writer.GetSpan(written);
-
-                item.WrittenSpan.CopyTo(span[..written]);
-
-                writer.Advance(written);
+                xBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
 
                 item.Dispose(); // reset
             }
@@ -285,13 +301,7 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 
         if (!_current.IsNull)
         {
-            var written = _current.Written;
-
-            var span = writer.GetSpan(written);
-
-            _current.WrittenSpan.CopyTo(span[..written]);
-
-            writer.Advance(_current.Written);
+            xBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
 
             _current.Dispose();
         }
