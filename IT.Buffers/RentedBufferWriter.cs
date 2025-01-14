@@ -42,8 +42,6 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
 
     public int Written => _written;
 
-    long IAdvancedBufferWriter<T>.WrittenLong => _written;
-
     public int Capacity => _buffer.Length;
 
     public int FreeCapacity

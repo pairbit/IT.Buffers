@@ -24,7 +24,6 @@ public class ValueBufferWriterTest
         where TBufferWriter : IAdvancedBufferWriter<byte>
     {
         Assert.That(writer.Written, Is.EqualTo(0));
-        Assert.That(writer.WrittenLong, Is.EqualTo(0));
 
         var span = writer.GetSpan();
 
@@ -33,7 +32,6 @@ public class ValueBufferWriterTest
         writer.Advance(span.Length);
 
         Assert.That(writer.Written, Is.EqualTo(span.Length));
-        Assert.That(writer.WrittenLong, Is.EqualTo(span.Length));
 
         var bytes = new byte[writer.Written];
 

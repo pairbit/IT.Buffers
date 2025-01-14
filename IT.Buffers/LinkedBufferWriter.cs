@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
+public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 {
     public static BufferPool<LinkedBufferWriter<T>> Pool =>
         BufferPool<LinkedBufferWriter<T>>.Shared;
@@ -23,8 +23,11 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     private int _nextBufferSize;
 
     private long _written;
+    private int _writtenSegments;
 
     public int Written => checked((int)_written);
+
+    public int WrittenSegments => _writtenSegments;
 
     public long WrittenLong => _written;
 
@@ -54,6 +57,12 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public T[] DangerousGetFirstBuffer() => _firstBuffer;
+
+    public void ResetWritten()
+    {
+        _written = 0;
+        _firstBufferWritten = 0;
+    }
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public Memory<T> GetMemory(int sizeHint = 0)
@@ -152,33 +161,41 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _written += count;
     }
 
+    public Memory<T> GetWrittenMemory(int segment = 0)
+    {
+        return default;
+    }
+
     public bool TryWrite(Span<T> span)
     {
         var written = _written;
         if (span.Length < written) return false;
 
-        if (UseFirstBuffer)
+        if (written > 0)
         {
-            _firstBuffer.AsSpan(0, _firstBufferWritten).CopyTo(span);
-            span = span[_firstBufferWritten..];
-        }
-
-        if (_buffers.Count > 0)
-        {
-#if NET6_0_OR_GREATER
-            foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
-#else
-            foreach (var item in _buffers)
-#endif
+            if (UseFirstBuffer)
             {
-                item.WrittenSpan.CopyTo(span);
-                span = span[item.Written..];
+                _firstBuffer.AsSpan(0, _firstBufferWritten).CopyTo(span);
+                span = span[_firstBufferWritten..];
             }
-        }
 
-        if (!_current.IsNull)
-        {
-            _current.WrittenSpan.CopyTo(span);
+            if (_buffers.Count > 0)
+            {
+#if NET6_0_OR_GREATER
+                foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+#else
+                foreach (var item in _buffers)
+#endif
+                {
+                    item.WrittenSpan.CopyTo(span);
+                    span = span[item.Written..];
+                }
+            }
+
+            if (!_current.IsNull)
+            {
+                _current.WrittenSpan.CopyTo(span);
+            }
         }
 
         return true;
@@ -189,41 +206,43 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         throw new NotImplementedException();
     }
 
-    public T[] ToArrayAndDispose()
+    public bool TryWriteAndDispose(Span<T> span)
     {
-        if (_written == 0) return Array.Empty<T>();
+        var written = _written;
+        if (span.Length < written) return false;
 
-        var result = new T[_written];
-        var dest = result.AsSpan();
-
-        if (UseFirstBuffer)
+        if (written > 0)
         {
-            _firstBuffer.AsSpan(0, _firstBufferWritten).CopyTo(dest);
-            dest = dest.Slice(_firstBufferWritten);
-        }
-
-        if (_buffers.Count > 0)
-        {
-#if NET6_0_OR_GREATER
-            foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
-#else
-            foreach (var item in _buffers)
-#endif
+            if (UseFirstBuffer)
             {
-                item.WrittenSpan.CopyTo(dest);
-                dest = dest.Slice(item.Written);
-                item.Dispose(); // reset _buffer-segment in this loop to avoid iterate twice for Reset
+                _firstBuffer.AsSpan(0, _firstBufferWritten).CopyTo(span);
+                span = span[_firstBufferWritten..];
             }
+
+            if (_buffers.Count > 0)
+            {
+#if NET6_0_OR_GREATER
+                foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+#else
+                foreach (var item in _buffers)
+#endif
+                {
+                    item.WrittenSpan.CopyTo(span);
+                    span = span[item.Written..];
+                    item.Dispose(); // reset _buffer-segment in this loop to avoid iterate twice for Reset
+                }
+            }
+
+            if (!_current.IsNull)
+            {
+                _current.WrittenSpan.CopyTo(span);
+                _current.Dispose();
+            }
+
+            ResetCore();
         }
 
-        if (!_current.IsNull)
-        {
-            _current.WrittenSpan.CopyTo(dest);
-            _current.Dispose();
-        }
-
-        ResetCore();
-        return result;
+        return true;
     }
 
     public void WriteAndDispose<TBufferWriter>(ref TBufferWriter writer)
