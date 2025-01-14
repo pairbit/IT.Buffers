@@ -185,13 +185,10 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 
         if (written > 0)
         {
-            var firstBuffer = _firstBuffer;
             var firstBufferWritten = _firstBufferWritten;
             if (firstBufferWritten > 0)
             {
-                Debug.Assert(firstBuffer.Length >= firstBufferWritten);
-
-                firstBuffer.AsSpan(0, firstBufferWritten).CopyTo(span);
+                FirstBufferWrittenSpan.CopyTo(span);
                 span = span[firstBufferWritten..];
             }
 
@@ -203,6 +200,7 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
                 foreach (var item in _buffers)
 #endif
                 {
+                    Debug.Assert(item.Written > 0);
                     item.WrittenSpan.CopyTo(span);
                     span = span[item.Written..];
                 }
@@ -210,6 +208,7 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 
             if (!_current.IsNull)
             {
+                Debug.Assert(_current.Written > 0);
                 _current.WrittenSpan.CopyTo(span);
             }
         }
@@ -219,7 +218,10 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 
     public void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
     {
-        xBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
+        if (_written == 0) return;
+
+        if (_firstBufferWritten > 0)
+            xBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
 
         if (_buffers.Count > 0)
         {
@@ -229,12 +231,14 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
             foreach (var item in _buffers)
 #endif
             {
+                Debug.Assert(item.Written > 0);
                 xBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
             }
         }
 
         if (!_current.IsNull)
         {
+            Debug.Assert(_current.Written > 0);
             xBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
         }
     }
@@ -246,10 +250,11 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 
         if (written > 0)
         {
-            if (UseFirstBuffer)
+            var firstBufferWritten = _firstBufferWritten;
+            if (firstBufferWritten > 0)
             {
-                _firstBuffer.AsSpan(0, _firstBufferWritten).CopyTo(span);
-                span = span[_firstBufferWritten..];
+                FirstBufferWrittenSpan.CopyTo(span);
+                span = span[firstBufferWritten..];
             }
 
             if (_buffers.Count > 0)
@@ -260,14 +265,16 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
                 foreach (var item in _buffers)
 #endif
                 {
+                    Debug.Assert(item.Written > 0);
                     item.WrittenSpan.CopyTo(span);
                     span = span[item.Written..];
-                    item.Dispose(); // reset _buffer-segment in this loop to avoid iterate twice for Reset
+                    item.Dispose();
                 }
             }
 
             if (!_current.IsNull)
             {
+                Debug.Assert(_current.Written > 0);
                 _current.WrittenSpan.CopyTo(span);
                 _current.Dispose();
             }
@@ -278,12 +285,12 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
         return true;
     }
 
-    public void WriteAndDispose<TBufferWriter>(ref TBufferWriter writer)
-        where TBufferWriter : IBufferWriter<T>
+    public void WriteAndDispose<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
     {
         if (_written == 0) return;
 
-        xBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
+        if (_firstBufferWritten > 0)
+            xBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
 
         if (_buffers.Count > 0)
         {
@@ -293,16 +300,16 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
             foreach (var item in _buffers)
 #endif
             {
+                Debug.Assert(item.Written > 0);
                 xBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
-
                 item.Dispose(); // reset
             }
         }
 
         if (!_current.IsNull)
         {
+            Debug.Assert(_current.Written > 0);
             xBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
-
             _current.Dispose();
         }
 

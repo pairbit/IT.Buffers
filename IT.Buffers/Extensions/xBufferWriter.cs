@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace IT.Buffers.Extensions;
@@ -10,6 +11,9 @@ public static class xBufferWriter
     public static void WriteSpan<TBufferWriter, T>(ref TBufferWriter writer, ReadOnlySpan<T> span)
         where TBufferWriter : IBufferWriter<T>
     {
+        Debug.Assert(writer != null);
+        Debug.Assert(span.Length > 0);
+
         Span<T> dest;
         int destlen, len;
         do
