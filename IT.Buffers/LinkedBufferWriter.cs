@@ -56,13 +56,21 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     {
         if (bufferSize < 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
 
-        _buffers = new List<BufferSegment<T>>();
-        _firstBuffer = useFirstBuffer && bufferSize > 0 ? new T[bufferSize] : [];
+        if (useFirstBuffer && bufferSize > 0)
+        {
+            _firstBuffer = new T[bufferSize];
+            _segments = 1;
+        }
+        else
+        {
+            _firstBuffer = [];
+            _segments = 0;
+        }
+        _buffers = [];
         _firstBufferWritten = 0;
         _current = default;
         _nextBufferSize = bufferSize;
         _written = 0;
-        _segments = _firstBuffer.Length == 0 ? 0 : 1;
     }
 
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -311,10 +319,15 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     {
         if (segment < 0 || segment >= _segments) throw new ArgumentOutOfRangeException(nameof(segment));
 
-        if (segment == 0 && _firstBuffer.Length > 0)
+        var firstBuffer = _firstBuffer;
+        if (firstBuffer.Length > 0)
         {
-            Debug.Assert(_firstBuffer.Length >= _firstBufferWritten);
-            return _firstBuffer.AsMemory(0, _firstBufferWritten);
+            if (segment == 0)
+            {
+                Debug.Assert(firstBuffer.Length >= _firstBufferWritten);
+                return firstBuffer.AsMemory(0, _firstBufferWritten);
+            }
+            segment--;
         }
 
         if (_buffers.Count > segment) return
@@ -354,7 +367,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _buffers.Clear();
         _written = 0;
         _current = default;
-        _nextBufferSize = 0;
+        _nextBufferSize = _firstBuffer.Length;
         _segments = _firstBuffer.Length == 0 ? 0 : 1;
     }
 
@@ -389,11 +402,19 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             {
                 _state = State.BuffersInit;
 
-                var firstBufferWritten = _parent._firstBufferWritten;
-                if (firstBufferWritten > 0)
+                var firstBuffer = _parent._firstBuffer;
+                if (firstBuffer.Length > 0)
                 {
-                    Debug.Assert(_parent._firstBuffer.Length >= firstBufferWritten);
-                    _current = _parent._firstBuffer.AsMemory(0, firstBufferWritten);
+                    var firstBufferWritten = _parent._firstBufferWritten;
+                    if (firstBufferWritten == 0)
+                    {
+                        _state = State.End;
+                        return false;
+                    }
+
+                    Debug.Assert(firstBuffer.Length >= firstBufferWritten);
+                    _current = firstBuffer.AsMemory(0, firstBufferWritten);
+
                     return true;
                 }
             }
