@@ -15,7 +15,7 @@ public interface IAdvancedBufferWriter<T> : IBufferWriter<T>
 
     //void ResetWritten();
 
-    int WrittenSegments { get; }
+    int Segments { get; }
 
     Memory<T> GetWrittenMemory(int segment = 0);
 

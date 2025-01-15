@@ -50,7 +50,7 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
 
     readonly long IAdvancedBufferWriter<T>.WrittenLong => _written;
 
-    readonly int IAdvancedBufferWriter<T>.WrittenSegments => 1;
+    readonly int IAdvancedBufferWriter<T>.Segments => 1;
 
     public readonly int Capacity
     {

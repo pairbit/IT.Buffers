@@ -24,13 +24,13 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     private int _nextBufferSize;
 
     internal long _written;
-    private int _writtenSegments;
+    private int _segments;
 
     public int Written => checked((int)_written);
 
     public long WrittenLong => _written;
 
-    public int WrittenSegments => _writtenSegments;
+    public int Segments => _segments;
 
     private ReadOnlySpan<T> FirstBufferWrittenSpan
     {
@@ -313,7 +313,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     public Memory<T> GetWrittenMemory(int segment = 0)
     {
-        if (segment >= _writtenSegments) throw new ArgumentOutOfRangeException(nameof(segment));
+        if (segment >= _segments) throw new ArgumentOutOfRangeException(nameof(segment));
 
         throw new NotImplementedException();
     }

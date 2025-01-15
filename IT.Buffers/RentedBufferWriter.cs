@@ -44,7 +44,7 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
 
     long IAdvancedBufferWriter<T>.WrittenLong => _written;
 
-    int IAdvancedBufferWriter<T>.WrittenSegments => 1;
+    int IAdvancedBufferWriter<T>.Segments => 1;
 
     public int Capacity => _buffer.Length;
 
