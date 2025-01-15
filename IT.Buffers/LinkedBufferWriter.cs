@@ -49,7 +49,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _current = default;
         _nextBufferSize = 0;
         _written = 0;
-        _segments = 1;
+        _segments = 0;
     }
 
     public LinkedBufferWriter(int bufferSize, bool useFirstBuffer = false)
@@ -62,7 +62,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _current = default;
         _nextBufferSize = bufferSize;
         _written = 0;
-        _segments = 1;
+        _segments = _firstBuffer.Length == 0 ? 0 : 1;
     }
 
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -317,7 +317,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             return _firstBuffer.AsMemory(0, _firstBufferWritten);
         }
 
-        if (_buffers.Count < segment) return
+        if (_buffers.Count > segment) return
 #if NET6_0_OR_GREATER
         System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers)[segment]
 #else
@@ -326,7 +326,6 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
                 .WrittenMemory;
 
         Debug.Assert(!_current.IsNull);
-
         return _current.WrittenMemory;
     }
 
@@ -356,6 +355,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _written = 0;
         _current = default;
         _nextBufferSize = 0;
+        _segments = _firstBuffer.Length == 0 ? 0 : 1;
     }
 
     void IDisposable.Dispose() => Reset();
