@@ -28,7 +28,7 @@ public static class BufferSize
 #if NET
     static BufferSize()
     {
-        System.Diagnostics.Debug.Assert(Max == System.Array.MaxLength);
+        Debug.Assert(Max == Array.MaxLength);
     }
 #endif
 
@@ -45,7 +45,6 @@ public static class BufferSize
     internal static void CheckAndResizeBuffer<T>(ref T[] buffer, int written, int sizeHint)
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
-        if (sizeHint == 0) sizeHint = 1;
 
         int capacity = buffer.Length;
 
@@ -98,16 +97,15 @@ public static class BufferSize
             }
 
             Debug.Assert(buffer.Length > capacity);
+            Debug.Assert(buffer.Length - written > 0);
         }
-
-        Debug.Assert(buffer.Length - written > 0);
+        
         Debug.Assert(buffer.Length - written >= sizeHint);
     }
 
     internal static T[] RentBuffer<T>(int sizeHint)
     {
-        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
-        if (sizeHint == 0) sizeHint = 1;
+        if (sizeHint <= 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
         if (sizeHint > Max) throw new OutOfMemoryException($"Size {sizeHint} > {Max}");
 

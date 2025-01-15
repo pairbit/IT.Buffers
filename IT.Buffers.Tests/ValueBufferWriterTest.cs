@@ -12,10 +12,10 @@ public class ValueBufferWriterTest
         try
         {
             Test(ref writer);
+            Assert.That(writer.Written, Is.Not.EqualTo(0));
         }
         finally
         {
-            Assert.That(writer.Written, Is.Not.EqualTo(0));
             writer.Dispose();
         }
     }
@@ -37,13 +37,15 @@ public class ValueBufferWriterTest
     {
         Assert.That(writer.Written, Is.EqualTo(0));
 
-        var span = writer.GetSpan();
+        var span = writer.GetSpan(1);
 
         Random.Shared.NextBytes(span);
 
         writer.Advance(span.Length);
 
         Assert.That(writer.Written, Is.EqualTo(span.Length));
+        Assert.That(writer.GetSpan().IsEmpty, Is.True);
+        Assert.That(writer.GetMemory().IsEmpty, Is.True);
 
         var bytes = new byte[writer.Written];
 
