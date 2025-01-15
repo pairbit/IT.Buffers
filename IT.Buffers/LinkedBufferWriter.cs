@@ -49,6 +49,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _current = default;
         _nextBufferSize = 0;
         _written = 0;
+        _segments = 1;
     }
 
     public LinkedBufferWriter(int bufferSize, bool useFirstBuffer = false)
@@ -61,6 +62,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _current = default;
         _nextBufferSize = bufferSize;
         _written = 0;
+        _segments = 1;
     }
 
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
@@ -101,13 +103,10 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         else
         {
             next = new BufferSegment<T>(sizeHint);
-            if (nextBufferSize == 0) _nextBufferSize = next.Capacity;
+            if (nextBufferSize == 0) _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
-
-        if (_current.Written != 0)
-        {
-            _buffers.Add(_current);
-        }
+        _segments++;
+        if (_current.Written != 0) _buffers.Add(_current);
         _current = next;
         return next.FreeMemory;
     }
@@ -142,11 +141,8 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             next = new BufferSegment<T>(sizeHint);
             if (nextBufferSize == 0) _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
-
-        if (_current.Written != 0)
-        {
-            _buffers.Add(_current);
-        }
+        _segments++;
+        if (_current.Written != 0) _buffers.Add(_current);
         _current = next;
         return next.FreeSpan;
     }
@@ -313,9 +309,25 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     public Memory<T> GetWrittenMemory(int segment = 0)
     {
-        if (segment >= _segments) throw new ArgumentOutOfRangeException(nameof(segment));
+        if (segment < 0 || segment >= _segments) throw new ArgumentOutOfRangeException(nameof(segment));
 
-        throw new NotImplementedException();
+        if (segment == 0 && _firstBuffer.Length > 0)
+        {
+            Debug.Assert(_firstBuffer.Length >= _firstBufferWritten);
+            return _firstBuffer.AsMemory(0, _firstBufferWritten);
+        }
+
+        if (_buffers.Count < segment) return
+#if NET6_0_OR_GREATER
+        System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers)[segment]
+#else
+        _buffers[segment]
+#endif
+                .WrittenMemory;
+
+        Debug.Assert(!_current.IsNull);
+
+        return _current.WrittenMemory;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
