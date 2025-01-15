@@ -113,7 +113,7 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
         return new ReadOnlySequence<T>(firstSegment, 0, lastSegment, lastSegment.Memory.Length);
     }
 
-    public void Dispose()
+    public void Reset()
     {
         if (_list.Count == 0) return;
 
@@ -140,4 +140,6 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
         }
         _list.Clear();
     }
+
+    void IDisposable.Dispose() => Reset();
 }
