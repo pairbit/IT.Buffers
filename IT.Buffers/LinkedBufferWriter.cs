@@ -86,7 +86,6 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     public Memory<T> GetMemory(int sizeHint = 0)
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
-        if (sizeHint == 0) sizeHint = 1;
 
         if (_current.IsNull)
         {
@@ -122,7 +121,6 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     public Span<T> GetSpan(int sizeHint = 0)
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
-        if (sizeHint == 0) sizeHint = 1;
 
         if (_current.IsNull)
         {
