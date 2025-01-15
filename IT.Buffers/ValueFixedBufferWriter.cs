@@ -28,7 +28,6 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
             if (buffer == null) return default;
 
             Debug.Assert(buffer.Length >= _written);
-
             return buffer.AsMemory(0, _written);
         }
     }
@@ -41,7 +40,6 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
             if (buffer == null) return default;
 
             Debug.Assert(buffer.Length >= _written);
-
             return buffer.AsSpan(0, _written);
         }
     }
@@ -69,7 +67,6 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
             if (buffer == null) return 0;
 
             Debug.Assert(buffer.Length >= _written);
-
             return buffer.Length - _written;
         }
     }
@@ -92,8 +89,8 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
-        var buffer = _buffer ?? throw new InvalidOperationException("buffer is empty");
-        if (sizeHint == 0) sizeHint = 1;
+        var buffer = _buffer;
+        if (buffer == null) return sizeHint == 0 ? default : throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
         var memory = buffer.AsMemory(_written);
         if (memory.Length >= sizeHint) return memory;
@@ -106,8 +103,8 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
-        var buffer = _buffer ?? throw new InvalidOperationException("buffer is empty");
-        if (sizeHint == 0) sizeHint = 1;
+        var buffer = _buffer;
+        if (buffer == null) return sizeHint == 0 ? default : throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
         var span = buffer.AsSpan(_written);
         if (span.Length >= sizeHint) return span;
@@ -126,7 +123,6 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
         if (buffer != null && written > 0)
         {
             Debug.Assert(buffer.Length >= written);
-
             buffer.AsSpan(0, written).CopyTo(span);
         }
 
@@ -140,7 +136,6 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
         if (buffer != null && written > 0)
         {
             Debug.Assert(buffer.Length >= written);
-
             xBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(buffer, 0, written));
         }
     }
