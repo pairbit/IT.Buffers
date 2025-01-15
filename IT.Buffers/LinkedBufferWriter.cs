@@ -422,7 +422,6 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             if (_state == State.BuffersInit)
             {
                 _state = State.BuffersIterate;
-
                 _buffersEnumerator = _parent._buffers.GetEnumerator();
             }
 

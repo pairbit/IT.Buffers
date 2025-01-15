@@ -53,5 +53,26 @@ public class LinkedBufferWriterTest
             }
             Assert.Throws<ArgumentOutOfRangeException>(() => writer.GetWrittenMemory(i));
         }
+
+        writer.Reset();
+
+        for (int s = 0; s < 5; s++)
+        {
+            var span = writer.GetSpan();
+
+            Assert.That(writer.Segments, Is.EqualTo(s + 1));
+
+            Random.Shared.NextBytes(span);
+
+            writer.Advance(span.Length);
+
+            i = 0;
+            e.Reset();
+            while (e.MoveNext())
+            {
+                Assert.That(e.Current.Span.SequenceEqual(writer.GetWrittenMemory(i++).Span), Is.True);
+            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => writer.GetWrittenMemory(i));
+        }
     }
 }
