@@ -20,7 +20,7 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
         _written = 0;
     }
 
-    public readonly ReadOnlyMemory<T> WrittenMemory
+    public readonly Memory<T> WrittenMemory
     {
         get
         {
@@ -33,7 +33,7 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
         }
     }
 
-    public readonly ReadOnlySpan<T> WrittenSpan
+    public readonly Span<T> WrittenSpan
     {
         get
         {
@@ -47,6 +47,10 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
     }
 
     public readonly int Written => _written;
+
+    readonly long IAdvancedBufferWriter<T>.WrittenLong => _written;
+
+    readonly int IAdvancedBufferWriter<T>.WrittenSegments => 1;
 
     public readonly int Capacity
     {
@@ -139,5 +143,11 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
 
             xBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(buffer, 0, written));
         }
+    }
+
+    readonly Memory<T> IAdvancedBufferWriter<T>.GetWrittenMemory(int segment)
+    {
+        if (segment != 0) throw new ArgumentOutOfRangeException(nameof(segment));
+        return WrittenMemory;
     }
 }

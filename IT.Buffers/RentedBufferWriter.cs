@@ -20,7 +20,7 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
         _written = 0;
     }
 
-    public ReadOnlyMemory<T> WrittenMemory
+    public Memory<T> WrittenMemory
     {
         get
         {
@@ -30,7 +30,7 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
         }
     }
 
-    public ReadOnlySpan<T> WrittenSpan
+    public Span<T> WrittenSpan
     {
         get
         {
@@ -41,6 +41,10 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
     }
 
     public int Written => _written;
+
+    long IAdvancedBufferWriter<T>.WrittenLong => _written;
+
+    int IAdvancedBufferWriter<T>.WrittenSegments => 1;
 
     public int Capacity => _buffer.Length;
 
@@ -129,5 +133,11 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
 
             xBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(_buffer, 0, written));
         }
+    }
+
+    Memory<T> IAdvancedBufferWriter<T>.GetWrittenMemory(int segment)
+    {
+        if (segment != 0) throw new ArgumentOutOfRangeException(nameof(segment));
+        return WrittenMemory;
     }
 }

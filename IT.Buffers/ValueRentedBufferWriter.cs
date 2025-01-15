@@ -11,7 +11,7 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     private T[]? _buffer;
     private int _written;
 
-    public readonly ReadOnlyMemory<T> WrittenMemory
+    public readonly Memory<T> WrittenMemory
     {
         get
         {
@@ -24,7 +24,7 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public readonly ReadOnlySpan<T> WrittenSpan
+    public readonly Span<T> WrittenSpan
     {
         get
         {
@@ -38,6 +38,10 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     }
 
     public readonly int Written => _written;
+
+    readonly long IAdvancedBufferWriter<T>.WrittenLong => _written;
+
+    readonly int IAdvancedBufferWriter<T>.WrittenSegments => 1;
 
     public readonly int Capacity
     {
@@ -135,5 +139,11 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
             xBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(buffer, 0, written));
         }
+    }
+
+    readonly Memory<T> IAdvancedBufferWriter<T>.GetWrittenMemory(int segment)
+    {
+        if (segment != 0) throw new ArgumentOutOfRangeException(nameof(segment));
+        return WrittenMemory;
     }
 }

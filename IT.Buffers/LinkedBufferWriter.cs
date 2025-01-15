@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
+public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
     public static BufferPool<LinkedBufferWriter<T>> Pool =>
         BufferPool<LinkedBufferWriter<T>>.Shared;
@@ -24,13 +24,13 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
     private int _nextBufferSize;
 
     internal long _written;
-    //private int _writtenSegments;
+    private int _writtenSegments;
 
     public int Written => checked((int)_written);
 
-    //public int WrittenSegments => _writtenSegments;
-
     public long WrittenLong => _written;
+
+    public int WrittenSegments => _writtenSegments;
 
     private ReadOnlySpan<T> FirstBufferWrittenSpan
     {
@@ -169,11 +169,6 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
             _current.Advance(count);
         }
         _written += count;
-    }
-
-    public Memory<T> GetWrittenMemory(int segment = 0)
-    {
-        return default;
     }
 
     public bool TryWrite(Span<T> span)
@@ -316,7 +311,12 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
 
     public Enumerator GetEnumerator() => new(this);
 
-    void IDisposable.Dispose() => Reset();
+    public Memory<T> GetWrittenMemory(int segment = 0)
+    {
+        if (segment >= _writtenSegments) throw new ArgumentOutOfRangeException(nameof(segment));
+
+        throw new NotImplementedException();
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
@@ -345,6 +345,8 @@ public class LinkedBufferWriter<T> : ILongAdvancedBufferWriter<T>, IDisposable
         _current = default;
         _nextBufferSize = 0;
     }
+
+    void IDisposable.Dispose() => Reset();
 
     public struct Enumerator : IEnumerator<Memory<T>>
     {
