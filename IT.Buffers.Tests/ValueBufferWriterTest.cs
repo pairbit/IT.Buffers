@@ -16,7 +16,7 @@ public class ValueBufferWriterTest
         }
         finally
         {
-            writer.Dispose();
+            writer.Reset();
         }
     }
 

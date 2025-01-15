@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace IT.Buffers;
 
-public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
+public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>
 {
     private T[]? _buffer;
     private int _written;
@@ -70,7 +70,7 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _written = 0;
     }
 
-    public void Dispose()
+    public void Reset()
     {
         var buffer = _buffer;
         if (buffer != null)
