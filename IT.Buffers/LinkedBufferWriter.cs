@@ -265,7 +265,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
                     Debug.Assert(item.Written > 0);
                     item.WrittenSpan.CopyTo(span);
                     span = span[item.Written..];
-                    item.Dispose();
+                    item.Reset();
                 }
             }
 
@@ -273,7 +273,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             {
                 Debug.Assert(_current.Written > 0);
                 _current.WrittenSpan.CopyTo(span);
-                _current.Dispose();
+                _current.Reset();
             }
 
             ResetCore();
@@ -299,7 +299,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             {
                 Debug.Assert(item.Written > 0);
                 xBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
-                item.Dispose(); // reset
+                item.Reset();
             }
         }
 
@@ -307,7 +307,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         {
             Debug.Assert(_current.Written > 0);
             xBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
-            _current.Dispose();
+            _current.Reset();
         }
 
         ResetCore();
@@ -353,9 +353,9 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         foreach (var item in _buffers)
 #endif
         {
-            item.Dispose();
+            item.Reset();
         }
-        _current.Dispose();
+        _current.Reset();
         ResetCore();
     }
 

@@ -26,7 +26,7 @@ public static class xLinkedBufferWriter
             {
                 Debug.Assert(item.Written > 0);
                 await stream.WriteAsync(item.WrittenMemory, cancellationToken).ConfigureAwait(false);
-                item.Dispose();
+                item.Reset();
             }
         }
 
@@ -35,7 +35,7 @@ public static class xLinkedBufferWriter
         {
             Debug.Assert(current.Written > 0);
             await stream.WriteAsync(current.WrittenMemory, cancellationToken).ConfigureAwait(false);
-            current.Dispose();
+            current.Reset();
         }
 
         writer.ResetCore();

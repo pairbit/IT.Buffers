@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers.Internal;
 
-internal struct BufferSegment<T> : IDisposable
+internal struct BufferSegment<T>
 {
     private T[] _buffer;
     private int _written;
@@ -40,7 +40,7 @@ internal struct BufferSegment<T> : IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Dispose()
+    public void Reset()
     {
         var buffer = _buffer;
         if (buffer != null)
