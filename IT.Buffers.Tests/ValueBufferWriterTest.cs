@@ -5,7 +5,7 @@ namespace IT.Buffers.Tests;
 public class ValueBufferWriterTest
 {
     [Test]
-    public void Test()
+    public void Test_Rented()
     {
         ValueRentedBufferWriter<byte> writer = default;
 
@@ -18,6 +18,18 @@ public class ValueBufferWriterTest
             Assert.That(writer.Written, Is.Not.EqualTo(0));
             writer.Dispose();
         }
+    }
+
+    [Test]
+    public void Test_Fixed()
+    {
+        ValueFixedBufferWriter<byte> writer = default;
+
+        Assert.That(writer.Capacity, Is.EqualTo(0));
+        Assert.That(writer.FreeCapacity, Is.EqualTo(0));
+        Assert.That(writer.Written, Is.EqualTo(0));
+        Assert.That(writer.GetSpan().IsEmpty, Is.True);
+        Assert.That(writer.GetMemory().IsEmpty, Is.True);
     }
 
     private static void Test<TBufferWriter>(ref TBufferWriter writer)
@@ -50,6 +62,8 @@ public class ValueBufferWriterTest
         writer.Write(ref fixedBuffer);
 
         Assert.That(fixedBuffer.Written, Is.EqualTo(bytes.Length));
+        Assert.That(fixedBuffer.GetSpan().IsEmpty, Is.True);
+        Assert.That(fixedBuffer.GetMemory().IsEmpty, Is.True);
 
         Assert.That(span.SequenceEqual(bytes), Is.True);
     }
