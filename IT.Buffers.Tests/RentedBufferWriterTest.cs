@@ -68,7 +68,7 @@ public class RentedBufferWriterTest
 
         Assert.That(newSpan.Slice(span.Length).SequenceEqual(span), Is.False);
 
-        bufferWriter.Dispose();
+        bufferWriter.Reset();
 
         Assert.That(bufferWriter.Capacity, Is.EqualTo(0));
 

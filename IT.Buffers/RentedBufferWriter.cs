@@ -71,7 +71,7 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
         _written = 0;
     }
 
-    public void Dispose()
+    public void Reset()
     {
         var buffer = _buffer;
         if (buffer.Length > 0)
@@ -140,4 +140,6 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
         if (segment != 0) throw new ArgumentOutOfRangeException(nameof(segment));
         return WrittenMemory;
     }
+
+    void IDisposable.Dispose() => Reset();
 }
