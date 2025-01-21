@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace IT.Buffers.Extensions;
 
-public static class xLinkedBufferWriter
+public static class xLinkedBufferWriterByte
 {
     public static async ValueTask WriteAndResetAsync(this LinkedBufferWriter<byte> writer, Stream stream, CancellationToken cancellationToken)
     {
