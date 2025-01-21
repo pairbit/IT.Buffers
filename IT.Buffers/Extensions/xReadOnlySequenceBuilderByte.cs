@@ -15,6 +15,7 @@ public static class xReadOnlySequenceBuilderByte
 
         var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
         var offset = 0;
+        int readed;
         do
         {
             if (offset == buffer.Length)
@@ -24,7 +25,6 @@ public static class xReadOnlySequenceBuilderByte
                 offset = 0;
             }
 
-            int readed;
             try
             {
                 readed = stream.Read(buffer.AsSpan(offset, buffer.Length - offset));
@@ -36,15 +36,9 @@ public static class xReadOnlySequenceBuilderByte
             }
 
             offset += readed;
+        } while (readed > 0);
 
-            if (readed == 0)
-            {
-                builder.Add(buffer.AsMemory(0, offset), returnToPool: true);
-                break;
-            }
-        } while (true);
-
-        return builder;
+        return builder.Add(buffer.AsMemory(0, offset), returnToPool: true);
     }
 
     public static async ValueTask<ReadOnlySequenceBuilder<byte>> AddAsync(this ReadOnlySequenceBuilder<byte> builder,
@@ -54,6 +48,7 @@ public static class xReadOnlySequenceBuilderByte
 
         var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
         var offset = 0;
+        int readed;
         do
         {
             if (offset == buffer.Length)
@@ -63,7 +58,6 @@ public static class xReadOnlySequenceBuilderByte
                 offset = 0;
             }
 
-            int readed;
             try
             {
                 readed = await stream.ReadAsync(buffer.AsMemory(offset, buffer.Length - offset), cancellationToken).ConfigureAwait(false);
@@ -75,14 +69,8 @@ public static class xReadOnlySequenceBuilderByte
             }
 
             offset += readed;
+        } while (readed > 0);
 
-            if (readed == 0)
-            {
-                builder.Add(buffer.AsMemory(0, offset), returnToPool: true);
-                break;
-            }
-        } while (true);
-
-        return builder;
+        return builder.Add(buffer.AsMemory(0, offset), returnToPool: true);
     }
 }
