@@ -58,6 +58,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
         if (useFirstBuffer && bufferSize > 0)
         {
+            //TODO: GC.AllocateUninitializedArray
             _firstBuffer = new T[bufferSize];
             _segments = 1;
         }
