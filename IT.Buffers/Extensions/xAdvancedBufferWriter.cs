@@ -10,7 +10,12 @@ public static class xAdvancedBufferWriter
         var written = writer.Written;
         if (written == 0) return [];
 
-        var array = new T[written];
+        var array =
+#if NET5_0_OR_GREATER
+            System.GC.AllocateUninitializedArray<T>(written);
+#else
+            new T[written];
+#endif
 
         writer.TryWrite(array);
 

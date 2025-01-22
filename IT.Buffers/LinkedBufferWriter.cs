@@ -43,7 +43,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     public LinkedBufferWriter()
     {
-        _buffers = new List<BufferSegment<T>>();
+        _buffers = [];
         _firstBuffer = [];
         _firstBufferWritten = 0;
         _current = default;
@@ -52,14 +52,22 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _segments = 0;
     }
 
-    public LinkedBufferWriter(int bufferSize, bool useFirstBuffer = false)
+    public LinkedBufferWriter(int bufferSize, bool useFirstBuffer = false
+#if NET5_0_OR_GREATER
+        , bool pinned = false
+#endif
+        )
     {
         if (bufferSize < 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
 
         if (useFirstBuffer && bufferSize > 0)
         {
-            //TODO: GC.AllocateUninitializedArray
-            _firstBuffer = new T[bufferSize];
+            _firstBuffer =
+#if NET5_0_OR_GREATER
+                GC.AllocateUninitializedArray<T>(bufferSize, pinned);
+#else
+                new T[bufferSize];
+#endif
             _segments = 1;
         }
         else
