@@ -2,11 +2,16 @@
 using System.Buffers;
 using System.Diagnostics;
 
-namespace IT.Buffers.Internal;
+namespace IT.Buffers;
 
-internal class SequenceSegment<T> : ReadOnlySequenceSegment<T>
+public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable
 {
+    public static BufferPool<SequenceSegment<T>> Pool
+        => BufferPool<SequenceSegment<T>>.Shared;
+
     private bool _returnToPool;
+
+    public SequenceSegment<T>? GetNext() => (SequenceSegment<T>?)Next;
 
     public void SetMemory(ReadOnlyMemory<T> memory, bool returnToPool = false)
     {
@@ -30,4 +35,6 @@ internal class SequenceSegment<T> : ReadOnlySequenceSegment<T>
         RunningIndex = 0;
         Next = null;
     }
+
+    void IDisposable.Dispose() => Reset();
 }
