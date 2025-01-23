@@ -3,7 +3,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace IT.Buffers.Extensions;
+namespace IT.Buffers;
 
 public static class ArrayPoolShared
 {
