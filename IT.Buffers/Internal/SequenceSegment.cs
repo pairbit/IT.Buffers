@@ -1,7 +1,7 @@
 ﻿using IT.Buffers.Extensions;
 using System;
 using System.Buffers;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace IT.Buffers.Internal;
 
@@ -25,14 +25,7 @@ internal class SequenceSegment<T> : ReadOnlySequenceSegment<T>
     {
         if (_returnToPool)
         {
-            if (MemoryMarshal.TryGetArray(Memory, out var segment))
-            {
-                var array = segment.Array;
-                if (array != null && array.Length > 0)
-                {
-                    ArrayPool<T>.Shared.ReturnAndClear(array);
-                }
-            }
+            Debug.Assert(ArrayPoolShared.TryReturnAndClear(Memory));
         }
         Memory = default;
         RunningIndex = 0;

@@ -93,7 +93,7 @@ public static class BufferSize
                 if (written > 0)
                     oldBuffer.AsSpan(0, written).CopyTo(buffer);
 
-                ArrayPool<T>.Shared.ReturnAndClear(oldBuffer);
+                ArrayPoolShared.ReturnAndClear(oldBuffer);
             }
 
             Debug.Assert(buffer.Length > capacity);

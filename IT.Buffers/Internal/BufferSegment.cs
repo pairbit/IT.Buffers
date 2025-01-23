@@ -47,7 +47,7 @@ internal struct BufferSegment<T>
         {
             _buffer = null!;
             _written = 0;
-            ArrayPool<T>.Shared.ReturnAndClear(buffer);
+            ArrayPoolShared.ReturnAndClear(buffer);
         }
     }
 }
