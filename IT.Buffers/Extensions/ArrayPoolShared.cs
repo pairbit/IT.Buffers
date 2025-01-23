@@ -29,4 +29,7 @@ public static class ArrayPoolShared
         }
         return false;
     }
+
+    public static bool TryReturnAndClear<T>(Memory<T> memory)
+        => TryReturnAndClear((ReadOnlyMemory<T>)memory);
 }
