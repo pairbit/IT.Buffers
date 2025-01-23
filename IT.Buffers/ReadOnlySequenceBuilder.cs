@@ -28,20 +28,20 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
             _list.Capacity = capacity;
     }
 
-    public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, bool returnToPool = false)
+    public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, bool isRented = false)
     {
         if (_stack == null || !_stack.TryPop(out var segment))
         {
             segment = new SequenceSegment<T>();
         }
 
-        segment.SetMemory(memory, returnToPool);
+        segment.SetMemory(memory, isRented);
         _list.Add(segment);
 
         return this;
     }
 
-    public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, int maxSegments, bool returnToPool = false)
+    public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, int maxSegments, bool isRented = false)
     {
         if (maxSegments <= 0) throw new ArgumentOutOfRangeException(nameof(maxSegments));
 
@@ -62,7 +62,7 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
             }
         }
 
-        Add(memory, returnToPool);
+        Add(memory, isRented);
 
         return this;
     }
@@ -91,7 +91,8 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
         for (int i = 0; i < lastIndex; i++)
         {
             var segment = span[i];
-            segment.SetRunningIndexAndNext(running, span[i + 1]);
+            segment.RunningIndex = running;
+            segment.Next = span[i + 1];
             running += segment.Memory.Length;
         }
         var firstSegment = span[0];
@@ -102,13 +103,14 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
         for (int i = 0; i < lastIndex; i++)
         {
             var segment = list[i];
-            segment.SetRunningIndexAndNext(running, list[i + 1]);
+            segment.RunningIndex = running;
+            segment.Next = list[i + 1];
             running += segment.Memory.Length;
         }
         var firstSegment = list[0];
         var lastSegment = list[lastIndex];
 #endif
-        lastSegment.SetRunningIndexAndNext(running, null);
+        lastSegment.RunningIndex = running;
         return new ReadOnlySequence<T>(firstSegment, 0, lastSegment, lastSegment.Memory.Length);
     }
 

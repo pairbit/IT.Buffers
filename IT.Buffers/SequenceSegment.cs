@@ -9,31 +9,43 @@ public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable
     public static BufferPool<SequenceSegment<T>> Pool
         => BufferPool<SequenceSegment<T>>.Shared;
 
-    private bool _returnToPool;
+    private bool _isRented;
 
-    public SequenceSegment<T>? GetNext() => (SequenceSegment<T>?)Next;
+    public bool IsRented => _isRented;
 
-    public void SetMemory(ReadOnlyMemory<T> memory, bool returnToPool = false)
+    public new ReadOnlyMemory<T> Memory
     {
-        Memory = memory;
-        _returnToPool = returnToPool;
+        get => base.Memory;
+        set => base.Memory = value;
     }
 
-    public void SetRunningIndexAndNext(long runningIndex, SequenceSegment<T>? next)
+    public new SequenceSegment<T>? Next
     {
-        RunningIndex = runningIndex;
-        Next = next;
+        get => (SequenceSegment<T>?)base.Next;
+        set => base.Next = value;
+    }
+
+    public new long RunningIndex
+    {
+        get => base.RunningIndex;
+        set => base.RunningIndex = value;
+    }
+
+    public void SetMemory(ReadOnlyMemory<T> memory, bool isRented = false)
+    {
+        base.Memory = memory;
+        _isRented = isRented;
     }
 
     public void Reset()
     {
-        if (_returnToPool)
+        if (_isRented)
         {
-            Debug.Assert(ArrayPoolShared.TryReturnAndClear(Memory));
+            Debug.Assert(ArrayPoolShared.TryReturnAndClear(base.Memory));
         }
-        Memory = default;
-        RunningIndex = 0;
-        Next = null;
+        base.Memory = default;
+        base.RunningIndex = 0;
+        base.Next = null;
     }
 
     void IDisposable.Dispose() => Reset();

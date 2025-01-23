@@ -20,7 +20,7 @@ public static class xReadOnlySequenceBuilderByte
         {
             if (offset == buffer.Length)
             {
-                builder.Add(buffer, returnToPool: true);
+                builder.Add(buffer, isRented: true);
                 buffer = ArrayPool<byte>.Shared.Rent(BufferSize.GetDoubleCapacity(buffer.Length));
                 offset = 0;
             }
@@ -38,7 +38,7 @@ public static class xReadOnlySequenceBuilderByte
             offset += readed;
         } while (readed > 0);
 
-        return builder.Add(buffer.AsMemory(0, offset), returnToPool: true);
+        return builder.Add(buffer.AsMemory(0, offset), isRented: true);
     }
 
     public static async ValueTask<ReadOnlySequenceBuilder<byte>> AddAsync(this ReadOnlySequenceBuilder<byte> builder,
@@ -53,7 +53,7 @@ public static class xReadOnlySequenceBuilderByte
         {
             if (offset == buffer.Length)
             {
-                builder.Add(buffer, returnToPool: true);
+                builder.Add(buffer, isRented: true);
                 buffer = ArrayPool<byte>.Shared.Rent(BufferSize.GetDoubleCapacity(buffer.Length));
                 offset = 0;
             }
@@ -71,6 +71,6 @@ public static class xReadOnlySequenceBuilderByte
             offset += readed;
         } while (readed > 0);
 
-        return builder.Add(buffer.AsMemory(0, offset), returnToPool: true);
+        return builder.Add(buffer.AsMemory(0, offset), isRented: true);
     }
 }

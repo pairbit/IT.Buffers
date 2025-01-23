@@ -42,7 +42,7 @@ public static class ArrayPoolShared
             var count = 0;
             do
             {
-                var next = segment.GetNext();
+                var next = segment.Next;
 
                 SequenceSegment<T>.Pool.Return(segment);
 
