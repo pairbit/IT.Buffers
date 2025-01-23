@@ -42,6 +42,7 @@ public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable
         if (_isRented)
         {
             Debug.Assert(ArrayPoolShared.TryReturnAndClear(base.Memory));
+            _isRented = false;
         }
         base.Memory = default;
         base.RunningIndex = 0;
