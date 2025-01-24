@@ -1,6 +1,4 @@
-﻿using IT.Buffers.Interfaces;
-using System;
-using System.Buffers;
+﻿using System;
 
 namespace IT.Buffers.Extensions;
 
