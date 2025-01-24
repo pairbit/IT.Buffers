@@ -44,12 +44,12 @@ public static class xReadOnlySequence
             {
                 if (otherSpan.Length >= firstSpan.Length)
                 {
-                    if (!firstSpan.SequenceEqual(otherSpan[..firstSpan.Length])) return false;
+                    if (!firstSpan.SequenceEqual(otherSpan[..firstSpan.Length], comparer)) return false;
                     otherSpan = otherSpan[firstSpan.Length..];
                     continue;
                 }
 
-                if (!firstSpan[..otherSpan.Length].SequenceEqual(otherSpan)) return false;
+                if (!firstSpan[..otherSpan.Length].SequenceEqual(otherSpan, comparer)) return false;
                 firstSpan = firstSpan[otherSpan.Length..];
             }
 
@@ -60,12 +60,12 @@ public static class xReadOnlySequence
 
                 if (otherSpan.Length >= firstSpan.Length)
                 {
-                    if (!firstSpan.SequenceEqual(otherSpan[..firstSpan.Length])) return false;
+                    if (!firstSpan.SequenceEqual(otherSpan[..firstSpan.Length], comparer)) return false;
                     otherSpan = otherSpan[firstSpan.Length..];
                     break;
                 }
 
-                if (!firstSpan[..otherSpan.Length].SequenceEqual(otherSpan)) return false;
+                if (!firstSpan[..otherSpan.Length].SequenceEqual(otherSpan, comparer)) return false;
                 firstSpan = firstSpan[otherSpan.Length..];
             }
         }
