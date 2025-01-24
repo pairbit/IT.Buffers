@@ -13,7 +13,7 @@ public static class xReadOnlyMemory
         int bufferSize = BufferSize.KB_64, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
         => SplitAndRent((ReadOnlyMemory<T>)memory, bufferSize, growthPolicy);
 
-    public static ReadOnlySequence<T> Split<T>(this ReadOnlyMemory<T> memory, 
+    public static ReadOnlySequence<T> Split<T>(this ReadOnlyMemory<T> memory,
         int bufferSize = BufferSize.KB_64, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
     {
         if (memory.IsEmpty) return ReadOnlySequence<T>.Empty;
@@ -45,7 +45,7 @@ public static class xReadOnlyMemory
         return new ReadOnlySequence<T>(start, 0, end, end.Memory.Length);
     }
 
-    public static ReadOnlySequence<T> SplitAndRent<T>(this ReadOnlyMemory<T> memory, 
+    public static ReadOnlySequence<T> SplitAndRent<T>(this ReadOnlyMemory<T> memory,
         int bufferSize = BufferSize.KB_64, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
     {
         if (memory.IsEmpty) return ReadOnlySequence<T>.Empty;
