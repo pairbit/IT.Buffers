@@ -38,9 +38,23 @@ public class ReadOnlySequenceTest
 
             var splitDouble = buffer.AsMemory().Split(10);
             Assert.That(rented.SequenceEqual(splitDouble));
+            Assert.That(ArrayPoolShared.TryReturn(splitDouble), Is.EqualTo(0));
+
+            splitDouble = buffer.AsMemory().SplitAndRent(10);
+            Assert.That(rented.SequenceEqual(splitDouble));
+
+            if (i > 1)
+                Assert.That(ArrayPoolShared.TryReturn(splitDouble) > 0, Is.True);
 
             var splitFixed = buffer.AsMemory().Split(buffer.Length / 5, BufferGrowthPolicy.Fixed);
             Assert.That(rented.SequenceEqual(splitFixed));
+            Assert.That(ArrayPoolShared.TryReturn(splitFixed), Is.EqualTo(0));
+
+            splitFixed = buffer.AsMemory().SplitAndRent(buffer.Length / 5, BufferGrowthPolicy.Fixed);
+            Assert.That(rented.SequenceEqual(splitFixed));
+
+            if (i > 1) 
+                Assert.That(ArrayPoolShared.TryReturn(splitFixed) > 0, Is.True);
 
             Assert.That(ArrayPoolShared.TryReturn(rented), Is.EqualTo(i));
         }
@@ -54,10 +68,10 @@ public class ReadOnlySequenceTest
         var rented = buffer.AsMemory(0, bufferSize);
         Random.Shared.NextBytes(rented.Span);
 
-        if (segments == 1) return new ReadOnlySequence<byte>(rented);
-
         var start = SequenceSegment<byte>.Pool.Rent();
         start.SetMemory(rented, isRented: true);
+
+        if (segments == 1) return new ReadOnlySequence<byte>(start, 0, start, start.Memory.Length);
 
         var end = start;
 

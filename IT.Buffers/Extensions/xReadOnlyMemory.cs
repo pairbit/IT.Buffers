@@ -9,6 +9,10 @@ public static class xReadOnlyMemory
         int bufferSize = BufferSize.KB_64, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
         => Split((ReadOnlyMemory<T>)memory, bufferSize, growthPolicy);
 
+    public static ReadOnlySequence<T> SplitAndRent<T>(this Memory<T> memory,
+        int bufferSize = BufferSize.KB_64, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
+        => SplitAndRent((ReadOnlyMemory<T>)memory, bufferSize, growthPolicy);
+
     public static ReadOnlySequence<T> Split<T>(this ReadOnlyMemory<T> memory, 
         int bufferSize = BufferSize.KB_64, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
     {

@@ -35,9 +35,6 @@ public static class ArrayPoolShared
 
     public static int TryReturn<T>(ReadOnlySequence<T> sequence)
     {
-        //TODO: как определить был ли арендован единственный сегмент?
-        if (sequence.IsSingleSegment) return TryReturn(sequence.First) ? 1 : 0;
-
         if (sequence.Start.GetObject() is SequenceSegment<T> segment)
         {
             var count = 0;
