@@ -13,7 +13,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <Authors>Ivan Tikhonov</Authors>
     <Copyright>Ivan Tikhonov © 2024</Copyright>
-    <Version>2.0.16</Version>
+    <Version>2.0.17</Version>
     <PackageTags>Buffers</PackageTags>
     <PackageReadmeFile>Readme.md</PackageReadmeFile>
     <PackageIcon>Icon.png</PackageIcon>
@@ -24,7 +24,6 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DebugType>full</DebugType>
-    <NoWarn>$(NoWarn);IDE1006;IDE0049;IDE0290</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

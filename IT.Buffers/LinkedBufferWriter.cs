@@ -82,9 +82,6 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _written = 0;
     }
 
-    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    public T[] DangerousGetFirstBuffer() => _firstBuffer;
-
     //public void ResetWritten()
     //{
     //    _written = 0;
@@ -365,6 +362,9 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _current.Reset();
         ResetCore();
     }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    public T[] DangerousGetFirstBuffer() => _firstBuffer;
 
     // reset without list's BufferSegment element
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

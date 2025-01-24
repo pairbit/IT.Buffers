@@ -7,35 +7,35 @@ namespace IT.Buffers;
 
 public static class ArrayPoolShared
 {
-    public static void ReturnAndClear<T>(T[] array)
+    public static void Return<T>(T[] array)
         => ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 
-    public static bool TryReturnAndClear<T>(ArraySegment<T> arraySegment)
+    public static bool TryReturn<T>(ArraySegment<T> arraySegment)
     {
         var array = arraySegment.Array;
         if (array != null && array.Length > 0)
         {
-            ReturnAndClear(array);
+            Return(array);
             return true;
         }
         return false;
     }
 
-    public static bool TryReturnAndClear<T>(ReadOnlyMemory<T> memory)
+    public static bool TryReturn<T>(ReadOnlyMemory<T> memory)
     {
         if (MemoryMarshal.TryGetArray(memory, out var arraySegment))
         {
-            return TryReturnAndClear(arraySegment);
+            return TryReturn(arraySegment);
         }
         return false;
     }
 
-    public static bool TryReturnAndClear<T>(Memory<T> memory)
-        => TryReturnAndClear((ReadOnlyMemory<T>)memory);
+    public static bool TryReturn<T>(Memory<T> memory)
+        => TryReturn((ReadOnlyMemory<T>)memory);
 
-    public static int TryReturnAndClear<T>(ReadOnlySequence<T> sequence)
+    public static int TryReturn<T>(ReadOnlySequence<T> sequence)
     {
-        if (sequence.IsSingleSegment) return TryReturnAndClear(sequence.First) ? 1 : 0;
+        if (sequence.IsSingleSegment) return TryReturn(sequence.First) ? 1 : 0;
 
         if (sequence.Start.GetObject() is SequenceSegment<T> segment)
         {

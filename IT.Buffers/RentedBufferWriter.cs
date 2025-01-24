@@ -78,7 +78,7 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
         {
             _buffer = [];
             _written = 0;
-            ArrayPoolShared.ReturnAndClear(buffer);
+            ArrayPoolShared.Return(buffer);
         }
     }
 
@@ -134,6 +134,9 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
             xBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(_buffer, 0, written));
         }
     }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    public T[] DangerousGetBuffer() => _buffer;
 
     Memory<T> IAdvancedBufferWriter<T>.GetWrittenMemory(int segment)
     {

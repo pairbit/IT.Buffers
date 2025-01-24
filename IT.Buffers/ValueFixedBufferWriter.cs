@@ -140,6 +140,9 @@ public struct ValueFixedBufferWriter<T> : IAdvancedBufferWriter<T>
         }
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    public readonly T[]? DangerousGetBuffer() => _buffer;
+
     readonly Memory<T> IAdvancedBufferWriter<T>.GetWrittenMemory(int segment)
     {
         if (segment != 0) throw new ArgumentOutOfRangeException(nameof(segment));

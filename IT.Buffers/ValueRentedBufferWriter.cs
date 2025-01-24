@@ -77,7 +77,7 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>
         {
             _buffer = null;
             _written = 0;
-            ArrayPoolShared.ReturnAndClear(buffer);
+            ArrayPoolShared.Return(buffer);
         }
     }
 
@@ -140,6 +140,9 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>
             xBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(buffer, 0, written));
         }
     }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    public readonly T[]? DangerousGetBuffer() => _buffer;
 
     readonly Memory<T> IAdvancedBufferWriter<T>.GetWrittenMemory(int segment)
     {

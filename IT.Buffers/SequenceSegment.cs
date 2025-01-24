@@ -13,18 +13,21 @@ public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable
 
     public bool IsRented => _isRented;
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public new ReadOnlyMemory<T> Memory
     {
         get => base.Memory;
         set => base.Memory = value;
     }
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public new SequenceSegment<T>? Next
     {
         get => (SequenceSegment<T>?)base.Next;
         set => base.Next = value;
     }
 
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public new long RunningIndex
     {
         get => base.RunningIndex;
@@ -41,7 +44,8 @@ public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable
     {
         if (_isRented)
         {
-            Debug.Assert(ArrayPoolShared.TryReturnAndClear(base.Memory));
+            var returned = ArrayPoolShared.TryReturn(base.Memory);
+            Debug.Assert(returned);
             _isRented = false;
         }
         base.Memory = default;
