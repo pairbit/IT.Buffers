@@ -14,7 +14,7 @@ public class LinkedBufferWriterTest
         }
         finally
         {
-            LinkedBufferWriter<byte>.Pool.Return(writer);
+            Assert.That(LinkedBufferWriter<byte>.Pool.Return(writer), Is.True);
         }
     }
 

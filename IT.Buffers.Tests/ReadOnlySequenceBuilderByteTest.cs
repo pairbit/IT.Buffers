@@ -1,6 +1,6 @@
 ﻿namespace IT.Buffers.Tests;
 
-public class ReadOnlySequenceByteTest : ReadOnlySequenceTest<byte>
+public class ReadOnlySequenceBuilderByteTest : ReadOnlySequenceBuilderTest<byte>
 {
     private ReadOnlyMemory<byte>[] Data = [
         "1 segment"u8.ToArray(),

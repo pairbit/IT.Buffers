@@ -4,5 +4,5 @@ public interface IBufferPool<TBuffer>
 {
     TBuffer Rent();
 
-    void Return(TBuffer buffer);
+    bool Return(TBuffer buffer);
 }

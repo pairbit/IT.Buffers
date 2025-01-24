@@ -1,17 +1,22 @@
-﻿using System;
+﻿using IT.Buffers.Interfaces;
+using System;
 using System.Buffers;
 using System.Diagnostics;
 
 namespace IT.Buffers;
 
-public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable
+public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable, IBufferRentable
 {
     public static BufferPool<SequenceSegment<T>> Pool
         => BufferPool<SequenceSegment<T>>.Shared;
 
-    private bool _isRented;
+    private RentalStatus _rentalStatus;
 
-    public bool IsRented => _isRented;
+    bool IBufferRentable.IsRented => IsRentedSegment;
+
+    public bool IsRentedMemory => (_rentalStatus & RentalStatus.Memory) == RentalStatus.Memory;
+
+    public bool IsRentedSegment => (_rentalStatus & RentalStatus.Segment) == RentalStatus.Segment;
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public new ReadOnlyMemory<T> Memory
@@ -37,21 +42,36 @@ public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable
     public void SetMemory(ReadOnlyMemory<T> memory, bool isRented = false)
     {
         base.Memory = memory;
-        _isRented = isRented;
+
+        if (isRented)
+            _rentalStatus |= RentalStatus.Memory;
     }
 
     public void Reset()
     {
-        if (_isRented)
+        if (IsRentedMemory)
         {
             var returned = ArrayPoolShared.TryReturn(base.Memory);
             Debug.Assert(returned);
-            _isRented = false;
+            _rentalStatus &= ~RentalStatus.Memory;
         }
         base.Memory = default;
         base.RunningIndex = 0;
         base.Next = null;
     }
 
+    void IBufferRentable.MakeRented()
+    {
+        _rentalStatus |= RentalStatus.Segment;
+    }
+
     void IDisposable.Dispose() => Reset();
+
+    [Flags]
+    internal enum RentalStatus : byte
+    {
+        None = 0,
+        Memory = 1,
+        Segment = 2
+    }
 }

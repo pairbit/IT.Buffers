@@ -1,6 +1,6 @@
 ﻿namespace IT.Buffers.Tests;
 
-public class ReadOnlySequenceCharTest : ReadOnlySequenceTest<char>
+public class ReadOnlySequenceBuilderCharTest : ReadOnlySequenceBuilderTest<char>
 {
     private ReadOnlyMemory<char>[] Data = [
         "1 segment".ToCharArray(),

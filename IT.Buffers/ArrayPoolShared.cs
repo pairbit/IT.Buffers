@@ -44,11 +44,10 @@ public static class ArrayPoolShared
             {
                 var next = segment.Next;
 
-                SequenceSegment<T>.Pool.Return(segment);
+                if (SequenceSegment<T>.Pool.Return(segment)) count++;
 
                 segment = next!;
 
-                count++;
             } while (segment != null);
 
             return count;

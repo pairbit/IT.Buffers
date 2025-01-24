@@ -1,6 +1,7 @@
 ﻿using IT.Buffers.Interfaces;
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace IT.Buffers;
 
@@ -10,15 +11,35 @@ public class BufferPool<TBuffer> : IBufferPool<TBuffer> where TBuffer : class, I
 
     private readonly ConcurrentQueue<TBuffer> _queue = new();
 
-    public TBuffer Rent() => _queue.TryDequeue(out var buffer) ? buffer : new TBuffer();
+    public TBuffer Rent()
+    {
+        if (!_queue.TryDequeue(out var buffer))
+        {
+            buffer = new TBuffer();
+
+            if (buffer is IBufferRentable bufferRentable)
+            {
+                Debug.Assert(!bufferRentable.IsRented);
+
+                bufferRentable.MakeRented();
+
+                Debug.Assert(bufferRentable.IsRented);
+            }
+        }
+        return buffer;
+    }
 
     /// <exception cref="ArgumentNullException"></exception>
-    public void Return(TBuffer buffer)
+    public bool Return(TBuffer buffer)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 
         buffer.Dispose();
 
+        //protection pool overflow. We return to the pool only rented buffers
+        if (buffer is IBufferRentable bufferRentable && !bufferRentable.IsRented) return false;
+
         _queue.Enqueue(buffer);
+        return true;
     }
 }

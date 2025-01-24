@@ -1,49 +1,76 @@
-﻿using System.Buffers;
+﻿using IT.Buffers.Extensions;
+using System.Buffers;
 
 namespace IT.Buffers.Tests;
 
-public abstract class ReadOnlySequenceTest<T>
+public class ReadOnlySequenceTest
 {
+    [Test]
+    public void OverflowPoolTest()
+    {
+        var segment = new SequenceSegment<byte>();
+
+        Assert.That(segment.IsRentedSegment, Is.False);
+
+        Assert.That(SequenceSegment<byte>.Pool.Return(segment), Is.False);
+
+        segment = SequenceSegment<byte>.Pool.Rent();
+
+        Assert.That(segment.IsRentedSegment, Is.True);
+
+        Assert.That(SequenceSegment<byte>.Pool.Return(segment), Is.True);
+
+        Assert.That(segment.IsRentedSegment, Is.True);
+    }
+
     [Test]
     public void Test()
     {
-        var builder = ReadOnlySequenceBuilder<T>.Pool.Rent();
-        
-		try
-		{
-            Builder(builder);
-        }
-		finally
-		{
-            ReadOnlySequenceBuilder<T>.Pool.Return(builder);
-        }
-    }
-
-    private void Builder(ReadOnlySequenceBuilder<T> builder)
-    {
-        foreach (var memory in GetMemories())
+        for (int i = 0; i < 10; i++)
         {
-            builder.Add(memory);
-        }
+            var rented = RentSequence(i);
+            var buffer = rented.ToArray();
+            var single = new ReadOnlySequence<byte>(buffer);
 
-        Sequence(builder.Build());
+            Assert.That(rented.SequenceEqual(single));
+            Assert.That(single.SequenceEqual(rented));
+            Assert.That(rented.SequenceEqual(rented));
+
+            var splitDouble = buffer.AsMemory().Split(10);
+            Assert.That(rented.SequenceEqual(splitDouble));
+
+            var splitFixed = buffer.AsMemory().Split(buffer.Length / 5, BufferGrowthPolicy.Fixed);
+            Assert.That(rented.SequenceEqual(splitFixed));
+
+            Assert.That(ArrayPoolShared.TryReturn(rented), Is.EqualTo(i));
+        }
     }
 
-    private void Sequence(ReadOnlySequence<T> sequence)
+    private static ReadOnlySequence<byte> RentSequence(int segments, int bufferSize = 10)
     {
-        var position = sequence.Start;
+        if (segments == 0) return ReadOnlySequence<byte>.Empty;
 
-        var i = 0;
+        var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+        var rented = buffer.AsMemory(0, bufferSize);
+        Random.Shared.NextBytes(rented.Span);
 
-        while (sequence.TryGet(ref position, out var memory))
+        if (segments == 1) return new ReadOnlySequence<byte>(rented);
+
+        var start = SequenceSegment<byte>.Pool.Rent();
+        start.SetMemory(rented, isRented: true);
+
+        var end = start;
+
+        for (int i = 1; i < segments; i++)
         {
-            ReadMemory(memory, i++);
+            var nextBufferSize = buffer.Length + bufferSize;
+            buffer = ArrayPool<byte>.Shared.Rent(nextBufferSize);
+            rented = buffer.AsMemory(0, nextBufferSize);
+            Random.Shared.NextBytes(rented.Span);
 
-            if (position.GetObject() == null) break;
+            end = end.AppendRented(rented, isRented: true);
         }
+
+        return new ReadOnlySequence<byte>(start, 0, end, end.Memory.Length);
     }
-
-    protected abstract IEnumerable<ReadOnlyMemory<T>> GetMemories();
-
-    protected abstract void ReadMemory(ReadOnlyMemory<T> memory, int index);
 }

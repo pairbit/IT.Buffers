@@ -13,7 +13,7 @@ public class ArrayBufferWriterPool<T> : IBufferPool<ArrayBufferWriter<T>>
 
     public ArrayBufferWriter<T> Rent() => _queue.TryDequeue(out var buffer) ? buffer : new ArrayBufferWriter<T>();
 
-    public void Return(ArrayBufferWriter<T> buffer)
+    public bool Return(ArrayBufferWriter<T> buffer)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 
@@ -23,5 +23,7 @@ public class ArrayBufferWriterPool<T> : IBufferPool<ArrayBufferWriter<T>>
         buffer.Clear();
 #endif
         _queue.Enqueue(buffer);
+
+        return true;
     }
 }
