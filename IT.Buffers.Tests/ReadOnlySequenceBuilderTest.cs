@@ -41,6 +41,8 @@ public abstract class ReadOnlySequenceBuilderTest<T>
 
             if (position.GetObject() == null) break;
         }
+
+        Assert.That(ArrayPoolShared.TryReturn(sequence), Is.EqualTo(0));
     }
 
     protected abstract IEnumerable<ReadOnlyMemory<T>> GetMemories();

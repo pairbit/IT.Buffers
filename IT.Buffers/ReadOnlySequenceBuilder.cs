@@ -82,7 +82,11 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
     {
         if (_list.Count == 0) return ReadOnlySequence<T>.Empty;
 
-        if (_list.Count == 1) return new ReadOnlySequence<T>(_list[0].Memory);
+        if (_list.Count == 1)
+        {
+            var single = _list[0];
+            return new ReadOnlySequence<T>(single, 0, single, single.Memory.Length);
+        }
 
         long running = 0;
 #if NET6_0_OR_GREATER
