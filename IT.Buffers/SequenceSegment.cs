@@ -68,7 +68,7 @@ public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable, IBuff
     void IDisposable.Dispose() => Reset();
 
     [Flags]
-    internal enum RentalStatus : byte
+    enum RentalStatus : byte
     {
         None = 0,
         Memory = 1,
