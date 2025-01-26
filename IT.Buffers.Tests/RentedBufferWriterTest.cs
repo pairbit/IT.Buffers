@@ -13,7 +13,7 @@ public class RentedBufferWriterTest
         }
         finally
         {
-            Assert.That(RentedBufferWriter<byte>.Pool.Return(buffer), Is.True);
+            Assert.That(RentedBufferWriter<byte>.Pool.TryReturn(buffer), Is.True);
         }
     }
 

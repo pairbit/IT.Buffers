@@ -28,7 +28,7 @@ public class BufferPool<TBuffer> : IBufferPool<TBuffer> where TBuffer : class, I
     }
 
     /// <exception cref="ArgumentNullException"></exception>
-    public bool Return(TBuffer buffer)
+    public bool TryReturn(TBuffer buffer)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 
