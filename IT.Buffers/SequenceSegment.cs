@@ -51,7 +51,7 @@ public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable, IBuff
     {
         if (IsRentedMemory)
         {
-            var returned = ArrayPoolShared.TryReturn(base.Memory);
+            var returned = BufferPool.TryReturn(base.Memory);
             Debug.Assert(returned);
         }
         _rentalStatus = default;

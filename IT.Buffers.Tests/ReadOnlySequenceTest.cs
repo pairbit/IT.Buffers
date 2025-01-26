@@ -49,25 +49,25 @@ public class ReadOnlySequenceTest
 
             var splitDouble = buffer.AsMemory().Split(10);
             Assert.That(rented.SequenceEqual(splitDouble));
-            Assert.That(ArrayPoolShared.TryReturn(splitDouble), Is.EqualTo(0));
+            Assert.That(BufferPool.TryReturn(splitDouble), Is.EqualTo(0));
 
             splitDouble = buffer.AsMemory().SplitAndRent(10);
             Assert.That(rented.SequenceEqual(splitDouble));
 
             if (i > 1)
-                Assert.That(ArrayPoolShared.TryReturn(splitDouble) > 0, Is.True);
+                Assert.That(BufferPool.TryReturn(splitDouble) > 0, Is.True);
 
             var splitFixed = buffer.AsMemory().Split(buffer.Length / 5, BufferGrowthPolicy.Fixed);
             Assert.That(rented.SequenceEqual(splitFixed));
-            Assert.That(ArrayPoolShared.TryReturn(splitFixed), Is.EqualTo(0));
+            Assert.That(BufferPool.TryReturn(splitFixed), Is.EqualTo(0));
 
             splitFixed = buffer.AsMemory().SplitAndRent(buffer.Length / 5, BufferGrowthPolicy.Fixed);
             Assert.That(rented.SequenceEqual(splitFixed));
 
             if (i > 1) 
-                Assert.That(ArrayPoolShared.TryReturn(splitFixed) > 0, Is.True);
+                Assert.That(BufferPool.TryReturn(splitFixed) > 0, Is.True);
 
-            Assert.That(ArrayPoolShared.TryReturn(rented), Is.EqualTo(i));
+            Assert.That(BufferPool.TryReturn(rented), Is.EqualTo(i));
         }
     }
 

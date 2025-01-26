@@ -1,58 +1,59 @@
-﻿using IT.Buffers.Interfaces;
-using System;
-using System.Collections.Concurrent;
+﻿using System;
+using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace IT.Buffers;
 
-public class BufferPool<TBuffer> : IBufferPool<TBuffer> where TBuffer : class, IDisposable, new()
+public static class BufferPool
 {
-    public static readonly BufferPool<TBuffer> Shared = new();
+    public static void Return<T>(T[] array)
+        => ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 
-    private readonly ConcurrentQueue<TBuffer> _queue = new();
-
-    public TBuffer Rent()
+    public static bool TryReturn<T>(ArraySegment<T> arraySegment)
     {
-        if (!_queue.TryDequeue(out var buffer)) buffer = new TBuffer();
-
-        if (buffer is IBufferRentable bufferRentable)
+        var array = arraySegment.Array;
+        if (array != null && array.Length > 0)
         {
-            Debug.Assert(!bufferRentable.IsRented);
-
-            bufferRentable.MakeRented();
-
-            Debug.Assert(bufferRentable.IsRented);
+            Return(array);
+            return true;
         }
-
-        return buffer;
+        return false;
     }
 
-    /// <exception cref="ArgumentNullException"></exception>
-    public bool TryReturn(TBuffer buffer)
+    public static bool TryReturn<T>(ReadOnlyMemory<T> memory)
     {
-        if (buffer == null) throw new ArgumentNullException(nameof(buffer));
-
-        if (buffer is IBufferRentable bufferRentable)
+        if (MemoryMarshal.TryGetArray(memory, out var arraySegment))
         {
-            //protection pool overflow. We return to the pool only rented buffers
-            if (bufferRentable.IsRented)
+            return TryReturn(arraySegment);
+        }
+        return false;
+    }
+
+    public static bool TryReturn<T>(Memory<T> memory)
+        => TryReturn((ReadOnlyMemory<T>)memory);
+
+    public static int TryReturn<T>(ReadOnlySequence<T> sequence)
+    {
+        if (sequence.Start.GetObject() is SequenceSegment<T> segment)
+        {
+            var count = 0;
+            do
             {
-                buffer.Dispose();
+                var next = segment.Next;
 
-                Debug.Assert(!bufferRentable.IsRented);
+                if (BufferPool<SequenceSegment<T>>.Shared.TryReturn(segment)) count++;
 
-                _queue.Enqueue(buffer);
+                segment = next!;
 
-                return true;
-            }
+            } while (segment != null);
 
-            buffer.Dispose();
+            //Debug.Assert(sequence.Length == 0);
 
-            return false;
+            return count;
         }
 
-        buffer.Dispose();
-        _queue.Enqueue(buffer);
-        return true;
+        return 0;
     }
 }

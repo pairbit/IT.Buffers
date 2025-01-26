@@ -78,7 +78,7 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
         {
             _buffer = [];
             _written = 0;
-            ArrayPoolShared.Return(buffer);
+            BufferPool.Return(buffer);
         }
     }
 
