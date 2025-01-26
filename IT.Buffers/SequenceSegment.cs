@@ -53,8 +53,8 @@ public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable, IBuff
         {
             var returned = ArrayPoolShared.TryReturn(base.Memory);
             Debug.Assert(returned);
-            _rentalStatus &= ~RentalStatus.Memory;
         }
+        _rentalStatus = default;
         base.Memory = default;
         base.RunningIndex = 0;
         base.Next = null;

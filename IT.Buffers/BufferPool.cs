@@ -13,19 +13,17 @@ public class BufferPool<TBuffer> : IBufferPool<TBuffer> where TBuffer : class, I
 
     public TBuffer Rent()
     {
-        if (!_queue.TryDequeue(out var buffer))
+        if (!_queue.TryDequeue(out var buffer)) buffer = new TBuffer();
+
+        if (buffer is IBufferRentable bufferRentable)
         {
-            buffer = new TBuffer();
+            Debug.Assert(!bufferRentable.IsRented);
 
-            if (buffer is IBufferRentable bufferRentable)
-            {
-                Debug.Assert(!bufferRentable.IsRented);
+            bufferRentable.MakeRented();
 
-                bufferRentable.MakeRented();
-
-                Debug.Assert(bufferRentable.IsRented);
-            }
+            Debug.Assert(bufferRentable.IsRented);
         }
+
         return buffer;
     }
 
@@ -34,11 +32,26 @@ public class BufferPool<TBuffer> : IBufferPool<TBuffer> where TBuffer : class, I
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 
+        if (buffer is IBufferRentable bufferRentable)
+        {
+            //protection pool overflow. We return to the pool only rented buffers
+            if (bufferRentable.IsRented)
+            {
+                buffer.Dispose();
+
+                Debug.Assert(!bufferRentable.IsRented);
+
+                _queue.Enqueue(buffer);
+
+                return true;
+            }
+
+            buffer.Dispose();
+
+            return false;
+        }
+
         buffer.Dispose();
-
-        //protection pool overflow. We return to the pool only rented buffers
-        if (buffer is IBufferRentable bufferRentable && !bufferRentable.IsRented) return false;
-
         _queue.Enqueue(buffer);
         return true;
     }
