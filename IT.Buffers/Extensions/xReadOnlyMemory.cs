@@ -10,8 +10,9 @@ public static class xReadOnlyMemory
         => Split((ReadOnlyMemory<T>)memory, bufferSize, growthPolicy);
 
     public static ReadOnlySequence<T> SplitAndRent<T>(this Memory<T> memory,
-        int bufferSize = BufferSize.KB_64, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
-        => SplitAndRent((ReadOnlyMemory<T>)memory, bufferSize, growthPolicy);
+        int bufferSize = BufferSize.KB_64, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double,
+        bool isRented = false)
+        => SplitAndRent((ReadOnlyMemory<T>)memory, bufferSize, growthPolicy, isRented);
 
     public static ReadOnlySequence<T> Split<T>(this ReadOnlyMemory<T> memory,
         int bufferSize = BufferSize.KB_64, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
@@ -46,7 +47,8 @@ public static class xReadOnlyMemory
     }
 
     public static ReadOnlySequence<T> SplitAndRent<T>(this ReadOnlyMemory<T> memory,
-        int bufferSize = BufferSize.KB_64, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
+        int bufferSize = BufferSize.KB_64, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double,
+        bool isRented = false)
     {
         if (memory.IsEmpty) return ReadOnlySequence<T>.Empty;
 
@@ -55,7 +57,7 @@ public static class xReadOnlyMemory
         if (bufferSize >= memory.Length) return new ReadOnlySequence<T>(memory);
 
         var start = SequenceSegment<T>.Pool.Rent();
-        start.SetMemory(memory[..bufferSize]);
+        start.SetMemory(memory[..bufferSize], isRented);
 
         memory = memory[bufferSize..];
         var end = start;
