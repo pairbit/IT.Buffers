@@ -20,7 +20,7 @@ public static class xSequenceSegment
     public static SequenceSegment<T> AppendRented<T>(this SequenceSegment<T> segment, ReadOnlyMemory<T> memory,
         bool isRented = false)
     {
-        var next = SequenceSegment<T>.Pool.Rent();
+        var next = BufferPool<SequenceSegment<T>>.Shared.Rent();
 
         next.SetMemory(memory, isRented);
         next.RunningIndex = segment.RunningIndex + segment.Memory.Length;

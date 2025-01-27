@@ -1,6 +1,7 @@
 ﻿using IT.Buffers.Interfaces;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace IT.Buffers;
@@ -9,7 +10,17 @@ public class BufferPool<TBuffer> : IBufferPool<TBuffer> where TBuffer : class, I
 {
     public static readonly BufferPool<TBuffer> Shared = new();
 
-    private readonly ConcurrentQueue<TBuffer> _queue = new();
+    private readonly ConcurrentQueue<TBuffer> _queue;
+
+    public BufferPool()
+    {
+        _queue = new();
+    }
+
+    public BufferPool(IEnumerable<TBuffer> buffers)
+    {
+        _queue = new(buffers);
+    }
 
     public TBuffer Rent()
     {
