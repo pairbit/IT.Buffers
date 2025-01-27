@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -8,6 +7,9 @@ namespace IT.Buffers;
 
 public static class BufferPool
 {
+    public static TBuffer Rent<TBuffer>() where TBuffer : class, IDisposable, new()
+        => BufferPool<TBuffer>.Shared.Rent();
+
     public static void Return<T>(T[] array)
         => ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 
@@ -34,7 +36,7 @@ public static class BufferPool
     public static bool TryReturn<T>(Memory<T> memory)
         => TryReturn((ReadOnlyMemory<T>)memory);
 
-    public static int TryReturn<T>(ReadOnlySequence<T> sequence, bool clear = true)
+    public static int TryReturn<T>(in ReadOnlySequence<T> sequence)
     {
         if (sequence.Start.GetObject() is SequenceSegment<T> segment)
         {
@@ -43,24 +45,18 @@ public static class BufferPool
             {
                 var next = segment.Next;
 
-                if (BufferPool<SequenceSegment<T>>.Shared.TryReturn(segment)) count++;
+                if (TryReturn(segment)) count++;
 
                 segment = next!;
 
             } while (segment != null);
-
-            if (clear)
-            {
-                Unsafe.As<ReadOnlySequence<T>, ReadOnlySequence<T>>(ref sequence) = ReadOnlySequence<T>.Empty;
-
-                Debug.Assert(sequence.IsSingleSegment);
-                Debug.Assert(sequence.IsEmpty);
-                Debug.Assert(sequence.Start.GetObject() is T[] array && array.Length == 0);
-            }
 
             return count;
         }
 
         return 0;
     }
+
+    public static bool TryReturn<TBuffer>(TBuffer buffer) where TBuffer : class, IDisposable, new()
+        => BufferPool<TBuffer>.Shared.TryReturn(buffer);
 }

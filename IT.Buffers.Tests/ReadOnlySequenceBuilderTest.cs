@@ -29,7 +29,7 @@ public abstract class ReadOnlySequenceBuilderTest<T>
         Sequence(builder.Build());
     }
 
-    private void Sequence(ReadOnlySequence<T> sequence)
+    private void Sequence(in ReadOnlySequence<T> sequence)
     {
         var position = sequence.Start;
 

@@ -7,7 +7,7 @@ namespace IT.Buffers.Extensions;
 
 public static class xReadOnlySequence
 {
-    public static bool SequenceEqual<T>(this ReadOnlySequence<T> first, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer = null)
+    public static bool SequenceEqual<T>(this in ReadOnlySequence<T> first, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer = null)
     {
         if (first.IsSingleSegment) return first.FirstSpan.SequenceEqual(other, comparer);
         if (first.Length != other.Length) return false;
@@ -25,7 +25,7 @@ public static class xReadOnlySequence
         return true;
     }
 
-    public static bool SequenceEqual<T>(this ReadOnlySequence<T> first, ReadOnlySequence<T> other, IEqualityComparer<T>? comparer = null)
+    public static bool SequenceEqual<T>(this in ReadOnlySequence<T> first, in ReadOnlySequence<T> other, IEqualityComparer<T>? comparer = null)
     {
         if (first.IsSingleSegment) return other.SequenceEqual(first.FirstSpan, comparer);
         if (other.IsSingleSegment) return first.SequenceEqual(other.FirstSpan, comparer);

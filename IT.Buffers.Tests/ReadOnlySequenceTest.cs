@@ -12,15 +12,17 @@ public class ReadOnlySequenceTest
 
         Assert.That(segment.IsRentedSegment, Is.False);
 
-        Assert.That(SequenceSegment<byte>.Pool.TryReturn(segment), Is.False);
-        Assert.That(SequenceSegment<byte>.Pool.TryReturn(segment), Is.False);
+        Assert.That(BufferPool.TryReturn(segment), Is.False);
+        Assert.That(BufferPool.TryReturn(segment), Is.False);
 
+        //segment = BufferPool<SequenceSegment<byte>>.Shared.Rent();
+        //segment = BufferPool.Rent<SequenceSegment<byte>>();
         segment = SequenceSegment<byte>.Pool.Rent();
 
         Assert.That(segment.IsRentedSegment, Is.True);
-
-        Assert.That(SequenceSegment<byte>.Pool.TryReturn(segment), Is.True);
-        Assert.That(SequenceSegment<byte>.Pool.TryReturn(segment), Is.False);
+        
+        Assert.That(BufferPool.TryReturn(segment), Is.True);
+        Assert.That(BufferPool.TryReturn(segment), Is.False);
 
         Assert.That(segment.IsRentedSegment, Is.False);
 
@@ -28,8 +30,8 @@ public class ReadOnlySequenceTest
 
         Assert.That(segment.IsRentedSegment, Is.True);
 
-        Assert.That(SequenceSegment<byte>.Pool.TryReturn(segment), Is.True);
-        Assert.That(SequenceSegment<byte>.Pool.TryReturn(segment), Is.False);
+        Assert.That(BufferPool.TryReturn(segment), Is.True);
+        Assert.That(BufferPool.TryReturn(segment), Is.False);
 
         Assert.That(segment.IsRentedSegment, Is.False);
     }
