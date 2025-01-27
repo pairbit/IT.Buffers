@@ -39,22 +39,25 @@ public static class BufferPool
     public static int TryReturn<T>(in ReadOnlySequence<T> sequence)
     {
         if (sequence.Start.GetObject() is SequenceSegment<T> segment)
-        {
-            var count = 0;
-            do
-            {
-                var next = segment.Next;
-
-                if (TryReturn(segment)) count++;
-
-                segment = next!;
-
-            } while (segment != null);
-
-            return count;
-        }
+            return TryReturnSegments(segment);
 
         return 0;
+    }
+
+    public static int TryReturnSegments<T>(SequenceSegment<T> segment)
+    {
+        var count = 0;
+        do
+        {
+            var next = segment.Next;
+
+            if (TryReturn(segment)) count++;
+
+            segment = next!;
+
+        } while (segment != null);
+
+        return count;
     }
 
     public static bool TryReturn<TBuffer>(TBuffer buffer) where TBuffer : class, IDisposable, new()
