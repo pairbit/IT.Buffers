@@ -36,7 +36,7 @@ public class RentedBuffers
         return true;
     }
 
-    public bool AddSequence<T>(ReadOnlySequence<T> sequence)
+    public bool AddSequence<T>(in ReadOnlySequence<T> sequence)
     {
         if (sequence.Start.GetObject() is not SequenceSegment<T> segment)
             throw new ArgumentException("does not contain SequenceSegment", nameof(sequence));
