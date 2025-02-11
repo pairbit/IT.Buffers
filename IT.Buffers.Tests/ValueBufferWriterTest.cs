@@ -38,6 +38,13 @@ public class ValueBufferWriterTest
         Assert.That(arrayBuffer.Written, Is.EqualTo(0));
         Assert.That(arrayBuffer.GetSpan().IsEmpty, Is.True);
         Assert.That(arrayBuffer.GetMemory().IsEmpty, Is.True);
+
+        ValueFixedSpanBufferWriter<byte> spanBuffer = default;
+
+        Assert.That(spanBuffer.Capacity, Is.EqualTo(0));
+        Assert.That(spanBuffer.FreeCapacity, Is.EqualTo(0));
+        Assert.That(spanBuffer.Written, Is.EqualTo(0));
+        Assert.That(spanBuffer.GetSpan().IsEmpty, Is.True);
     }
 
     private static void Test<TBufferWriter>(ref TBufferWriter writer)
@@ -53,18 +60,28 @@ public class ValueBufferWriterTest
 
         Assert.That(writer.Written, Is.EqualTo(span.Length));
         Assert.That(writer.GetSpan().IsEmpty, Is.True);
-        Assert.That(writer.GetMemory().IsEmpty, Is.True);
+        if (writer.HasMemory)
+            Assert.That(writer.GetMemory().IsEmpty, Is.True);
+        else
+        {
+            try
+            {
+                writer.GetMemory();
+                Assert.Fail();
+            }
+            catch (NotSupportedException ex)
+            {
+                Assert.That(ex.Message, Is.EqualTo("Method 'GetMemory' is not supported"));
+            }
+        }
 
         TestArray(ref writer, span);
 
         TestMemory(ref writer, span);
 
-#if NET9_0_OR_GREATER
         TestSpan(ref writer, span);
-#endif
     }
 
-#if NET9_0_OR_GREATER
     private static void TestSpan<TBufferWriter>(ref TBufferWriter writer, Span<byte> data)
         where TBufferWriter : IAdvancedBufferWriter<byte>
     {
@@ -83,15 +100,17 @@ public class ValueBufferWriterTest
         Assert.That(spanBuffer.FreeCapacity, Is.EqualTo(span.Length));
         Assert.That(spanBuffer.Written, Is.EqualTo(0));
 
+#if NET9_0_OR_GREATER
         writer.Write(ref spanBuffer);
-
+#else
+        writer.TryWrite(spanBuffer.GetSpan(writer.Written));
+        spanBuffer.Advance(writer.Written);
+#endif
         Assert.That(spanBuffer.Written, Is.EqualTo(span.Length));
         Assert.That(spanBuffer.GetSpan().IsEmpty, Is.True);
-        //Assert.That(spanBuffer.GetMemory().IsEmpty, Is.True);
 
         Assert.That(data.SequenceEqual(span), Is.True);
     }
-#endif
 
     private static void TestMemory<TBufferWriter>(ref TBufferWriter writer, Span<byte> data)
         where TBufferWriter : IAdvancedBufferWriter<byte>

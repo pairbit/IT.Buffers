@@ -17,7 +17,7 @@ public interface IAdvancedBufferWriter<T> : IBufferWriter<T>
 
     int Segments { get; }
 
-    //bool HasMemory { get; }
+    bool HasMemory { get; }
 
     Memory<T> GetWrittenMemory(int segment = 0);
 

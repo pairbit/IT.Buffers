@@ -33,6 +33,8 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
 
     readonly int IAdvancedBufferWriter<T>.Segments => 1;
 
+    readonly bool IAdvancedBufferWriter<T>.HasMemory => false;
+
     public readonly int Capacity => _buffer.Length;
 
     public readonly int FreeCapacity
@@ -57,8 +59,8 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly Memory<T> GetMemory(int sizeHint = 0)
-        => throw new NotSupportedException($"Method '{nameof(GetMemory)}' is not supported");
+    readonly Memory<T> IBufferWriter<T>.GetMemory(int sizeHint)
+        => throw new NotSupportedException($"Method '{nameof(IBufferWriter<T>.GetMemory)}' is not supported");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly Span<T> GetSpan(int sizeHint = 0)

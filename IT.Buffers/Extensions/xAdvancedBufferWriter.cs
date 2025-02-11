@@ -6,6 +6,9 @@ public static class xAdvancedBufferWriter
 {
     public static T[] ToArray<TBufferWriter, T>(ref TBufferWriter writer)
         where TBufferWriter : IAdvancedBufferWriter<T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
+#endif
     {
         var written = writer.Written;
         if (written == 0) return [];

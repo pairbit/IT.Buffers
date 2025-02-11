@@ -32,6 +32,8 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     public int Segments => _segments;
 
+    bool IAdvancedBufferWriter<T>.HasMemory => true;
+
     private ReadOnlySpan<T> FirstBufferWrittenSpan
     {
         get
