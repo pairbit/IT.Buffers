@@ -9,6 +9,9 @@ dotnet_diagnostic.CA1512.severity = none
 # IDE0011: Add braces
 dotnet_diagnostic.IDE0011.severity = none
 
+# IDE0057: Use range operator
+dotnet_diagnostic.IDE0057.severity = none
+
 # IDE0130: Namespace does not match folder structure
 dotnet_diagnostic.IDE0130.severity = none
 

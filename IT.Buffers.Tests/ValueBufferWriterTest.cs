@@ -23,13 +23,21 @@ public class ValueBufferWriterTest
     [Test]
     public void Test_Fixed()
     {
-        ValueFixedBufferWriter<byte> writer = default;
+        ValueFixedMemoryBufferWriter<byte> memoryBuffer = default;
 
-        Assert.That(writer.Capacity, Is.EqualTo(0));
-        Assert.That(writer.FreeCapacity, Is.EqualTo(0));
-        Assert.That(writer.Written, Is.EqualTo(0));
-        Assert.That(writer.GetSpan().IsEmpty, Is.True);
-        Assert.That(writer.GetMemory().IsEmpty, Is.True);
+        Assert.That(memoryBuffer.Capacity, Is.EqualTo(0));
+        Assert.That(memoryBuffer.FreeCapacity, Is.EqualTo(0));
+        Assert.That(memoryBuffer.Written, Is.EqualTo(0));
+        Assert.That(memoryBuffer.GetSpan().IsEmpty, Is.True);
+        Assert.That(memoryBuffer.GetMemory().IsEmpty, Is.True);
+
+        ValueFixedArrayBufferWriter<byte> arrayBuffer = default;
+
+        Assert.That(arrayBuffer.Capacity, Is.EqualTo(0));
+        Assert.That(arrayBuffer.FreeCapacity, Is.EqualTo(0));
+        Assert.That(arrayBuffer.Written, Is.EqualTo(0));
+        Assert.That(arrayBuffer.GetSpan().IsEmpty, Is.True);
+        Assert.That(arrayBuffer.GetMemory().IsEmpty, Is.True);
     }
 
     private static void Test<TBufferWriter>(ref TBufferWriter writer)
@@ -56,18 +64,40 @@ public class ValueBufferWriterTest
         memory.Span.Clear();
         Assert.That(span.SequenceEqual(memory.Span), Is.False);
 
-        var fixedBuffer = new ValueFixedBufferWriter<byte>(memory);
+        var memoryBuffer = new ValueFixedMemoryBufferWriter<byte>(memory);
 
-        Assert.That(fixedBuffer.Capacity, Is.EqualTo(memory.Length));
-        Assert.That(fixedBuffer.FreeCapacity, Is.EqualTo(memory.Length));
-        Assert.That(fixedBuffer.Written, Is.EqualTo(0));
+        Assert.That(memoryBuffer.Capacity, Is.EqualTo(memory.Length));
+        Assert.That(memoryBuffer.FreeCapacity, Is.EqualTo(memory.Length));
+        Assert.That(memoryBuffer.Written, Is.EqualTo(0));
 
-        writer.Write(ref fixedBuffer);
+        writer.Write(ref memoryBuffer);
 
-        Assert.That(fixedBuffer.Written, Is.EqualTo(memory.Length));
-        Assert.That(fixedBuffer.GetSpan().IsEmpty, Is.True);
-        Assert.That(fixedBuffer.GetMemory().IsEmpty, Is.True);
+        Assert.That(memoryBuffer.Written, Is.EqualTo(memory.Length));
+        Assert.That(memoryBuffer.GetSpan().IsEmpty, Is.True);
+        Assert.That(memoryBuffer.GetMemory().IsEmpty, Is.True);
 
         Assert.That(span.SequenceEqual(memory.Span), Is.True);
+
+        bytes = new byte[writer.Written];
+
+        Assert.That(writer.TryWrite(bytes), Is.True);
+        Assert.That(span.SequenceEqual(bytes), Is.True);
+
+        bytes.AsSpan().Clear();
+        Assert.That(span.SequenceEqual(bytes), Is.False);
+
+        var arrayBuffer = new ValueFixedArrayBufferWriter<byte>(bytes);
+
+        Assert.That(arrayBuffer.Capacity, Is.EqualTo(bytes.Length));
+        Assert.That(arrayBuffer.FreeCapacity, Is.EqualTo(bytes.Length));
+        Assert.That(arrayBuffer.Written, Is.EqualTo(0));
+
+        writer.Write(ref arrayBuffer);
+
+        Assert.That(arrayBuffer.Written, Is.EqualTo(bytes.Length));
+        Assert.That(arrayBuffer.GetSpan().IsEmpty, Is.True);
+        Assert.That(arrayBuffer.GetMemory().IsEmpty, Is.True);
+
+        Assert.That(span.SequenceEqual(bytes), Is.True);
     }
 }
