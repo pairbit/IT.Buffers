@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Buffers;
+using System.Runtime.CompilerServices;
 
 namespace IT.Buffers.Tests;
 
@@ -16,6 +17,9 @@ public class BufferSizeTest
     [Test]
     public void SizeOfTest()
     {
+        Assert.That(Unsafe.SizeOf<ReadOnlySequence<byte>>(), Is.EqualTo(24));
+        Assert.That(Unsafe.SizeOf<SequenceSegments<byte>>(), Is.EqualTo(16));
+
         Assert.That(Unsafe.SizeOf<Memory<byte>>(), Is.EqualTo(16));
         Assert.That(Unsafe.SizeOf<ValueFixedMemoryBufferWriter<byte>>(), Is.EqualTo(24));
 
