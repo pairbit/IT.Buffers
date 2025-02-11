@@ -7,13 +7,13 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Company />
-    <Description>ReadOnlySequenceBuilder, ValueFixedBufferWriter, RentedBufferWriter, LinkedBufferWriter</Description>
+    <Description>ReadOnlySequenceBuilder, ValueBufferWriters, RentedBufferWriter, LinkedBufferWriter</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/pairbit/IT.Buffers</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <Authors>Ivan Tikhonov</Authors>
     <Copyright>Ivan Tikhonov © 2024</Copyright>
-    <Version>2.0.23</Version>
+    <Version>2.0.24</Version>
     <PackageTags>Buffers</PackageTags>
     <PackageReadmeFile>Readme.md</PackageReadmeFile>
     <PackageIcon>Icon.png</PackageIcon>
