@@ -21,7 +21,7 @@ public class ValueBufferWriterTest
     }
 
     [Test]
-    public void Test_Fixed()
+    public void Test_Default()
     {
         ValueFixedMemoryBufferWriter<byte> memoryBuffer = default;
 
@@ -85,6 +85,8 @@ public class ValueBufferWriterTest
     private static void TestSpan<TBufferWriter>(ref TBufferWriter writer, Span<byte> data)
         where TBufferWriter : IAdvancedBufferWriter<byte>
     {
+        Assert.That(writer.Written, Is.LessThanOrEqualTo(255));
+
         Span<byte> bytes = stackalloc byte[writer.Written + 10];
         var span = bytes.Slice(5, writer.Written);
 
