@@ -21,5 +21,10 @@ public class BufferSizeTest
 
         Assert.That(Unsafe.SizeOf<byte[]>(), Is.EqualTo(8));
         Assert.That(Unsafe.SizeOf<ValueFixedArrayBufferWriter<byte>>(), Is.EqualTo(16));
+
+#if NET9_0_OR_GREATER
+        Assert.That(Unsafe.SizeOf<Span<byte>>(), Is.EqualTo(16));
+        Assert.That(Unsafe.SizeOf<ValueFixedSpanBufferWriter<byte>>(), Is.EqualTo(24));
+#endif
     }
 }

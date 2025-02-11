@@ -55,14 +55,55 @@ public class ValueBufferWriterTest
         Assert.That(writer.GetSpan().IsEmpty, Is.True);
         Assert.That(writer.GetMemory().IsEmpty, Is.True);
 
-        var bytes = new byte[writer.Written + 10];
-        var memory = bytes.AsMemory(5, writer.Written);
+        TestArray(ref writer, span);
+
+        TestMemory(ref writer, span);
+
+#if NET9_0_OR_GREATER
+        TestSpan(ref writer, span);
+#endif
+    }
+
+#if NET9_0_OR_GREATER
+    private static void TestSpan<TBufferWriter>(ref TBufferWriter writer, Span<byte> data)
+        where TBufferWriter : IAdvancedBufferWriter<byte>
+    {
+        Span<byte> bytes = stackalloc byte[writer.Written + 10];
+        var span = bytes.Slice(5, writer.Written);
+
+        Assert.That(writer.TryWrite(span), Is.True);
+        Assert.That(data.SequenceEqual(span), Is.True);
+
+        span.Clear();
+        Assert.That(data.SequenceEqual(span), Is.False);
+
+        var spanBuffer = new ValueFixedSpanBufferWriter<byte>(span);
+
+        Assert.That(spanBuffer.Capacity, Is.EqualTo(span.Length));
+        Assert.That(spanBuffer.FreeCapacity, Is.EqualTo(span.Length));
+        Assert.That(spanBuffer.Written, Is.EqualTo(0));
+
+        writer.Write(ref spanBuffer);
+
+        Assert.That(spanBuffer.Written, Is.EqualTo(span.Length));
+        Assert.That(spanBuffer.GetSpan().IsEmpty, Is.True);
+        //Assert.That(spanBuffer.GetMemory().IsEmpty, Is.True);
+
+        Assert.That(data.SequenceEqual(span), Is.True);
+    }
+#endif
+
+    private static void TestMemory<TBufferWriter>(ref TBufferWriter writer, Span<byte> data)
+        where TBufferWriter : IAdvancedBufferWriter<byte>
+    {
+        var array = new byte[writer.Written + 10];
+        var memory = array.AsMemory(5, writer.Written);
 
         Assert.That(writer.TryWrite(memory.Span), Is.True);
-        Assert.That(span.SequenceEqual(memory.Span), Is.True);
+        Assert.That(data.SequenceEqual(memory.Span), Is.True);
 
         memory.Span.Clear();
-        Assert.That(span.SequenceEqual(memory.Span), Is.False);
+        Assert.That(data.SequenceEqual(memory.Span), Is.False);
 
         var memoryBuffer = new ValueFixedMemoryBufferWriter<byte>(memory);
 
@@ -76,28 +117,32 @@ public class ValueBufferWriterTest
         Assert.That(memoryBuffer.GetSpan().IsEmpty, Is.True);
         Assert.That(memoryBuffer.GetMemory().IsEmpty, Is.True);
 
-        Assert.That(span.SequenceEqual(memory.Span), Is.True);
+        Assert.That(data.SequenceEqual(memory.Span), Is.True);
+    }
 
-        bytes = new byte[writer.Written];
+    private static void TestArray<TBufferWriter>(ref TBufferWriter writer, Span<byte> data)
+        where TBufferWriter : IAdvancedBufferWriter<byte>
+    {
+        var array = new byte[writer.Written];
 
-        Assert.That(writer.TryWrite(bytes), Is.True);
-        Assert.That(span.SequenceEqual(bytes), Is.True);
+        Assert.That(writer.TryWrite(array), Is.True);
+        Assert.That(data.SequenceEqual(array), Is.True);
 
-        bytes.AsSpan().Clear();
-        Assert.That(span.SequenceEqual(bytes), Is.False);
+        array.AsSpan().Clear();
+        Assert.That(data.SequenceEqual(array), Is.False);
 
-        var arrayBuffer = new ValueFixedArrayBufferWriter<byte>(bytes);
+        var arrayBuffer = new ValueFixedArrayBufferWriter<byte>(array);
 
-        Assert.That(arrayBuffer.Capacity, Is.EqualTo(bytes.Length));
-        Assert.That(arrayBuffer.FreeCapacity, Is.EqualTo(bytes.Length));
+        Assert.That(arrayBuffer.Capacity, Is.EqualTo(array.Length));
+        Assert.That(arrayBuffer.FreeCapacity, Is.EqualTo(array.Length));
         Assert.That(arrayBuffer.Written, Is.EqualTo(0));
 
         writer.Write(ref arrayBuffer);
 
-        Assert.That(arrayBuffer.Written, Is.EqualTo(bytes.Length));
+        Assert.That(arrayBuffer.Written, Is.EqualTo(array.Length));
         Assert.That(arrayBuffer.GetSpan().IsEmpty, Is.True);
         Assert.That(arrayBuffer.GetMemory().IsEmpty, Is.True);
 
-        Assert.That(span.SequenceEqual(bytes), Is.True);
+        Assert.That(data.SequenceEqual(array), Is.True);
     }
 }

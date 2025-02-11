@@ -218,6 +218,9 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     }
 
     public void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
+#endif
     {
         if (_written == 0) return;
 

@@ -88,6 +88,9 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
     }
 
     public readonly void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
+#endif
     {
         var written = _written;
         if (written > 0)

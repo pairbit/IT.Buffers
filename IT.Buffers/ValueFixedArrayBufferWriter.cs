@@ -128,6 +128,9 @@ public struct ValueFixedArrayBufferWriter<T> : IAdvancedBufferWriter<T>
     }
 
     public readonly void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
+#endif
     {
         var buffer = _buffer;
         var written = _written;

@@ -10,6 +10,9 @@ public static class xBufferWriter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteSpan<TBufferWriter, T>(ref TBufferWriter writer, ReadOnlySpan<T> span)
         where TBufferWriter : IBufferWriter<T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
+#endif
     {
         Debug.Assert(writer != null);
         Debug.Assert(span.Length > 0);
