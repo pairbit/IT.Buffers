@@ -136,7 +136,7 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
         {
             Debug.Assert(_buffer.Length >= written);
 
-            xBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(_buffer, 0, written));
+            xBufferWriter.WriteSpanByRef(ref writer, new ReadOnlySpan<T>(_buffer, 0, written));
         }
     }
 

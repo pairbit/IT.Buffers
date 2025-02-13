@@ -227,7 +227,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         if (_written == 0) return;
 
         if (_firstBufferWritten > 0)
-            xBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
+            xBufferWriter.WriteSpanByRef(ref writer, FirstBufferWrittenSpan);
 
         if (_buffers.Count > 0)
         {
@@ -238,14 +238,14 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 #endif
             {
                 Debug.Assert(item.Written > 0);
-                xBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
+                xBufferWriter.WriteSpanByRef(ref writer, item.WrittenSpan);
             }
         }
 
         if (!_current.IsNull)
         {
             Debug.Assert(_current.Written > 0);
-            xBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
+            xBufferWriter.WriteSpanByRef(ref writer, _current.WrittenSpan);
         }
     }
 
@@ -296,7 +296,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         if (_written == 0) return;
 
         if (_firstBufferWritten > 0)
-            xBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
+            xBufferWriter.WriteSpanByRef(ref writer, FirstBufferWrittenSpan);
 
         if (_buffers.Count > 0)
         {
@@ -307,7 +307,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 #endif
             {
                 Debug.Assert(item.Written > 0);
-                xBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
+                xBufferWriter.WriteSpanByRef(ref writer, item.WrittenSpan);
                 item.Reset();
             }
         }
@@ -315,7 +315,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         if (!_current.IsNull)
         {
             Debug.Assert(_current.Written > 0);
-            xBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
+            xBufferWriter.WriteSpanByRef(ref writer, _current.WrittenSpan);
             _current.Reset();
         }
 

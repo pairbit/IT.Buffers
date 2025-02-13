@@ -98,7 +98,7 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
         if (written > 0)
         {
             Debug.Assert(_buffer.Length >= written);
-            xBufferWriter.WriteSpan(ref writer, (ReadOnlySpan<T>)_buffer.Slice(0, _written));
+            xBufferWriter.WriteSpanByRef(ref writer, (ReadOnlySpan<T>)_buffer.Slice(0, _written));
         }
     }
 

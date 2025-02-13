@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IT.Buffers.Extensions;
+using System;
 using System.Buffers;
 using System.IO;
 using System.Threading;
@@ -50,13 +51,8 @@ public class BufferWriterStream : Stream
     public override void Write(byte[] buffer, int offset, int count)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
-        if (_isDisposed) throw new ObjectDisposedException(nameof(BufferWriterStream));
 
-        Span<byte> span = _writer.GetSpan(count);
-
-        buffer.AsSpan(offset, count).CopyTo(span);
-
-        _writer.Advance(count);
+        Write(buffer.AsSpan(offset, count));
     }
 
     public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -88,11 +84,7 @@ public class BufferWriterStream : Stream
     {
         if (_isDisposed) throw new ObjectDisposedException(nameof(BufferWriterStream));
 
-        Span<byte> span = _writer.GetSpan(buffer.Length);
-
-        buffer.CopyTo(span);
-
-        _writer.Advance(buffer.Length);
+        _writer.WriteSpan(buffer);
     }
 
     public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)

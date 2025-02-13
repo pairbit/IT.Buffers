@@ -142,7 +142,7 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>
         {
             Debug.Assert(buffer.Length >= written);
 
-            xBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(buffer, 0, written));
+            xBufferWriter.WriteSpanByRef(ref writer, new ReadOnlySpan<T>(buffer, 0, written));
         }
     }
 
