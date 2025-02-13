@@ -6,8 +6,25 @@ using System.Threading.Tasks;
 
 namespace IT.Buffers.Extensions;
 
-public static class xLinkedBufferWriterByte
+public static class xLinkedBufferWriter
 {
+    public static T[] ToArrayAndReset<T>(this LinkedBufferWriter<T> writer)
+    {
+        var written = writer.Written;
+        if (written == 0) return [];
+
+        var array =
+#if NET5_0_OR_GREATER
+            GC.AllocateUninitializedArray<T>(written);
+#else
+            new T[written];
+#endif
+
+        writer.TryWriteAndReset(array);
+
+        return array;
+    }
+
     public static async ValueTask WriteAndResetAsync(this LinkedBufferWriter<byte> writer, Stream stream, CancellationToken cancellationToken)
     {
         if (writer._written == 0) return;
