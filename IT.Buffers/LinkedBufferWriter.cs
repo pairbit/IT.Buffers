@@ -354,7 +354,9 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
     {
-        if (_written == 0) return;
+        //https://github.com/pairbit/IT.Buffers/issues/7
+        //if you do a check (written == 0), a leak may occur if method Advance is not called
+        //if (_written == 0) return;
 
 #if NET6_0_OR_GREATER
         foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
