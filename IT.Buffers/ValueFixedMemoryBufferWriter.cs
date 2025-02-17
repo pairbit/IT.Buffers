@@ -44,6 +44,8 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
 
     readonly bool IAdvancedBufferWriter<T>.HasMemory => true;
 
+    readonly bool IAdvancedBufferWriter<T>.IsFixed => true;
+
     public readonly int Capacity => _buffer.Length;
 
     public readonly int FreeCapacity

@@ -48,6 +48,8 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
 
     bool IAdvancedBufferWriter<T>.HasMemory => true;
 
+    bool IAdvancedBufferWriter<T>.IsFixed => false;
+
     public int Capacity => _buffer.Length;
 
     public int FreeCapacity

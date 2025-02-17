@@ -50,6 +50,8 @@ public struct ValueFixedArrayBufferWriter<T> : IAdvancedBufferWriter<T>
 
     readonly bool IAdvancedBufferWriter<T>.HasMemory => true;
 
+    readonly bool IAdvancedBufferWriter<T>.IsFixed => true;
+
     public readonly int Capacity
     {
         get

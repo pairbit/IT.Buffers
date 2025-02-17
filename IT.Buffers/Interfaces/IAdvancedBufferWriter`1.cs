@@ -17,7 +17,7 @@ public interface IAdvancedBufferWriter<T> : IBufferWriter<T>
 
     bool HasMemory { get; }
 
-    //bool IsFixed { get; }
+    bool IsFixed { get; }
 
     //void ResetWritten();
 

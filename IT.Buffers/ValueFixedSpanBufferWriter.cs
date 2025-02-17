@@ -35,6 +35,8 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
 
     readonly bool IAdvancedBufferWriter<T>.HasMemory => false;
 
+    readonly bool IAdvancedBufferWriter<T>.IsFixed => true;
+
     public readonly int Capacity => _buffer.Length;
 
     public readonly int FreeCapacity

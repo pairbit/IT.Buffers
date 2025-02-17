@@ -34,6 +34,8 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     bool IAdvancedBufferWriter<T>.HasMemory => true;
 
+    bool IAdvancedBufferWriter<T>.IsFixed => false;
+
     private ReadOnlySpan<T> FirstBufferWrittenSpan
     {
         get
