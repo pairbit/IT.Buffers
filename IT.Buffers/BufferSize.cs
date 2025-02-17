@@ -87,7 +87,7 @@ public static class BufferSize
                 newSize = capacity + sizeHint;
                 if ((uint)newSize > Max)
                 {
-                    throw new OutOfMemoryException($"Size {(uint)newSize} > {Max}");
+                    throw new OutOfMemoryException($"SizeHint {(uint)newSize} > {Max}");
                 }
             }
 
@@ -125,7 +125,7 @@ public static class BufferSize
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
         if (sizeHint == 0) sizeHint = 1;
 
-        if (sizeHint > Max) throw new OutOfMemoryException($"Size {sizeHint} > {Max}");
+        if (sizeHint > Max) throw new OutOfMemoryException($"SizeHint {sizeHint} > {Max}");
 
         var buffer = ArrayPool<T>.Shared.Rent(sizeHint);
 
