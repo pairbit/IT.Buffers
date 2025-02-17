@@ -7,11 +7,14 @@ namespace IT.Buffers.Extensions;
 
 public static class xBufferWriter
 {
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="OutOfMemoryException"></exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteSpan<T>(this IBufferWriter<T> writer, ReadOnlySpan<T> span)
     {
+        if (span.Length == 0) return;
+
         Debug.Assert(writer != null);
-        Debug.Assert(span.Length > 0);
 
         Span<T> dest;
         int destlen, len;

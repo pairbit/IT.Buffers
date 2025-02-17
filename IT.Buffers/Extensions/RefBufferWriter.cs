@@ -7,6 +7,8 @@ namespace IT.Buffers.Extensions;
 
 public static class RefBufferWriter
 {
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="OutOfMemoryException"></exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteSpan<TBufferWriter, T>(ref TBufferWriter writer, ReadOnlySpan<T> span)
         where TBufferWriter : IBufferWriter<T>
@@ -14,8 +16,9 @@ public static class RefBufferWriter
         , allows ref struct
 #endif
     {
+        if (span.Length == 0) return;
+
         Debug.Assert(writer != null);
-        Debug.Assert(span.Length > 0);
 
         Span<T> dest;
         int destlen, len;

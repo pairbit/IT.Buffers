@@ -26,6 +26,7 @@ public class ValueBufferWriterTest
     {
         ValueFixedMemoryBufferWriter<byte> memoryBuffer = default;
         memoryBuffer.Advance(0);
+        memoryBuffer.Write(ReadOnlySpan<byte>.Empty);
 
         Assert.That(memoryBuffer.Capacity, Is.EqualTo(0));
         Assert.That(memoryBuffer.FreeCapacity, Is.EqualTo(0));
@@ -37,6 +38,7 @@ public class ValueBufferWriterTest
 
         ValueFixedArrayBufferWriter<byte> arrayBuffer = default;
         arrayBuffer.Advance(0);
+        arrayBuffer.Write(ReadOnlySpan<byte>.Empty);
 
         Assert.That(arrayBuffer.Capacity, Is.EqualTo(0));
         Assert.That(arrayBuffer.FreeCapacity, Is.EqualTo(0));
