@@ -89,12 +89,14 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public void Advance(int count)
     {
-        if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count > 0)
+        {
+            var written = _written + count;
+            if (written > _buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
 
-        var written = _written + count;
-        if (written > _buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
-
-        _written = written;
+            _written = written;
+        }
     }
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>

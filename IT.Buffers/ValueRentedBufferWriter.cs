@@ -88,13 +88,15 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public void Advance(int count)
     {
-        var buffer = _buffer;
-        if (buffer == null || count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count > 0)
+        {
+            var buffer = _buffer ?? throw new ArgumentOutOfRangeException(nameof(count));
+            var written = _written + count;
+            if (written > buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
 
-        var written = _written + count;
-        if (written > buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
-
-        _written = written;
+            _written = written;
+        }
     }
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
@@ -143,7 +145,7 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>
         if (buffer != null && written > 0)
         {
             Debug.Assert(buffer.Length >= written);
-            
+
             RefBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(buffer, 0, written));
         }
     }

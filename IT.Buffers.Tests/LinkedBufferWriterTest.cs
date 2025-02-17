@@ -1,4 +1,6 @@
-﻿namespace IT.Buffers.Tests;
+﻿using System.Buffers;
+
+namespace IT.Buffers.Tests;
 
 public class LinkedBufferWriterTest
 {
@@ -31,6 +33,7 @@ public class LinkedBufferWriterTest
 
     private void Test(LinkedBufferWriter<byte> writer)
     {
+        Assert.Throws<ArgumentOutOfRangeException>(() => writer.Advance(-1));
         var i = 0;
         var e = writer.GetEnumerator();
         Assert.That(e.MoveNext(), Is.False);
@@ -74,5 +77,8 @@ public class LinkedBufferWriterTest
             }
             Assert.Throws<ArgumentOutOfRangeException>(() => writer.GetWrittenMemory(i));
         }
+
+        writer.Advance(0);
+        writer.Write(ReadOnlySpan<byte>.Empty);
     }
 }

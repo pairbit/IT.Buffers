@@ -1,4 +1,5 @@
 ﻿using IT.Buffers.Interfaces;
+using System.Buffers;
 
 namespace IT.Buffers.Tests;
 
@@ -24,6 +25,7 @@ public class ValueBufferWriterTest
     public void Test_Default()
     {
         ValueFixedMemoryBufferWriter<byte> memoryBuffer = default;
+        memoryBuffer.Advance(0);
 
         Assert.That(memoryBuffer.Capacity, Is.EqualTo(0));
         Assert.That(memoryBuffer.FreeCapacity, Is.EqualTo(0));
@@ -34,6 +36,7 @@ public class ValueBufferWriterTest
         Assert.Throws<OutOfMemoryException>(() => memoryBuffer.GetMemory(1));
 
         ValueFixedArrayBufferWriter<byte> arrayBuffer = default;
+        arrayBuffer.Advance(0);
 
         Assert.That(arrayBuffer.Capacity, Is.EqualTo(0));
         Assert.That(arrayBuffer.FreeCapacity, Is.EqualTo(0));
@@ -44,6 +47,7 @@ public class ValueBufferWriterTest
         Assert.Throws<OutOfMemoryException>(() => arrayBuffer.GetMemory(1));
 
         ValueFixedSpanBufferWriter<byte> spanBuffer = default;
+        spanBuffer.Advance(0);
 
         Assert.That(spanBuffer.Capacity, Is.EqualTo(0));
         Assert.That(spanBuffer.FreeCapacity, Is.EqualTo(0));
@@ -63,6 +67,9 @@ public class ValueBufferWriterTest
     private static void Test<TBufferWriter>(ref TBufferWriter writer)
         where TBufferWriter : IAdvancedBufferWriter<byte>
     {
+        writer.Advance(0);
+        writer.Write(ReadOnlySpan<byte>.Empty);
+
         Assert.That(writer.Written, Is.EqualTo(0));
 
         var span = writer.GetSpan();
@@ -85,6 +92,16 @@ public class ValueBufferWriterTest
             {
                 Assert.That(ex.Message, Is.EqualTo("Method 'GetMemory' is not supported"));
             }
+        }
+
+        try
+        {
+            writer.Advance(-1);
+            Assert.Fail();
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            Assert.That(ex.ParamName, Is.EqualTo("count"));
         }
 
         TestArray(ref writer, span);

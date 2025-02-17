@@ -77,13 +77,15 @@ public struct ValueFixedArrayBufferWriter<T> : IAdvancedBufferWriter<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int count)
     {
-        var buffer = _buffer;
-        if (buffer == null || count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count > 0)
+        {
+            var buffer = _buffer ?? throw new ArgumentOutOfRangeException(nameof(count));
+            var written = _written + count;
+            if (written > buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
 
-        var written = _written + count;
-        if (written > buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
-
-        _written = written;
+            _written = written;
+        }
     }
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>

@@ -128,7 +128,8 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _current = next;
         return next.FreeMemory;
     }
-
+    
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     public Span<T> GetSpan(int sizeHint = 0)
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
@@ -165,25 +166,27 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         return next.FreeSpan;
     }
 
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int count)
     {
-        //TODO: allow 0??
-        if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
-
-        if (_current.IsNull)
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count > 0)
         {
-            var firstBufferWritten = _firstBufferWritten + count;
-            if (firstBufferWritten > _firstBuffer.Length)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            if (_current.IsNull)
+            {
+                var firstBufferWritten = _firstBufferWritten + count;
+                if (firstBufferWritten > _firstBuffer.Length)
+                    throw new ArgumentOutOfRangeException(nameof(count));
 
-            _firstBufferWritten = firstBufferWritten;
+                _firstBufferWritten = firstBufferWritten;
+            }
+            else
+            {
+                _current.Advance(count);
+            }
+            _written += count;
         }
-        else
-        {
-            _current.Advance(count);
-        }
-        _written += count;
     }
 
     public bool TryWrite(Span<T> span)

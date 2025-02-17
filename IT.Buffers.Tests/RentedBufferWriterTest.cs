@@ -1,24 +1,27 @@
-﻿namespace IT.Buffers.Tests;
+﻿using System.Buffers;
+
+namespace IT.Buffers.Tests;
 
 public class RentedBufferWriterTest
 {
     [Test]
     public void Test()
     {
-        var buffer = RentedBufferWriter<byte>.Pool.Rent();
-
+        var writer = RentedBufferWriter<byte>.Pool.Rent();
+        
         try
         {
-            Test(buffer);
+            Test(writer);
         }
         finally
         {
-            Assert.That(RentedBufferWriter<byte>.Pool.TryReturn(buffer), Is.True);
+            Assert.That(RentedBufferWriter<byte>.Pool.TryReturn(writer), Is.True);
         }
     }
 
     private void Test(RentedBufferWriter<byte> writer)
     {
+        Assert.Throws<ArgumentOutOfRangeException>(() => writer.Advance(-1));
         Assert.That(writer.Capacity, Is.EqualTo(0));
         Assert.That(writer.FreeCapacity, Is.EqualTo(0));
         Assert.That(writer.Written, Is.EqualTo(0));
@@ -71,5 +74,8 @@ public class RentedBufferWriterTest
         newSpan = writer.GetSpan();
 
         Assert.That(writer.Capacity, Is.EqualTo(16));
+
+        writer.Advance(0);
+        writer.Write(ReadOnlySpan<byte>.Empty);
     }
 }
