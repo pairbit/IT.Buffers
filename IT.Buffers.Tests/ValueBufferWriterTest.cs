@@ -30,6 +30,8 @@ public class ValueBufferWriterTest
         Assert.That(memoryBuffer.Written, Is.EqualTo(0));
         Assert.That(memoryBuffer.GetSpan().IsEmpty, Is.True);
         Assert.That(memoryBuffer.GetMemory().IsEmpty, Is.True);
+        Assert.Throws<OutOfMemoryException>(() => memoryBuffer.GetSpan(1));
+        Assert.Throws<OutOfMemoryException>(() => memoryBuffer.GetMemory(1));
 
         ValueFixedArrayBufferWriter<byte> arrayBuffer = default;
 
@@ -38,6 +40,8 @@ public class ValueBufferWriterTest
         Assert.That(arrayBuffer.Written, Is.EqualTo(0));
         Assert.That(arrayBuffer.GetSpan().IsEmpty, Is.True);
         Assert.That(arrayBuffer.GetMemory().IsEmpty, Is.True);
+        Assert.Throws<OutOfMemoryException>(() => arrayBuffer.GetSpan(1));
+        Assert.Throws<OutOfMemoryException>(() => arrayBuffer.GetMemory(1));
 
         ValueFixedSpanBufferWriter<byte> spanBuffer = default;
 
@@ -45,6 +49,15 @@ public class ValueBufferWriterTest
         Assert.That(spanBuffer.FreeCapacity, Is.EqualTo(0));
         Assert.That(spanBuffer.Written, Is.EqualTo(0));
         Assert.That(spanBuffer.GetSpan().IsEmpty, Is.True);
+        try
+        {
+            spanBuffer.GetSpan(1);
+            Assert.Fail();
+        }
+        catch (OutOfMemoryException ex)
+        {
+            Assert.That(ex.Message, Is.EqualTo("SizeHint 1 > 0"));
+        }
     }
 
     private static void Test<TBufferWriter>(ref TBufferWriter writer)
@@ -52,17 +65,16 @@ public class ValueBufferWriterTest
     {
         Assert.That(writer.Written, Is.EqualTo(0));
 
-        var span = writer.GetSpan(1);
+        var span = writer.GetSpan();
+        Assert.That(span.Length > 0, Is.True);
 
         Random.Shared.NextBytes(span);
 
         writer.Advance(span.Length);
 
         Assert.That(writer.Written, Is.EqualTo(span.Length));
-        Assert.That(writer.GetSpan().IsEmpty, Is.True);
-        if (writer.HasMemory)
-            Assert.That(writer.GetMemory().IsEmpty, Is.True);
-        else
+        
+        if (!writer.HasMemory)
         {
             try
             {

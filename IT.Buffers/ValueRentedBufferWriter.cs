@@ -99,7 +99,7 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>
     /// <exception cref="OutOfMemoryException"></exception>
     public Memory<T> GetMemory(int sizeHint = 0)
     {
-        if (_buffer == null) return sizeHint == 0 ? default : _buffer = BufferSize.RentBuffer<T>(sizeHint);
+        if (_buffer == null) return _buffer = BufferSize.RentBuffer<T>(sizeHint);
 
         BufferSize.CheckAndResizeBuffer(ref _buffer, _written, sizeHint);
         return _buffer.AsMemory(_written);
@@ -109,7 +109,7 @@ public struct ValueRentedBufferWriter<T> : IAdvancedBufferWriter<T>
     /// <exception cref="OutOfMemoryException"></exception>
     public Span<T> GetSpan(int sizeHint = 0)
     {
-        if (_buffer == null) return sizeHint == 0 ? default : _buffer = BufferSize.RentBuffer<T>(sizeHint);
+        if (_buffer == null) return _buffer = BufferSize.RentBuffer<T>(sizeHint);
 
         BufferSize.CheckAndResizeBuffer(ref _buffer, _written, sizeHint);
         return _buffer.AsSpan(_written);

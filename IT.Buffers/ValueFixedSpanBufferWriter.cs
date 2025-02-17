@@ -62,6 +62,8 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
     readonly Memory<T> IBufferWriter<T>.GetMemory(int sizeHint)
         => throw new NotSupportedException($"Method '{nameof(IBufferWriter<T>.GetMemory)}' is not supported");
 
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="OutOfMemoryException"></exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly Span<T> GetSpan(int sizeHint = 0)
     {
@@ -70,7 +72,7 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
         var span = _buffer.Slice(_written);
         if (span.Length >= sizeHint) return span;
 
-        throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        throw new OutOfMemoryException($"SizeHint {sizeHint} > {span.Length}");
     }
 
     public void ResetWritten() => _written = 0;

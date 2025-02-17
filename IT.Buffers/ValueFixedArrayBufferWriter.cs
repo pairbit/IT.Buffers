@@ -84,32 +84,36 @@ public struct ValueFixedArrayBufferWriter<T> : IAdvancedBufferWriter<T>
         _written = written;
     }
 
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="OutOfMemoryException"></exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly Memory<T> GetMemory(int sizeHint = 0)
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
         var buffer = _buffer;
-        if (buffer == null) return sizeHint == 0 ? default : throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        if (buffer == null) return sizeHint == 0 ? default : throw new OutOfMemoryException($"SizeHint {sizeHint} > 0");
 
         var memory = buffer.AsMemory(_written);
         if (memory.Length >= sizeHint) return memory;
 
-        throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        throw new OutOfMemoryException($"SizeHint {sizeHint} > {memory.Length}");
     }
 
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="OutOfMemoryException"></exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly Span<T> GetSpan(int sizeHint = 0)
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
         var buffer = _buffer;
-        if (buffer == null) return sizeHint == 0 ? default : throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        if (buffer == null) return sizeHint == 0 ? default : throw new OutOfMemoryException($"SizeHint {sizeHint} > 0");
 
         var span = buffer.AsSpan(_written);
         if (span.Length >= sizeHint) return span;
 
-        throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        throw new OutOfMemoryException($"SizeHint {sizeHint} > {span.Length}");
     }
 
     public void ResetWritten() => _written = 0;

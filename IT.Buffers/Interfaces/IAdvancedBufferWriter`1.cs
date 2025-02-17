@@ -13,11 +13,13 @@ public interface IAdvancedBufferWriter<T> : IBufferWriter<T>
 
     //int FreeCapacity { get; }
 
-    //void ResetWritten();
-
     int Segments { get; }
 
     bool HasMemory { get; }
+
+    //bool IsFixed { get; }
+
+    //void ResetWritten();
 
     Memory<T> GetWrittenMemory(int segment = 0);
 

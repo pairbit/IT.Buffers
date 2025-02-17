@@ -38,7 +38,6 @@ public class LinkedBufferWriterTest
         for (int s = 0; s < 5; s++)
         {
             var span = writer.GetSpan();
-            if (span.IsEmpty) span = writer.GetSpan(1);
 
             Assert.That(writer.Segments, Is.EqualTo(s + 1));
 
@@ -60,7 +59,6 @@ public class LinkedBufferWriterTest
         for (int s = 0; s < 5; s++)
         {
             var span = writer.GetSpan();
-            if (span.IsEmpty) span = writer.GetSpan(1);
 
             Assert.That(writer.Segments, Is.EqualTo(s + 1));
 

@@ -25,6 +25,7 @@ internal struct BufferSegment<T>
 
     public BufferSegment(int size)
     {
+        //TODO: вынести на верх, добавить поддержку custom ArrayPool и сделать проверку на OutOfMemoryException($"Size {sizeHint} > {Max}")
         _buffer = ArrayPool<T>.Shared.Rent(size);
         _written = 0;
     }

@@ -67,6 +67,8 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
         _written = written;
     }
 
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="OutOfMemoryException"></exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly Memory<T> GetMemory(int sizeHint = 0)
     {
@@ -75,9 +77,11 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
         var memory = _buffer.Slice(_written);
         if (memory.Length >= sizeHint) return memory;
 
-        throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        throw new OutOfMemoryException($"SizeHint {sizeHint} > {memory.Length}");
     }
 
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="OutOfMemoryException"></exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly Span<T> GetSpan(int sizeHint = 0)
     {
@@ -86,7 +90,7 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
         var span = _buffer.Slice(_written).Span;
         if (span.Length >= sizeHint) return span;
 
-        throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        throw new OutOfMemoryException($"SizeHint {sizeHint} > {span.Length}");
     }
 
     public void ResetWritten() => _written = 0;
