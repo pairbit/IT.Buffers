@@ -7,6 +7,7 @@ namespace IT.Buffers;
 public static class BufferSize
 {
     public const int Min = 256;//2^8
+    public const int KB_Half = 512;//2^9
     public const int KB = 1024;//2^10
     public const int KB_2 = 2048;//2^11
     public const int KB_4 = 4096;//2^12
@@ -20,15 +21,31 @@ public static class BufferSize
     public const int KB_128 = 131072;//2^17
     public const int KB_256 = 262144;//2^18
     public const int KB_512 = 524288;//2^19
+    public const int MB_Half = 524288;//2^19
     public const int MB = 1048576;//2^20
-    public const int Max = 0X7FFFFFC7;//2147483591 = 2^31 - 57
-    public const int MaxHalf = Max / 2;//1073741795
+    public const int MB_2 = 2097152;//2^21
+    public const int MB_4 = 4194304;//2^22
+    public const int MB_8 = 8388608;//2^23
+    public const int MB_16 = 16777216;//2^24
+    public const int MB_32 = 33554432;//2^25
+    public const int MB_64 = 67108864;//2^26
+    public const int MB_128 = 134217728;//2^27
+    public const int MB_256 = 268435456;//2^28
+    public const int MB_512 = 536870912;//2^29
+    public const int GB_Half = 536870912;//2^29
+    public const int Max_Half = 1073741795;//0X7FFFFFC7 / 2 = 2^30 - 29
+    public const int GB = 1073741824;//2^30
+    public const int Max = 2147483591;// 0X7FFFFFC7 = 2^31 - 57
 
 #if NET
     static BufferSize()
     {
         Debug.Assert(Max == Array.MaxLength);
     }
+
+    public static int Log2(int size) => System.Numerics.BitOperations.Log2((uint)size);
+
+    public static int Log2(long size) => System.Numerics.BitOperations.Log2((ulong)size);
 #endif
 
     public static int GetDoubleCapacity(int size)
@@ -53,7 +70,7 @@ public static class BufferSize
 
         // If we've reached ~1GB written, grow to the maximum buffer
         // length to avoid incessant minimal growths causing perf issues.
-        if (written >= MaxHalf)
+        if (written >= Max_Half)
         {
             sizeHint = Math.Max(sizeHint, Max - capacity);
         }
@@ -98,7 +115,7 @@ public static class BufferSize
             Debug.Assert(buffer.Length > capacity);
             Debug.Assert(buffer.Length - written > 0);
         }
-        
+
         Debug.Assert(buffer.Length - written >= sizeHint);
     }
 
