@@ -1,6 +1,6 @@
 ﻿using System.Buffers;
 
-namespace IT.Buffers;
+namespace IT.Buffers.Internal;
 
 //BufferWriterFactory??
 internal class BufferWriters

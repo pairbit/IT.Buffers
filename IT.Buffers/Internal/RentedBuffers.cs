@@ -2,9 +2,9 @@
 using System.Buffers;
 using System.Collections.Generic;
 
-namespace IT.Buffers;
+namespace IT.Buffers.Internal;
 
-public class RentedBuffers
+internal class RentedBuffers
 {
     private readonly List<RentedBuffer> _list;
     private int _depth;
@@ -104,7 +104,7 @@ public class RentedBuffers
             var clear = 0;
 #if NET6_0_OR_GREATER
             var span = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(list);
-            
+
             for (var i = span.Length - 1; i >= 0; i--)
             {
                 var rentedBuffer = span[i];

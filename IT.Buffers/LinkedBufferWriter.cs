@@ -164,6 +164,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int count)
     {
+        //TODO: allow 0??
         if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
 
         if (_current.IsNull)
