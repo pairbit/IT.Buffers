@@ -12,6 +12,14 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
     private Stack<SequenceSegment<T>>? _stack;
     private readonly List<SequenceSegment<T>> _list;
 
+    public int Count => _list.Count;
+
+    public int Capacity
+    {
+        get => _list.Capacity;
+        set => _list.Capacity = value;
+    }
+
     public ReadOnlySequenceBuilder()
     {
         _list = [];
@@ -24,8 +32,7 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
 
     public void EnsureCapacity(int capacity)
     {
-        if (capacity > _list.Capacity)
-            _list.Capacity = capacity;
+        _list.EnsureCapacity(capacity);
     }
 
     public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, bool isRented = false)

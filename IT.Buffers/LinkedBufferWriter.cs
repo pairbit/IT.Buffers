@@ -17,6 +17,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     internal readonly List<BufferSegment<T>> _buffers;
 
+    //TODO: add to BufferSegment
     internal readonly T[] _firstBuffer;
     internal int _firstBufferWritten;
 
@@ -56,7 +57,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _segments = 0;
     }
 
-    public LinkedBufferWriter(int bufferSize, bool useFirstBuffer = false
+    public LinkedBufferWriter(int bufferSize, bool useFirstBuffer = false, int segmentsCapacity = 0
 #if NET5_0_OR_GREATER
         , bool pinned = false
 #endif
@@ -79,12 +80,17 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             _firstBuffer = [];
             _segments = 0;
         }
-        _buffers = [];
+        _buffers = new List<BufferSegment<T>>(segmentsCapacity);
         _firstBufferWritten = 0;
         _current = default;
         _nextBufferSize = bufferSize;
         _written = 0;
     }
+
+    //public void EnsureCapacitySegments(int capacity)
+    //{
+
+    //}
 
     //public void ResetWritten()
     //{
