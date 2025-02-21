@@ -27,6 +27,15 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     internal long _written;
     private int _segments;
 
+    private ReadOnlySpan<T> FirstBufferWrittenSpan
+    {
+        get
+        {
+            Debug.Assert(_firstBuffer.Length >= _firstBufferWritten);
+            return new ReadOnlySpan<T>(_firstBuffer, 0, _firstBufferWritten);
+        }
+    }
+
     public int Written => checked((int)_written);
 
     public long WrittenLong => _written;
@@ -37,12 +46,13 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     bool IAdvancedBufferWriter<T>.IsFixed => false;
 
-    private ReadOnlySpan<T> FirstBufferWrittenSpan
+    public int NextBufferSize
     {
-        get
+        get { return _nextBufferSize; }
+        set
         {
-            Debug.Assert(_firstBuffer.Length >= _firstBufferWritten);
-            return new ReadOnlySpan<T>(_firstBuffer, 0, _firstBufferWritten);
+            if (value < 0 || value > BufferSize.Max) throw new ArgumentOutOfRangeException(nameof(value));
+            _nextBufferSize = value;
         }
     }
 
@@ -117,24 +127,15 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             if (freeMemory.Length >= sizeHint) return freeMemory;
         }
 
-        BufferSegment<T> next;
-        var nextBufferSize = _nextBufferSize;
-        if (nextBufferSize >= sizeHint)
-        {
-            next = new BufferSegment<T>(nextBufferSize);
-            _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
-        }
-        else
-        {
-            next = new BufferSegment<T>(sizeHint);
-            if (nextBufferSize == 0) _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
-        }
-        _segments++;
+        var next = GetNextBuffer(sizeHint);
+
         if (_current.Written != 0) _buffers.Add(_current);
+
         _current = next;
+
         return next.FreeMemory;
     }
-    
+
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public Span<T> GetSpan(int sizeHint = 0)
     {
@@ -154,21 +155,12 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             if (freeSpan.Length >= sizeHint) return freeSpan;
         }
 
-        BufferSegment<T> next;
-        var nextBufferSize = _nextBufferSize;
-        if (nextBufferSize >= sizeHint)
-        {
-            next = new BufferSegment<T>(nextBufferSize);
-            _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
-        }
-        else
-        {
-            next = new BufferSegment<T>(sizeHint);
-            if (nextBufferSize == 0) _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
-        }
-        _segments++;
+        var next = GetNextBuffer(sizeHint);
+
         if (_current.Written != 0) _buffers.Add(_current);
+
         _current = next;
+
         return next.FreeSpan;
     }
 
@@ -397,6 +389,24 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _current = default;
         _nextBufferSize = _firstBuffer.Length;
         _segments = _firstBuffer.Length == 0 ? 0 : 1;
+    }
+
+    private BufferSegment<T> GetNextBuffer(int sizeHint)
+    {
+        BufferSegment<T> next;
+        var nextBufferSize = _nextBufferSize;
+        if (nextBufferSize >= sizeHint)
+        {
+            next = new BufferSegment<T>(nextBufferSize);
+            _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
+        }
+        else
+        {
+            next = new BufferSegment<T>(sizeHint);
+            if (nextBufferSize == 0) _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
+        }
+        _segments++;
+        return next;
     }
 
     void IDisposable.Dispose() => Reset();

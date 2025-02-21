@@ -1,5 +1,6 @@
 ﻿using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace IT.Buffers.Tests;
 
@@ -64,6 +65,9 @@ public class BufferSizeTest
     [Test]
     public void SizeOfTest()
     {
+        Assert.That(Unsafe.SizeOf<ArraySegment<byte>>(), Is.EqualTo(16));
+        Assert.That(Unsafe.SizeOf<RentedArray<byte>>(), Is.EqualTo(16));
+
         Assert.That(Unsafe.SizeOf<ReadOnlySequence<byte>>(), Is.EqualTo(24));
         Assert.That(Unsafe.SizeOf<SequenceSegments<byte>>(), Is.EqualTo(16));
 
@@ -77,5 +81,19 @@ public class BufferSizeTest
         Assert.That(Unsafe.SizeOf<Span<byte>>(), Is.EqualTo(16));
         Assert.That(Unsafe.SizeOf<ValueFixedSpanBufferWriter<byte>>(), Is.EqualTo(24));
 #endif
+    }
+
+    //TODO: why not 12 bytes?
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public readonly struct RentedArray<T>
+    {
+        private readonly T[]? _array;
+        private readonly int _index;
+
+        public RentedArray(T[]? array, int index)
+        {
+            _array = array;
+            _index = index;
+        }
     }
 }
