@@ -105,12 +105,17 @@ public static class BufferSize
 
                 buffer = ArrayPool<T>.Shared.Rent(newSize);
 
-                Debug.Assert(buffer.Length >= written);
+                try
+                {
+                    Debug.Assert(buffer.Length >= written);
 
-                if (written > 0)
-                    oldBuffer.AsSpan(0, written).CopyTo(buffer);
-
-                BufferPool.Return(oldBuffer);
+                    if (written > 0)
+                        oldBuffer.AsSpan(0, written).CopyTo(buffer);
+                }
+                finally
+                {
+                    BufferPool.Return(oldBuffer);
+                }
             }
 
             Debug.Assert(buffer.Length > capacity);
