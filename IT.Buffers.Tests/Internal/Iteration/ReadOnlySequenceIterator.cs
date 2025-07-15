@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Buffers;
 
-namespace IT.Buffers.Iteration;
+namespace IT.Buffers.Tests.Internal.Iteration;
 
 internal struct ReadOnlySequenceIterator<T> : IReadOnlyMemoryIterator<T>
 {

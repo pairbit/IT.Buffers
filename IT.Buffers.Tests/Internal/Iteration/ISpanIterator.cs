@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace IT.Buffers.Iteration;
+namespace IT.Buffers.Tests.Internal.Iteration;
 
 internal interface ISpanIterator<T>
 {
