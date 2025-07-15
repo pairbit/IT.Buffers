@@ -1,7 +1,8 @@
-﻿namespace IT.Buffers.Tests.Internal.Iteration;
+﻿using System.Buffers;
 
-//SequenceSegmentIndex
-internal readonly struct SequenceRange
+namespace IT.Buffers.Tests.Internal.Iteration;
+
+internal readonly struct SegmentRange
 {
     private readonly int _startSegment;
     private readonly int _startIndex;
@@ -16,7 +17,7 @@ internal readonly struct SequenceRange
 
     public int EndIndex => _endIndex;
 
-    public SequenceRange(int startSegment, int startIndex, int endSegment, int endIndex)
+    public SegmentRange(int startSegment, int startIndex, int endSegment, int endIndex)
     {
         _startSegment = startSegment;
         _startIndex = startIndex;
