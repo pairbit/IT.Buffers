@@ -73,6 +73,25 @@ public class ReadOnlySequenceTest
         }
     }
 
+    [Test]
+    public void SeqTest()
+    {
+        var span = "--Sep--body--Sep--"u8;
+        Assert.That(span.Length, Is.EqualTo(18));
+        var seq = span.ToArray().AsMemory().Split(2);
+        Assert.That(seq.SequenceEqual(span), Is.True);
+
+        var start = seq.Start;
+        Assert.That(seq.GetPosition(0), Is.EqualTo(start));
+        Assert.That(seq.GetPosition(1), Is.EqualTo(new SequencePosition(start.GetObject(), 1)));
+        Assert.That(seq.GetPosition(0, start), Is.EqualTo(start));
+
+        var end = seq.End;
+        Assert.That(seq.GetPosition(0, end), Is.EqualTo(end));
+
+        Assert.That(seq.PositionOf((byte)'S'), Is.EqualTo(seq.GetPosition(2)));
+    }
+
     private static ReadOnlySequence<byte> RentSequence(int segments, int bufferSize = 10)
     {
         if (segments == 0) return ReadOnlySequence<byte>.Empty;
