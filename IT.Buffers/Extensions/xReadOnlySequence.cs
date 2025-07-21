@@ -111,13 +111,13 @@ public static class xReadOnlySequence
                 {
                     if (span.SequenceEqual(value.Slice(valueLengthPart)))
                     {
-                        return new(current.GetObject(), remainder);
+                        return current.AddOffset(remainder);
                         //return next.IsEnd() ? new(current.GetObject(), remainder) : next;
                     }
                 }
                 else if (span.StartsWith(value.Slice(valueLengthPart)))
                 {
-                    return new(current.GetObject(), remainder);
+                    return current.AddOffset(remainder);
                 }
             }
 
@@ -125,7 +125,7 @@ public static class xReadOnlySequence
             if (index > -1)
             {
                 if (valueLength == valueLengthPart)
-                    return new(current.GetObject(), index + valueLength);
+                    return current.AddOffset(index + valueLength);
             }
         }
         return new(null, -1);
