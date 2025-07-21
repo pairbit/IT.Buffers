@@ -49,12 +49,13 @@ public class ReadOnlySequence_PositionOfTest
 
             var start = seq.PositionOfEnd(sep);
             Assert.That(start.IsNegative(), Is.False);
-            
+
             var sliced = seq.Slice(start);
             Assert.That(sliced.SequenceEqual("body--Sep--"u8), Is.True);
 
             var end = sliced.PositionOf(sep);
             Assert.That(end.IsNegative(), Is.False);
+            Assert.That(seq.PositionOf(sep, start), Is.EqualTo(end));
 
             var body = sliced.Slice(0, end);
             Assert.That(body.SequenceEqual("body"u8), Is.True);

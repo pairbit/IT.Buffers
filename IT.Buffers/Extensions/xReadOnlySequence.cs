@@ -13,7 +13,25 @@ public static class xReadOnlySequence
         ?
 #endif
     {
-        var current = sequence.Start;
+        return PositionOf(sequence, value, sequence.Start);
+    }
+
+    public static SequencePosition PositionOfEnd<T>(this in ReadOnlySequence<T> sequence, ReadOnlySpan<T> value)
+        where T : IEquatable<T>
+#if NET7_0_OR_GREATER
+        ?
+#endif
+    {
+        return PositionOfEnd(sequence, value, sequence.Start);
+    }
+
+    public static SequencePosition PositionOf<T>(this in ReadOnlySequence<T> sequence, ReadOnlySpan<T> value, SequencePosition start)
+        where T : IEquatable<T>
+#if NET7_0_OR_GREATER
+        ?
+#endif
+    {
+        var current = start;
         var next = current;
         var valueLength = value.Length;
         SequencePosition position = default;
@@ -68,13 +86,13 @@ public static class xReadOnlySequence
         return new(null, -1);
     }
 
-    public static SequencePosition PositionOfEnd<T>(this in ReadOnlySequence<T> sequence, ReadOnlySpan<T> value)
+    public static SequencePosition PositionOfEnd<T>(this in ReadOnlySequence<T> sequence, ReadOnlySpan<T> value, SequencePosition start)
         where T : IEquatable<T>
 #if NET7_0_OR_GREATER
         ?
 #endif
     {
-        var current = sequence.Start;
+        var current = start;
         var next = current;
         var valueLength = value.Length;
         int valueLengthPart = 0;
