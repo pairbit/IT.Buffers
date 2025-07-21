@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace IT.Buffers.Internal;
+namespace IT.Buffers.Extensions;
 
-internal static class xReadOnlySpan
+public static class xReadOnlySpan
 {
     public static int IndexOfPart<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, out int length)
         where T : IEquatable<T>

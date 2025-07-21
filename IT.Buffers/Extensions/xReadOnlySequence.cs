@@ -1,6 +1,4 @@
-﻿#if NET
-using IT.Buffers.Internal;
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,7 +7,7 @@ namespace IT.Buffers.Extensions;
 
 public static class xReadOnlySequence
 {
-    public static SequencePosition PositionOf<T>(this in ReadOnlySequence<T> sequence, ReadOnlySpan<T> value) 
+    public static SequencePosition PositionOf<T>(this in ReadOnlySequence<T> sequence, ReadOnlySpan<T> value)
         where T : IEquatable<T>
 #if NET7_0_OR_GREATER
         ?
@@ -62,7 +60,7 @@ public static class xReadOnlySequence
             {
                 position = new(current.GetObject(), index);
 
-                if (valueLength == valueLengthPart) 
+                if (valueLength == valueLengthPart)
                     return position;
             }
             current = next;
@@ -70,8 +68,8 @@ public static class xReadOnlySequence
         return new(null, -1);
     }
 
-    public static SequencePosition EndPositionOf<T>(this in ReadOnlySequence<T> sequence, ReadOnlySpan<T> value)
-            where T : IEquatable<T>
+    public static SequencePosition PositionOfEnd<T>(this in ReadOnlySequence<T> sequence, ReadOnlySpan<T> value)
+        where T : IEquatable<T>
 #if NET7_0_OR_GREATER
         ?
 #endif
@@ -108,12 +106,12 @@ public static class xReadOnlySequence
                 {
                     if (span.SequenceEqual(value.Slice(valueLengthPart)))
                     {
-                        return new(current.GetObject(), spanLength);
+                        return next;
                     }
                 }
                 else if (span.StartsWith(value.Slice(valueLengthPart)))
                 {
-                    return new(current.GetObject(), spanLength);
+                    return new(current.GetObject(), remainder);
                 }
             }
 
@@ -128,6 +126,7 @@ public static class xReadOnlySequence
         return new(null, -1);
     }
 
+#if NET
     public static bool SequenceEqual<T>(this in ReadOnlySequence<T> first, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer = null)
     {
         if (first.IsSingleSegment) return first.FirstSpan.SequenceEqual(other, comparer);
@@ -193,5 +192,5 @@ public static class xReadOnlySequence
 
         return true;
     }
-}
 #endif
+}

@@ -22,9 +22,11 @@ public class ReadOnlySequence_PositionOfTest
             Assert.That(seq.PositionOf(sep), Is.EqualTo(seq.Start));
 
             var end = seq.GetPosition(sep.Length);
+            Assert.That(seq.PositionOfEnd(sep), Is.EqualTo(end));
             Assert.That(seq.Slice(end).SequenceEqual("body--Sep--"u8), Is.True);
 
-            //Assert.That(seq.EndPositionOf(sep), Is.EqualTo(end));
+            var pos = seq.PositionOf("y--Sep--"u8);
+            Assert.That(seq.Slice(seq.Start, pos).SequenceEqual("--Sep--bod"u8), Is.True);
         }
     }
 }
