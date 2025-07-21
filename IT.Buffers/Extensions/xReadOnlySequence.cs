@@ -32,18 +32,13 @@ public static class xReadOnlySequence
 #endif
     {
         var current = start;
-        var next = current;
         var valueLength = value.Length;
         SequencePosition position = default;
         int valueLengthPart = 0;
-        while (sequence.TryGet(ref next, out var memory))
+        for (var next = current; sequence.TryGet(ref next, out var memory); current = next)
         {
             var spanLength = memory.Length;
-            if (spanLength == 0)
-            {
-                current = next;
-                continue;
-            }
+            if (spanLength == 0) continue;
 
             var span = memory.Span;
             if (valueLengthPart > 0)
@@ -56,7 +51,6 @@ public static class xReadOnlySequence
                     if (span.SequenceEqual(value.Slice(valueLengthPart, spanLength)))
                     {
                         valueLengthPart += spanLength;
-                        current = next;
                         continue;
                     }
                 }
@@ -81,7 +75,6 @@ public static class xReadOnlySequence
                 if (valueLength == valueLengthPart)
                     return position;
             }
-            current = next;
         }
         return new(null, -1);
     }
@@ -93,17 +86,12 @@ public static class xReadOnlySequence
 #endif
     {
         var current = start;
-        var next = current;
         var valueLength = value.Length;
         int valueLengthPart = 0;
-        while (sequence.TryGet(ref next, out var memory))
+        for (var next = current; sequence.TryGet(ref next, out var memory); current = next)
         {
             var spanLength = memory.Length;
-            if (spanLength == 0)
-            {
-                current = next;
-                continue;
-            }
+            if (spanLength == 0) continue;
 
             var span = memory.Span;
             if (valueLengthPart > 0)
@@ -116,7 +104,6 @@ public static class xReadOnlySequence
                     if (span.SequenceEqual(value.Slice(valueLengthPart, spanLength)))
                     {
                         valueLengthPart += spanLength;
-                        current = next;
                         continue;
                     }
                 }
@@ -140,7 +127,6 @@ public static class xReadOnlySequence
                 if (valueLength == valueLengthPart)
                     return new(current.GetObject(), index + valueLength);
             }
-            current = next;
         }
         return new(null, -1);
     }
