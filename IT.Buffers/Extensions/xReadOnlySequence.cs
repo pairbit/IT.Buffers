@@ -131,7 +131,6 @@ public static class xReadOnlySequence
         return new(null, -1);
     }
 
-#if NET
     public static bool SequenceEqual<T>(this in ReadOnlySequence<T> first, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer = null)
     {
         if (first.IsSingleSegment) return first.FirstSpan.SequenceEqual(other, comparer);
@@ -197,5 +196,4 @@ public static class xReadOnlySequence
 
         return true;
     }
-#endif
 }
