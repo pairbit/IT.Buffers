@@ -58,7 +58,7 @@ public static class xReadOnlySequence
             var index = span.IndexOfPart(value, out valueLengthPart);
             if (index > -1)
             {
-                position = new(current.GetObject(), index);
+                position = current.AddOffset(index);
 
                 if (valueLength == valueLengthPart)
                     return position;
@@ -106,7 +106,8 @@ public static class xReadOnlySequence
                 {
                     if (span.SequenceEqual(value.Slice(valueLengthPart)))
                     {
-                        return next.IsEnd() ? new(current.GetObject(), remainder) : next;
+                        return new(current.GetObject(), remainder);
+                        //return next.IsEnd() ? new(current.GetObject(), remainder) : next;
                     }
                 }
                 else if (span.StartsWith(value.Slice(valueLengthPart)))
