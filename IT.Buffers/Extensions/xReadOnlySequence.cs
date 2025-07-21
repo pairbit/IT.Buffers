@@ -106,7 +106,7 @@ public static class xReadOnlySequence
                 {
                     if (span.SequenceEqual(value.Slice(valueLengthPart)))
                     {
-                        return next;
+                        return next.IsEnd() ? new(current.GetObject(), remainder) : next;
                     }
                 }
                 else if (span.StartsWith(value.Slice(valueLengthPart)))
