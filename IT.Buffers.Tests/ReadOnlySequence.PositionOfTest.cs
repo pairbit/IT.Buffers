@@ -47,6 +47,11 @@ public class ReadOnlySequence_PositionOfTest
             var seq = memory.SplitBySegments(i);
             Assert.That(seq.SequenceEqual(span), Is.True);
 
+            var current = seq.Start;
+            var pos = seq.PositionOf(sep, ref current);
+            Assert.That(pos.IsNegative(), Is.False);
+            Assert.That(seq.Slice(pos, current).SequenceEqual(sep), Is.True);
+
             var start = seq.PositionOfEnd(sep);
             Assert.That(start.IsNegative(), Is.False);
 
