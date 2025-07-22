@@ -196,7 +196,7 @@ public static class xReadOnlySequence
 #endif
         => StartsWith(sequence, value, sequence.Start);
 
-    public static bool StartsWith<T>(this in ReadOnlySequence<T> sequence, ReadOnlySpan<T> value, SequencePosition current)
+    public static bool StartsWith<T>(this in ReadOnlySequence<T> sequence, ReadOnlySpan<T> value, SequencePosition start)
         where T : IEquatable<T>
 #if NET7_0_OR_GREATER
         ?
@@ -204,7 +204,7 @@ public static class xReadOnlySequence
     {
         var valueLength = value.Length;
         int valueLengthPart = 0;
-        for (var next = current; sequence.TryGet(ref next, out var memory); current = next)
+        while (sequence.TryGet(ref start, out var memory))
         {
             var spanLength = memory.Length;
             if (spanLength == 0) continue;

@@ -15,7 +15,11 @@ public class ReadOnlySequence_StartsWithTest
         {
             var seq = memory.SplitBySegments(i);
             Assert.That(seq.StartsWith("--"u8), Is.True);
+
+            Assert.That(seq.StartsWith("--bo-"u8), Is.False);
+            Assert.That(seq.StartsWith("---++"u8), Is.False);
             Assert.That(seq.StartsWith("---"u8), Is.False);
+            Assert.That(seq.StartsWith("++"u8), Is.False);
         }
     }
 }
