@@ -41,4 +41,44 @@ public class ReadOnlySequence_StartsWithTest
             Assert.That(seq.StartsWith("++"u8), Is.False);
         }
     }
+
+    [Test]
+    public void StartsWithTest2()
+    {
+        var span = "prefix--bo"u8;
+        var memory = span.ToArray().AsMemory();
+        var length = span.Length;
+
+        for (int i = 1; i <= length; i++)
+        {
+            var seq = memory.SplitBySegments(i);
+            var start = seq.GetPosition(6);
+
+            Assert.That(seq.StartsWith("-"u8, start), Is.True);
+            Assert.That(seq.StartsWith("--"u8, start), Is.True);
+            Assert.That(seq.StartsWith("--b"u8, start), Is.True);
+            Assert.That(seq.StartsWith("--bo"u8, start), Is.True);
+
+            var current = start;
+            Assert.That(seq.StartsWith("-"u8, ref current), Is.True);
+            Assert.That(seq.Slice(current).SequenceEqual("-bo"u8), Is.True);
+
+            current = start;
+            Assert.That(seq.StartsWith("--"u8, ref current), Is.True);
+            Assert.That(seq.Slice(current).SequenceEqual("bo"u8), Is.True);
+
+            current = start;
+            Assert.That(seq.StartsWith("--b"u8, ref current), Is.True);
+            Assert.That(seq.Slice(current).SequenceEqual("o"u8), Is.True);
+
+            current = start;
+            Assert.That(seq.StartsWith("--bo"u8, ref current), Is.True);
+            Assert.That(seq.Slice(current).IsEmpty, Is.True);
+
+            Assert.That(seq.StartsWith("--bo-"u8, start), Is.False);
+            Assert.That(seq.StartsWith("---++"u8, start), Is.False);
+            Assert.That(seq.StartsWith("---"u8, start), Is.False);
+            Assert.That(seq.StartsWith("++"u8, start), Is.False);
+        }
+    }
 }
