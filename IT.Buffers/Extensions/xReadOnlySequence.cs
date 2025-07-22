@@ -284,13 +284,13 @@ public static class xReadOnlySequence
                 {
                     if (span.SequenceEqual(value.Slice(valueLengthPart)))
                     {
-                        //current = current.AddOffset(remainder);
+                        current = current.AddOffset(remainder);
                         return true;
                     }
                 }
                 else if (span.StartsWith(value.Slice(valueLengthPart)))
                 {
-                    //current = current.AddOffset(remainder);
+                    current = current.AddOffset(remainder);
                     return true;
                 }
                 return false;
@@ -298,7 +298,12 @@ public static class xReadOnlySequence
 
             if (spanLength >= valueLength)
             {
-                return span.StartsWith(value);
+                if (span.StartsWith(value))
+                {
+                    current = current.AddOffset(valueLength);
+                    return true;
+                }
+                return false;
             }
 
             if (!value.Slice(0, spanLength).SequenceEqual(span))
