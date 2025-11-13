@@ -246,7 +246,11 @@ internal sealed class BoundedConcurrentQueue<T>
 
 internal class PaddingHelpers
 {
-    public const int CACHE_LINE_SIZE = 128;
+#if TARGET_ARM64 || TARGET_LOONGARCH64
+    internal const int CACHE_LINE_SIZE = 128;
+#else
+    internal const int CACHE_LINE_SIZE = 64;
+#endif
 }
 
 /// <summary>Padded head and tail indices, to avoid false sharing between producers and consumers.</summary>
