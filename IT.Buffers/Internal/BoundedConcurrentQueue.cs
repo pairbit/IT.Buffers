@@ -23,7 +23,7 @@ internal sealed class BoundedConcurrentQueue<T>
     public BoundedConcurrentQueue(int power2 = 5)
     {
         if (power2 < 1 || power2 > 30) throw new System.ArgumentOutOfRangeException(nameof(power2));
-        
+
         var boundedLength = 2 << (power2 - 1);
 
         Debug.Assert(boundedLength >= 2, $"Must be >= 2, got {boundedLength}");
@@ -133,6 +133,19 @@ internal sealed class BoundedConcurrentQueue<T>
                     );
             }
         }
+    }
+
+    public int GetCount()
+    {
+        int head = Volatile.Read(ref _headAndTail.Head);
+        int tail = Volatile.Read(ref _headAndTail.Tail);
+        if (head != tail && head != tail - FreezeOffset)
+        {
+            head &= _slotsMask;
+            tail &= _slotsMask;
+            return head < tail ? tail - head : _slots.Length - head + tail;
+        }
+        return 0;
     }
 
     /// <summary>Tries to peek at an element from the queue, without removing it.</summary>

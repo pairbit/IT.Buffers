@@ -40,17 +40,21 @@ internal class BoundedConcurrentQueueTest
     public void IsEmptyTest()
     {
         var queue = new BoundedConcurrentQueue<byte[]>(1);
-
+        
+        Assert.That(queue.Capacity, Is.EqualTo(2));
         Assert.That(queue.IsEmpty(), Is.True);
+        Assert.That(queue.GetCount(), Is.EqualTo(0));
 
         Assert.That(queue.TryEnqueue([]), Is.True);
-
+        
         Assert.That(queue.IsEmpty(), Is.False);
+        Assert.That(queue.GetCount(), Is.EqualTo(1));
 
         Assert.That(queue.TryDequeue(out var array), Is.True);
         Assert.That(array != null && array.Length == 0, Is.True);
 
         Assert.That(queue.IsEmpty(), Is.True);
+        Assert.That(queue.GetCount(), Is.EqualTo(0));
     }
 
     [Test]
