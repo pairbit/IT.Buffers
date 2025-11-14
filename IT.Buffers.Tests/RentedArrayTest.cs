@@ -42,7 +42,17 @@ internal class RentedArrayTest
 
         Assert.That(BufferPool.TryReturn(rented), Is.True);
 
+        rented = BufferPool.RentArray<byte>(BufferSize.GB);
 
+        Equals(rented, length: BufferSize.GB, count: BufferSize.GB, type: RentedArrayType.Shared);
+
+        Assert.That(BufferPool.TryReturn(rented), Is.True);
+
+        rented = BufferPool.RentArray<byte>(BufferSize.GB + 1);
+
+        Equals(rented, length: BufferSize.GB + 1, count: BufferSize.GB + 1, type: RentedArrayType.None);
+
+        Assert.That(BufferPool.TryReturn(rented), Is.False);
     }
 
     private static void Equals(RentedArray<byte> array,
