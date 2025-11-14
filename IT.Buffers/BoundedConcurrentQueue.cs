@@ -4,12 +4,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace IT.Buffers.Internal;
+namespace IT.Buffers;
 
 //14/10/2022 6:41 AM
 //https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Collections/Concurrent/ConcurrentQueueSegment.cs
 [DebuggerDisplay("Capacity = {Capacity}")]
-internal sealed class BoundedConcurrentQueue<T>
+public sealed class BoundedConcurrentQueue<T>
 {
     private readonly Slot[] _slots; // SOS's ThreadPool command depends on this name
     private readonly int _slotsMask;

@@ -1,6 +1,4 @@
-﻿using IT.Buffers.Internal;
-
-namespace IT.Buffers.Tests.Internal;
+﻿namespace IT.Buffers.Tests;
 
 internal class BoundedConcurrentQueueTest
 {
