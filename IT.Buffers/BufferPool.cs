@@ -10,8 +10,7 @@ public static class BufferPool
     public static RentedArray<T> RentArray<T>(int minimumLength)
     {
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
-        return new(array, 0, minimumLength,
-            minimumLength == 0 || minimumLength > BufferSize.GB
+        return new(array, 0, minimumLength, minimumLength == 0 || minimumLength > BufferSize.GB
             ? RentedArrayType.None : RentedArrayType.Shared);
     }
 
