@@ -12,6 +12,14 @@ namespace IT.Buffers;
 [DebuggerDisplay("Capacity = {Capacity}")]
 public sealed class BoundedConcurrentQueue<T>
 {
+    [StructLayout(LayoutKind.Auto)]
+    [DebuggerDisplay("Item = {Item}, SequenceNumber = {SequenceNumber}")]
+    struct Slot
+    {
+        public T? Item;
+        public int SequenceNumber;
+    }
+
     private readonly Slot[] _slots; // SOS's ThreadPool command depends on this name
     private readonly int _slotsMask;
     private PaddedHeadAndTail _headAndTail;
@@ -40,13 +48,15 @@ public sealed class BoundedConcurrentQueue<T>
         }
     }
 
-    /// <summary>Gets the number of elements this segment can store.</summary>
-    public int Capacity => _slots.Length;
-
     /// <summary>Gets the "freeze offset" for this segment.</summary>
     private int FreezeOffset => _slots.Length * 2;
 
+    /// <summary>Gets the number of elements this segment can store.</summary>
+    public int Capacity => _slots.Length;
+
     public bool IsFrozen => _frozenForEnqueues;
+
+    public bool IsPreservedForObservation => _preservedForObservation;
 
     public void Freeze() // must only be called while queue's segment lock is held
     {
@@ -215,13 +225,5 @@ public sealed class BoundedConcurrentQueue<T>
                 return false;
             }
         }
-    }
-
-    [StructLayout(LayoutKind.Auto)]
-    [DebuggerDisplay("Item = {Item}, SequenceNumber = {SequenceNumber}")]
-    internal struct Slot
-    {
-        public T? Item;
-        public int SequenceNumber;
     }
 }
