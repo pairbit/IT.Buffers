@@ -19,7 +19,7 @@ internal class BoundedConcurrentQueueTest
     [Test]
     public void EnqueueDequeueTest()
     {
-        var q = new System.Collections.Concurrent.ConcurrentQueue<byte[]>();
+        //var q = new System.Collections.Concurrent.ConcurrentQueue<byte[]>();
         var queue = new BoundedConcurrentQueue<byte[]>(1);
 
         Assert.That(queue.TryEnqueue(new byte[1]), Is.True);
@@ -63,17 +63,18 @@ internal class BoundedConcurrentQueueTest
         var queue = new BoundedConcurrentQueue<byte[]>(1);
 
         Assert.That(queue.IsEmpty(), Is.True);
+        Assert.That(queue.GetCount(), Is.EqualTo(0));
 
         Assert.That(queue.TryEnqueue(new byte[1]), Is.True);
-
         Assert.That(queue.IsEmpty(), Is.False);
+        Assert.That(queue.GetCount(), Is.EqualTo(1));
+
         Assert.That(queue.IsFrozen, Is.False);
-
         queue.Freeze();
-
         Assert.That(queue.IsFrozen, Is.True);
 
         Assert.That(queue.IsEmpty(), Is.False);
+        Assert.That(queue.GetCount(), Is.EqualTo(1));
 
         Assert.That(queue.TryEnqueue([]), Is.False);
 
@@ -81,6 +82,7 @@ internal class BoundedConcurrentQueueTest
         Assert.That(array != null && array.Length == 1, Is.True);
 
         Assert.That(queue.IsEmpty(), Is.True);
+        Assert.That(queue.GetCount(), Is.EqualTo(0));
 
         Assert.That(queue.TryDequeue(out array), Is.False);
         Assert.That(array == null, Is.True);
