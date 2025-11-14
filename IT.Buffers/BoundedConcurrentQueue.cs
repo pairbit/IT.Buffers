@@ -234,7 +234,7 @@ internal struct PaddedHeadAndTail
 }
 
 //https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/Internal/Padding.cs
-internal class PaddingHelpers
+internal static class PaddingHelpers
 {
 #if TARGET_ARM64 || TARGET_LOONGARCH64
     internal const int CACHE_LINE_SIZE = 128;

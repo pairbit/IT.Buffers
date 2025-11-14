@@ -1,4 +1,7 @@
-﻿namespace IT.Buffers.Tests;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+namespace IT.Buffers.Tests;
 
 internal class BoundedConcurrentQueueTest
 {
@@ -13,11 +16,22 @@ internal class BoundedConcurrentQueueTest
         Assert.That(Power2(20), Is.EqualTo(1024 * 1024));
         Assert.That(Power2(30), Is.EqualTo(BufferSize.GB));
     }
+    
+    [Test]
+    public void SizeOfTest()
+    {
+        var type = Type.GetType("System.Collections.Concurrent.PaddedHeadAndTail");
+        Assert.That(type, Is.Not.Null);
+
+        int size = Marshal.SizeOf(type);
+
+        Assert.That(size, Is.EqualTo(PaddingHelpers.CACHE_LINE_SIZE * 3));
+        Assert.That(Unsafe.SizeOf<PaddedHeadAndTail>(), Is.EqualTo(size));
+    }
 
     [Test]
     public void EnqueueDequeueTest()
     {
-        //var q = new System.Collections.Concurrent.ConcurrentQueue<byte[]>();
         var queue = new BoundedConcurrentQueue<byte[]>(1);
 
         Assert.That(queue.TryEnqueue(new byte[1]), Is.True);
