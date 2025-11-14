@@ -6,6 +6,7 @@ using System.Threading;
 
 namespace IT.Buffers.Internal;
 
+//14/10/2022 6:41 AM
 //https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Collections/Concurrent/ConcurrentQueueSegment.cs
 [DebuggerDisplay("Capacity = {Capacity}")]
 internal sealed class BoundedConcurrentQueue<T>
@@ -44,7 +45,7 @@ internal sealed class BoundedConcurrentQueue<T>
     /// <summary>Gets the "freeze offset" for this segment.</summary>
     private int FreezeOffset => _slots.Length * 2;
 
-    internal void EnsureFrozenForEnqueues() // must only be called while queue's segment lock is held
+    public void Freeze() // must only be called while queue's segment lock is held
     {
         if (!_frozenForEnqueues) // flag used to ensure we don't increase the Tail more than once if frozen more than once
         {

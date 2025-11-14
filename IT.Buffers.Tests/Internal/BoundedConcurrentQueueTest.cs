@@ -37,10 +37,33 @@ internal class BoundedConcurrentQueueTest
 
         Assert.That(queue.TryEnqueue(new byte[3]), Is.True);
 
-        //queue.EnsureFrozenForEnqueues();
+        queue.Freeze();
 
-        //Assert.That(queue.TryDequeue(out var array3), Is.False);
-        //Assert.That(array3 == null, Is.True);
+        Assert.That(queue.TryEnqueue(new byte[4]), Is.False);
+
+        Assert.That(queue.TryDequeue(out var array3), Is.True);
+        Assert.That(array3 != null && array3.Length == 3, Is.True);
+
+        Assert.That(queue.TryDequeue(out var array4), Is.False);
+        Assert.That(array4 == null, Is.True);
+    }
+
+    [Test]
+    public void QueueFreezeTest()
+    {
+        var queue = new BoundedConcurrentQueue<byte[]>(1);
+
+        Assert.That(queue.TryEnqueue(new byte[1]), Is.True);
+
+        queue.Freeze();
+
+        Assert.That(queue.TryEnqueue([]), Is.False);
+
+        Assert.That(queue.TryDequeue(out var array), Is.True);
+        Assert.That(array != null && array.Length == 1, Is.True);
+
+        Assert.That(queue.TryDequeue(out array), Is.False);
+        Assert.That(array == null, Is.True);
     }
 
     private static int Power2(int power)
