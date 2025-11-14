@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace IT.Buffers.Tests;
+﻿namespace IT.Buffers.Tests;
 
 internal class RentedArrayTest
 {
@@ -32,7 +30,7 @@ internal class RentedArrayTest
 
         Assert.That(global.Equals(external), Is.False);
     }
-    
+
     [Test]
     public void RentTest()
     {
