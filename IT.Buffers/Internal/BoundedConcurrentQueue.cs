@@ -10,20 +10,16 @@ namespace IT.Buffers.Internal;
 [DebuggerDisplay("Capacity = {Capacity}")]
 internal sealed class BoundedConcurrentQueue<T>
 {
-    internal readonly Slot[] _slots; // SOS's ThreadPool command depends on this name
-    internal readonly int _slotsMask;
-    internal PaddedHeadAndTail _headAndTail;
-    internal bool _preservedForObservation;
-    internal bool _frozenForEnqueues;
-#pragma warning disable 0649 // some builds don't assign to this field
-    /// <summary>The segment following this one in the queue, or null if this segment is the last in the queue.</summary>
-    internal BoundedConcurrentQueue<T>? _nextSegment; // SOS's ThreadPool command depends on this name
-#pragma warning restore 0649
+    private readonly Slot[] _slots; // SOS's ThreadPool command depends on this name
+    private readonly int _slotsMask;
+    private PaddedHeadAndTail _headAndTail;
+    private bool _preservedForObservation;
+    private bool _frozenForEnqueues;
 
     /// <param name="boundedLength">
     /// The maximum number of elements the segment can contain.  Must be a power of 2.
     /// </param>
-    internal BoundedConcurrentQueue(int power2 = 5)
+    public BoundedConcurrentQueue(int power2 = 5)
     {
         if (power2 < 1 || power2 > 30) throw new System.ArgumentOutOfRangeException(nameof(power2));
         
@@ -43,10 +39,10 @@ internal sealed class BoundedConcurrentQueue<T>
     }
 
     /// <summary>Gets the number of elements this segment can store.</summary>
-    internal int Capacity => _slots.Length;
+    public int Capacity => _slots.Length;
 
     /// <summary>Gets the "freeze offset" for this segment.</summary>
-    internal int FreezeOffset => _slots.Length * 2;
+    private int FreezeOffset => _slots.Length * 2;
 
     internal void EnsureFrozenForEnqueues() // must only be called while queue's segment lock is held
     {
