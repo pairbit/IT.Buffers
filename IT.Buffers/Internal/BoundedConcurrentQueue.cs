@@ -45,6 +45,8 @@ internal sealed class BoundedConcurrentQueue<T>
     /// <summary>Gets the "freeze offset" for this segment.</summary>
     private int FreezeOffset => _slots.Length * 2;
 
+    public bool IsFrozen => _frozenForEnqueues;
+
     public void Freeze() // must only be called while queue's segment lock is held
     {
         if (!_frozenForEnqueues) // flag used to ensure we don't increase the Tail more than once if frozen more than once
@@ -134,7 +136,7 @@ internal sealed class BoundedConcurrentQueue<T>
     }
 
     /// <summary>Tries to peek at an element from the queue, without removing it.</summary>
-    public bool TryPeek([MaybeNullWhen(false)] out T result)
+    public bool TryPeek([MaybeNullWhen(false)] out T item)
     {
         _preservedForObservation = true;
         Interlocked.MemoryBarrier();
@@ -149,7 +151,7 @@ internal sealed class BoundedConcurrentQueue<T>
             int diff = sequenceNumber - (currentHead + 1);
             if (diff == 0)
             {
-                result = slots[slotsIndex].Item!;
+                item = slots[slotsIndex].Item!;
                 return true;
             }
             else if (diff < 0)
@@ -158,7 +160,7 @@ internal sealed class BoundedConcurrentQueue<T>
                 int currentTail = Volatile.Read(ref _headAndTail.Tail);
                 if (currentTail - currentHead <= 0 || (frozen && (currentTail - FreezeOffset - currentHead <= 0)))
                 {
-                    result = default;
+                    item = default;
                     return false;
                 }
 
