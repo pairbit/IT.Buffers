@@ -1,4 +1,6 @@
-﻿namespace IT.Buffers.Tests;
+﻿using System;
+
+namespace IT.Buffers.Tests;
 
 internal class RentedArrayTest
 {
@@ -30,12 +32,24 @@ internal class RentedArrayTest
 
         Assert.That(global.Equals(external), Is.False);
     }
+    
+    [Test]
+    public void RentTest()
+    {
+        var rented = BufferPool.RentArray<byte>(1);
+
+        Equals(rented, length: 16, count: 1, type: RentedArrayType.Shared);
+
+        Assert.That(BufferPool.TryReturn(rented), Is.True);
+
+
+    }
 
     private static void Equals(RentedArray<byte> array,
-        int offset = 0, int count = 0,
+        int length = 0, int offset = 0, int count = 0,
         RentedArrayType type = RentedArrayType.None)
     {
-        Assert.That(array.Array != null && array.Array.Length == 0, Is.True);
+        Assert.That(array.Array != null && array.Array.Length == length, Is.True);
         Assert.That(array.Offset, Is.EqualTo(offset));
         Assert.That(array.Count, Is.EqualTo(count));
         Assert.That(array.Type, Is.EqualTo(type));
