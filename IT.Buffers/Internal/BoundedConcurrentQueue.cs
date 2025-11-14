@@ -181,6 +181,14 @@ internal sealed class BoundedConcurrentQueue<T>
     }
 }
 
+[DebuggerDisplay("Head = {Head}, Tail = {Tail}")]
+[StructLayout(LayoutKind.Explicit, Size = 3 * PaddingHelpers.CACHE_LINE_SIZE)]
+internal struct PaddedHeadAndTail
+{
+    [FieldOffset(1 * PaddingHelpers.CACHE_LINE_SIZE)] public int Head;
+    [FieldOffset(2 * PaddingHelpers.CACHE_LINE_SIZE)] public int Tail;
+}
+
 //https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/Internal/Padding.cs
 internal class PaddingHelpers
 {
@@ -189,12 +197,4 @@ internal class PaddingHelpers
 #else
     internal const int CACHE_LINE_SIZE = 64;
 #endif
-}
-
-[DebuggerDisplay("Head = {Head}, Tail = {Tail}")]
-[StructLayout(LayoutKind.Explicit, Size = 3 * PaddingHelpers.CACHE_LINE_SIZE)]
-internal struct PaddedHeadAndTail
-{
-    [FieldOffset(1 * PaddingHelpers.CACHE_LINE_SIZE)] public int Head;
-    [FieldOffset(2 * PaddingHelpers.CACHE_LINE_SIZE)] public int Tail;
 }
