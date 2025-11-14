@@ -11,7 +11,8 @@ public static class BufferPool
     {
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
         return new(array, 0, minimumLength,
-            minimumLength > BufferSize.GB ? RentedArrayType.None : RentedArrayType.Shared);
+            minimumLength == 0 || minimumLength > BufferSize.GB
+            ? RentedArrayType.None : RentedArrayType.Shared);
     }
 
     public static TBuffer Rent<TBuffer>() where TBuffer : class, IDisposable, new()

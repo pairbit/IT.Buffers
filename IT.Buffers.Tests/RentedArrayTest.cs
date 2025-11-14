@@ -36,23 +36,31 @@ internal class RentedArrayTest
     [Test]
     public void RentTest()
     {
-        var rented = BufferPool.RentArray<byte>(1);
+        var rented = BufferPool.RentArray<byte>(0);
+
+        Equals(rented);
+
+        Assert.That(BufferPool.TryReturn(rented), Is.False);
+
+        rented = BufferPool.RentArray<byte>(1);
 
         Equals(rented, length: 16, count: 1, type: RentedArrayType.Shared);
 
         Assert.That(BufferPool.TryReturn(rented), Is.True);
 
-        rented = BufferPool.RentArray<byte>(BufferSize.GB);
+        rented = BufferPool.RentArray<byte>(BufferSize.GB - 1);
 
-        Equals(rented, length: BufferSize.GB, count: BufferSize.GB, type: RentedArrayType.Shared);
+        Equals(rented, length: BufferSize.GB, count: BufferSize.GB - 1, type: RentedArrayType.Shared);
 
         Assert.That(BufferPool.TryReturn(rented), Is.True);
 
         rented = BufferPool.RentArray<byte>(BufferSize.GB + 1);
 
-        Equals(rented, length: BufferSize.GB + 1, count: BufferSize.GB + 1, type: RentedArrayType.None);
+        Equals(rented, length: BufferSize.GB + 1);
 
         Assert.That(BufferPool.TryReturn(rented), Is.False);
+
+        //rented = BufferPool.RentArray<byte>(BufferSize.Max + 1);
     }
 
     private static void Equals(RentedArray<byte> array,
@@ -60,6 +68,11 @@ internal class RentedArrayTest
         RentedArrayType type = RentedArrayType.None)
     {
         Assert.That(array.Array != null && array.Array.Length == length, Is.True);
+
+        if (count == 0)
+        {
+            count = length;
+        }
         Assert.That(array.Offset, Is.EqualTo(offset));
         Assert.That(array.Count, Is.EqualTo(count));
         Assert.That(array.Type, Is.EqualTo(type));
