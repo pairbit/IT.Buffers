@@ -101,17 +101,9 @@ internal sealed class BoundedConcurrentQueue<T>
         }
     }
 
-    /// <summary>Tries to peek at an element from the queue, without removing it.</summary>
-    public bool TryPeek([MaybeNullWhen(false)] out T result, bool resultUsed)
+    public bool IsEmpty()
     {
-        if (resultUsed)
-        {
-            _preservedForObservation = true;
-            Interlocked.MemoryBarrier();
-        }
-
         Slot[] slots = _slots;
-
         SpinWait spinner = default;
         while (true)
         {
@@ -121,7 +113,43 @@ internal sealed class BoundedConcurrentQueue<T>
             int diff = sequenceNumber - (currentHead + 1);
             if (diff == 0)
             {
-                result = resultUsed ? slots[slotsIndex].Item! : default!;
+                return false;
+            }
+            else if (diff < 0)
+            {
+                bool frozen = _frozenForEnqueues;
+                int currentTail = Volatile.Read(ref _headAndTail.Tail);
+                if (currentTail - currentHead <= 0 || (frozen && (currentTail - FreezeOffset - currentHead <= 0)))
+                {
+                    return true;
+                }
+
+                spinner.SpinOnce(
+#if NET
+                    sleep1Threshold: -1
+#endif
+                    );
+            }
+        }
+    }
+
+    /// <summary>Tries to peek at an element from the queue, without removing it.</summary>
+    public bool TryPeek([MaybeNullWhen(false)] out T result)
+    {
+        _preservedForObservation = true;
+        Interlocked.MemoryBarrier();
+
+        Slot[] slots = _slots;
+        SpinWait spinner = default;
+        while (true)
+        {
+            int currentHead = Volatile.Read(ref _headAndTail.Head);
+            int slotsIndex = currentHead & _slotsMask;
+            int sequenceNumber = Volatile.Read(ref slots[slotsIndex].SequenceNumber);
+            int diff = sequenceNumber - (currentHead + 1);
+            if (diff == 0)
+            {
+                result = slots[slotsIndex].Item!;
                 return true;
             }
             else if (diff < 0)
