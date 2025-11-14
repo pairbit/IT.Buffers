@@ -10,17 +10,25 @@ public enum RentedArrayType : byte
     None = 0,
 
     /// <summary>
-    /// ArrayPool<T>.Shared.Rent
+    /// Rented from an ArrayPool.Shared
     /// </summary>
     Shared = 1,
 
+    /// <summary>
+    /// 
+    /// </summary>
     Global = 2,
 
-    Custom = 3
+    /// <summary>
+    /// Rented from an external pool
+    /// </summary>
+    External = 3
 }
 
 public readonly struct RentedArray<T>
 {
+    public static RentedArray<T> Empty { get; } = new([]);
+
     private readonly T[]? _array;
     private readonly int _offset;
     private readonly int _count;
@@ -29,7 +37,7 @@ public readonly struct RentedArray<T>
     {
         get
         {
-            if (_offset < 0) return _count < 0 ? RentedArrayType.Custom : RentedArrayType.Global;
+            if (_offset < 0) return _count < 0 ? RentedArrayType.External : RentedArrayType.Global;
 
             if (_count < 0) return RentedArrayType.Shared;
 
@@ -61,6 +69,13 @@ public readonly struct RentedArray<T>
         }
     }
 
+    public RentedArray(T[] array)
+    {
+        _array = array ?? throw new ArgumentNullException(nameof(array));
+        _offset = 0;
+        _count = array.Length;
+    }
+
     public RentedArray(T[] array, RentedArrayType type)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
@@ -76,6 +91,12 @@ public readonly struct RentedArray<T>
             _array = array;
             _offset = ~0;
             _count = array.Length;
+        }
+        else if (type == RentedArrayType.External)
+        {
+            _array = array;
+            _offset = ~0;
+            _count = ~array.Length;
         }
         else if (type == RentedArrayType.None)
         {
@@ -113,7 +134,7 @@ public readonly struct RentedArray<T>
             _offset = ~offset;
             _count = count;
         }
-        else if (type == RentedArrayType.Custom)
+        else if (type == RentedArrayType.External)
         {
             _offset = ~offset;
             _count = ~count;
@@ -128,4 +149,7 @@ public readonly struct RentedArray<T>
             throw new ArgumentOutOfRangeException(nameof(type));
         }
     }
+
+    public static implicit operator ArraySegment<T>(RentedArray<T> value)
+        => value._array == null ? default : new(value._array, value.Offset, value.Count);
 }
