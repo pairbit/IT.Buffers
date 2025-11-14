@@ -10,35 +10,29 @@ namespace IT.Buffers.Internal;
 [DebuggerDisplay("Capacity = {Capacity}")]
 internal sealed class BoundedConcurrentQueue<T>
 {
-    // design is inspired by the algorithm outlined at:
-    // http://www.1024cores.net/home/lock-free-algorithms/queues/bounded-mpmc-queue
-
-    /// <summary>The array of items in this queue.  Each slot contains the item in that slot and its "sequence number".</summary>
     internal readonly Slot[] _slots; // SOS's ThreadPool command depends on this name
-    /// <summary>Mask for quickly accessing a position within the queue's array.</summary>
     internal readonly int _slotsMask;
-    /// <summary>The head and tail positions, with padding to help avoid false sharing contention.</summary>
-    /// <remarks>Dequeuing happens from the head, enqueuing happens at the tail.</remarks>
-    internal PaddedHeadAndTail _headAndTail; // mutable struct: do not make this readonly
-
-    /// <summary>Indicates whether the segment has been marked such that dequeues don't overwrite the removed data.</summary>
+    internal PaddedHeadAndTail _headAndTail;
     internal bool _preservedForObservation;
-    /// <summary>Indicates whether the segment has been marked such that no additional items may be enqueued.</summary>
     internal bool _frozenForEnqueues;
 #pragma warning disable 0649 // some builds don't assign to this field
     /// <summary>The segment following this one in the queue, or null if this segment is the last in the queue.</summary>
     internal BoundedConcurrentQueue<T>? _nextSegment; // SOS's ThreadPool command depends on this name
 #pragma warning restore 0649
 
-    /// <summary>Creates the segment.</summary>
     /// <param name="boundedLength">
     /// The maximum number of elements the segment can contain.  Must be a power of 2.
     /// </param>
-    internal BoundedConcurrentQueue(int boundedLength)
+    internal BoundedConcurrentQueue(int power2 = 5)
     {
-        Debug.Assert(boundedLength >= 2, $"Must be >= 2, got {boundedLength}");
-        //Debug.Assert(BitOperations.IsPow2(boundedLength), $"Must be a power of 2, got {boundedLength}");
+        if (power2 < 1 || power2 > 30) throw new System.ArgumentOutOfRangeException(nameof(power2));
+        
+        var boundedLength = 2 << (power2 - 1);
 
+        Debug.Assert(boundedLength >= 2, $"Must be >= 2, got {boundedLength}");
+#if NET
+        Debug.Assert(System.Numerics.BitOperations.IsPow2(boundedLength), $"Must be a power of 2, got {boundedLength}");
+#endif
         _slots = new Slot[boundedLength];
         _slotsMask = boundedLength - 1;
 
@@ -107,7 +101,6 @@ internal sealed class BoundedConcurrentQueue<T>
 #endif
                     );
             }
-
         }
     }
 
@@ -127,8 +120,8 @@ internal sealed class BoundedConcurrentQueue<T>
         {
             int currentHead = Volatile.Read(ref _headAndTail.Head);
             int slotsIndex = currentHead & _slotsMask;
-int sequenceNumber = Volatile.Read(ref slots[slotsIndex].SequenceNumber);
-int diff = sequenceNumber - (currentHead + 1);
+            int sequenceNumber = Volatile.Read(ref slots[slotsIndex].SequenceNumber);
+            int diff = sequenceNumber - (currentHead + 1);
             if (diff == 0)
             {
                 result = resultUsed ? slots[slotsIndex].Item! : default!;
@@ -180,7 +173,6 @@ int diff = sequenceNumber - (currentHead + 1);
             {
                 return false;
             }
-
         }
     }
 
@@ -188,7 +180,7 @@ int diff = sequenceNumber - (currentHead + 1);
     [DebuggerDisplay("Item = {Item}, SequenceNumber = {SequenceNumber}")]
     internal struct Slot
     {
-        public T? Item; // SOS's ThreadPool command depends on this being at the beginning of the struct when T is a reference type
+        public T? Item;
         public int SequenceNumber;
     }
 }
