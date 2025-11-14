@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace IT.Buffers;
 
@@ -58,14 +60,18 @@ public readonly struct RentedArray<T>
             if ((uint)index >= (uint)Count)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            return _array![Offset + index];
+            Debug.Assert(_array != null);
+
+            return _array[Offset + index];
         }
         set
         {
             if ((uint)index >= (uint)Count)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            _array![Offset + index] = value;
+            Debug.Assert(_array != null);
+
+            _array[Offset + index] = value;
         }
     }
 
@@ -150,6 +156,57 @@ public readonly struct RentedArray<T>
         }
     }
 
+    public override int GetHashCode()
+        => _array is null ? 0 : HashCode.Combine(_offset, _count, _array.GetHashCode());
+
+    public override bool Equals([NotNullWhen(true)] object? obj)
+        => obj is RentedArray<T> other && Equals(other);
+
+    public bool Equals(RentedArray<T> other)
+        => other._array == _array && other._offset == _offset && other._count == _count;
+
+    public RentedArray<T> Slice(int index)
+    {
+        var count = Count;
+        if ((uint)index > (uint)count)
+            throw new ArgumentOutOfRangeException(nameof(index));
+
+        return new(_array ?? throw InvalidState(), Offset + index, count - index, Type);
+    }
+
+    public RentedArray<T> Slice(int index, int count)
+    {
+        var oldCount = Count;
+        if ((uint)index > (uint)oldCount)
+            throw new ArgumentOutOfRangeException(nameof(index));
+
+        if ((uint)count > (uint)(oldCount - index))
+            throw new ArgumentOutOfRangeException(nameof(count));
+
+        return new(_array ?? throw InvalidState(), Offset + index, count, Type);
+    }
+
+    public T[] ToArray()
+    {
+        if (_count == 0) return Empty._array!;
+
+        var array = _array ?? throw InvalidState();
+        var copy = new T[_count];
+
+        System.Array.Copy(array, _offset, copy, 0, _count);
+
+        return copy;
+    }
+
+    private static InvalidOperationException InvalidState()
+        => new("_array == null");
+
+    public static bool operator ==(RentedArray<T> left, RentedArray<T> right) => left.Equals(right);
+
+    public static bool operator !=(RentedArray<T> left, RentedArray<T> right) => !left.Equals(right);
+
+    public static implicit operator RentedArray<T>(T[] array) => array != null ? new(array) : default;
+
     public static implicit operator ArraySegment<T>(RentedArray<T> value)
-        => value._array == null ? default : new(value._array, value.Offset, value.Count);
+        => value._array != null ? new(value._array, value.Offset, value.Count) : default;
 }
