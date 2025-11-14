@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using IT.Buffers.Internal;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -223,22 +224,4 @@ public sealed class BoundedConcurrentQueue<T>
         public T? Item;
         public int SequenceNumber;
     }
-}
-
-[DebuggerDisplay("Head = {Head}, Tail = {Tail}")]
-[StructLayout(LayoutKind.Explicit, Size = 3 * PaddingHelpers.CACHE_LINE_SIZE)]
-internal struct PaddedHeadAndTail
-{
-    [FieldOffset(1 * PaddingHelpers.CACHE_LINE_SIZE)] public int Head;
-    [FieldOffset(2 * PaddingHelpers.CACHE_LINE_SIZE)] public int Tail;
-}
-
-//https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/Internal/Padding.cs
-internal static class PaddingHelpers
-{
-#if TARGET_ARM64 || TARGET_LOONGARCH64
-    internal const int CACHE_LINE_SIZE = 128;
-#else
-    internal const int CACHE_LINE_SIZE = 64;
-#endif
 }

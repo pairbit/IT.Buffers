@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using IT.Buffers.Internal;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace IT.Buffers.Tests;
@@ -25,7 +26,7 @@ internal class BoundedConcurrentQueueTest
 
         int size = Marshal.SizeOf(type);
 
-        Assert.That(size, Is.EqualTo(PaddingHelpers.CACHE_LINE_SIZE * 3));
+        Assert.That(size, Is.EqualTo(Padding.CACHE_LINE_SIZE * 3));
         Assert.That(Unsafe.SizeOf<PaddedHeadAndTail>(), Is.EqualTo(size));
     }
 
