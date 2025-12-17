@@ -43,7 +43,7 @@ public static class xBufferWriter
             {
                 Debug.Assert(item.Written > 0);
                 await stream.WriteAsync(item.WrittenMemory, cancellationToken).ConfigureAwait(false);
-                item.Reset();
+                item.Reset(writer._arrayPool);
             }
         }
 
@@ -52,7 +52,7 @@ public static class xBufferWriter
         {
             Debug.Assert(current.Written > 0);
             await stream.WriteAsync(current.WrittenMemory, cancellationToken).ConfigureAwait(false);
-            current.Reset();
+            current.Reset(writer._arrayPool);
         }
 
         writer.ResetCore();

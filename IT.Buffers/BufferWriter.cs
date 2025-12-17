@@ -10,12 +10,12 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-//BufferWriter
 public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
     public static BufferPool<BufferWriter<T>> Pool =>
         BufferPool<BufferWriter<T>>.Shared;
 
+    internal readonly ArrayPool<T>? _arrayPool;
     internal readonly List<BufferSegment<T>> _buffers;
 
     //TODO: add to BufferSegment
@@ -68,7 +68,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _segments = 0;
     }
 
-    public BufferWriter(int bufferSize, bool useFirstBuffer = false, int segmentsCapacity = 0
+    public BufferWriter(int bufferSize, ArrayPool<T>? arrayPool = null, bool useFirstBuffer = false, int segmentsCapacity = 0
 #if NET5_0_OR_GREATER
         , bool pinned = false
 #endif
@@ -96,6 +96,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _current = default;
         _nextBufferSize = bufferSize;
         _written = 0;
+        _arrayPool = arrayPool;
     }
 
     //public void EnsureCapacitySegments(int capacity)
@@ -281,7 +282,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
                     Debug.Assert(item.Written > 0);
                     item.WrittenSpan.CopyTo(span);
                     span = span[item.Written..];
-                    item.Reset();
+                    item.Reset(_arrayPool);
                 }
             }
 
@@ -289,7 +290,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             {
                 Debug.Assert(_current.Written > 0);
                 _current.WrittenSpan.CopyTo(span);
-                _current.Reset();
+                _current.Reset(_arrayPool);
             }
 
             ResetCore();
@@ -315,7 +316,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             {
                 Debug.Assert(item.Written > 0);
                 RefBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
-                item.Reset();
+                item.Reset(_arrayPool);
             }
         }
 
@@ -323,7 +324,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         {
             Debug.Assert(_current.Written > 0);
             RefBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
-            _current.Reset();
+            _current.Reset(_arrayPool);
         }
 
         ResetCore();
@@ -371,9 +372,9 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         foreach (var item in _buffers)
 #endif
         {
-            item.Reset();
+            item.Reset(_arrayPool);
         }
-        _current.Reset();
+        _current.Reset(_arrayPool);
         ResetCore();
     }
 
@@ -398,16 +399,22 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         var nextBufferSize = _nextBufferSize;
         if (nextBufferSize >= sizeHint)
         {
-            next = new BufferSegment<T>(nextBufferSize);
+            next = new BufferSegment<T>(Rent(nextBufferSize));
             _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
         else
         {
-            next = new BufferSegment<T>(sizeHint);
+            next = new BufferSegment<T>(Rent(sizeHint));
             if (nextBufferSize == 0) _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
         _segments++;
         return next;
+    }
+
+    private T[] Rent(int size)
+    {
+        //TODO: сделать проверку на OutOfMemoryException($"Size {sizeHint} > {Max}")
+        return (_arrayPool ?? ArrayPool<T>.Shared).Rent(size);
     }
 
     void IDisposable.Dispose() => Reset();

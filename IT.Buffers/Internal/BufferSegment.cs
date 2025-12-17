@@ -23,10 +23,9 @@ internal struct BufferSegment<T>
 
     public readonly Span<T> FreeSpan => _buffer.AsSpan(_written);
 
-    public BufferSegment(int size)
+    public BufferSegment(T[] buffer)
     {
-        //TODO: вынести на верх, добавить поддержку custom ArrayPool и сделать проверку на OutOfMemoryException($"Size {sizeHint} > {Max}")
-        _buffer = ArrayPool<T>.Shared.Rent(size);
+        _buffer = buffer;
         _written = 0;
     }
 
@@ -40,14 +39,14 @@ internal struct BufferSegment<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Reset()
+    public void Reset(ArrayPool<T>? arrayPool)
     {
         var buffer = _buffer;
         if (buffer != null)
         {
             _buffer = null!;
             _written = 0;
-            BufferPool.Return(buffer);
+            (arrayPool ?? ArrayPool<T>.Shared).Return(buffer, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
         }
     }
 }
