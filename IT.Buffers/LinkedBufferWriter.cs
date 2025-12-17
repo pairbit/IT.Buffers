@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
+//BufferWriter
 public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
     public static BufferPool<LinkedBufferWriter<T>> Pool =>

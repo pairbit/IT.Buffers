@@ -6,6 +6,7 @@ using System.Diagnostics;
 
 namespace IT.Buffers;
 
+//Rerented
 public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
     public static BufferPool<RentedBufferWriter<T>> Pool
