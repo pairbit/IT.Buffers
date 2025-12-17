@@ -57,9 +57,15 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public BufferWriter()
+    public BufferWriter() : this(0, null)
     {
-        _buffers = [];
+
+    }
+
+    public BufferWriter(int segmentsCapacity, ArrayPool<T>? arrayPool)
+    {
+        _arrayPool = arrayPool;
+        _buffers = new List<BufferSegment<T>>(segmentsCapacity);
         _firstBuffer = [];
         _firstBufferWritten = 0;
         _current = default;
@@ -68,35 +74,18 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _segments = 0;
     }
 
-    public BufferWriter(int bufferSize, ArrayPool<T>? arrayPool = null, bool useFirstBuffer = false, int segmentsCapacity = 0
-#if NET5_0_OR_GREATER
-        , bool pinned = false
-#endif
-        )
+    public BufferWriter(T[] firstBuffer, int segmentsCapacity = 0, ArrayPool<T>? arrayPool = null)
     {
-        if (bufferSize < 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
+        if (firstBuffer == null) throw new ArgumentNullException(nameof(firstBuffer));
 
-        if (useFirstBuffer && bufferSize > 0)
-        {
-            _firstBuffer =
-#if NET5_0_OR_GREATER
-                GC.AllocateUninitializedArray<T>(bufferSize, pinned);
-#else
-                new T[bufferSize];
-#endif
-            _segments = 1;
-        }
-        else
-        {
-            _firstBuffer = [];
-            _segments = 0;
-        }
+        _arrayPool = arrayPool;
         _buffers = new List<BufferSegment<T>>(segmentsCapacity);
+        _firstBuffer = firstBuffer;
         _firstBufferWritten = 0;
         _current = default;
-        _nextBufferSize = bufferSize;
+        _nextBufferSize = firstBuffer.Length;
         _written = 0;
-        _arrayPool = arrayPool;
+        _segments = 1;
     }
 
     //public void EnsureCapacitySegments(int capacity)

@@ -23,7 +23,7 @@ public class BufferWriterTest
     [Test]
     public void Test_FirstBuffer()
     {
-        var writer = new BufferWriter<byte>(BufferSize.KB, useFirstBuffer: true);
+        var writer = new BufferWriter<byte>(new byte[BufferSize.KB]);
 
         Assert.That(writer.Segments, Is.EqualTo(1));
         Assert.That(writer.GetWrittenMemory(0).IsEmpty, Is.True);
