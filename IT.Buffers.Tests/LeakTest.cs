@@ -5,7 +5,7 @@ internal class LeakTest
     [Test]
     public void Test()
     {
-        var writer = LinkedBufferWriter<byte>.Pool.Rent();
+        var writer = BufferWriter<byte>.Pool.Rent();
         try
         {
             writer.GetSpan(BufferSize.KB);

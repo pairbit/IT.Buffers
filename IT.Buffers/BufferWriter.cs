@@ -11,10 +11,10 @@ using System.Runtime.CompilerServices;
 namespace IT.Buffers;
 
 //BufferWriter
-public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
+public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
-    public static BufferPool<LinkedBufferWriter<T>> Pool =>
-        BufferPool<LinkedBufferWriter<T>>.Shared;
+    public static BufferPool<BufferWriter<T>> Pool =>
+        BufferPool<BufferWriter<T>>.Shared;
 
     internal readonly List<BufferSegment<T>> _buffers;
 
@@ -57,7 +57,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public LinkedBufferWriter()
+    public BufferWriter()
     {
         _buffers = [];
         _firstBuffer = [];
@@ -68,7 +68,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _segments = 0;
     }
 
-    public LinkedBufferWriter(int bufferSize, bool useFirstBuffer = false, int segmentsCapacity = 0
+    public BufferWriter(int bufferSize, bool useFirstBuffer = false, int segmentsCapacity = 0
 #if NET5_0_OR_GREATER
         , bool pinned = false
 #endif
@@ -414,12 +414,12 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     public struct Enumerator : IEnumerator<Memory<T>>
     {
-        private readonly LinkedBufferWriter<T> _parent;
+        private readonly BufferWriter<T> _parent;
         private State _state;
         private Memory<T> _current;
         private List<BufferSegment<T>>.Enumerator _buffersEnumerator;
 
-        public Enumerator(LinkedBufferWriter<T> parent)
+        public Enumerator(BufferWriter<T> parent)
         {
             _parent = parent;
             _state = default;

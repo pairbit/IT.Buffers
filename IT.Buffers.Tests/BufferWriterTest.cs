@@ -2,12 +2,12 @@
 
 namespace IT.Buffers.Tests;
 
-public class LinkedBufferWriterTest
+public class BufferWriterTest
 {
     [Test]
     public void Test_Pool()
     {
-        var writer = LinkedBufferWriter<byte>.Pool.Rent();
+        var writer = BufferWriter<byte>.Pool.Rent();
         Assert.That(writer.Segments, Is.EqualTo(0));
         Assert.Throws<ArgumentOutOfRangeException>(() => writer.GetWrittenMemory(0));
         try
@@ -16,14 +16,14 @@ public class LinkedBufferWriterTest
         }
         finally
         {
-            Assert.That(LinkedBufferWriter<byte>.Pool.TryReturn(writer), Is.True);
+            Assert.That(BufferWriter<byte>.Pool.TryReturn(writer), Is.True);
         }
     }
 
     [Test]
     public void Test_FirstBuffer()
     {
-        var writer = new LinkedBufferWriter<byte>(BufferSize.KB, true);
+        var writer = new BufferWriter<byte>(BufferSize.KB, true);
 
         Assert.That(writer.Segments, Is.EqualTo(1));
         Assert.That(writer.GetWrittenMemory(0).IsEmpty, Is.True);
@@ -31,7 +31,7 @@ public class LinkedBufferWriterTest
         Test(writer);
     }
 
-    private void Test(LinkedBufferWriter<byte> writer)
+    private void Test(BufferWriter<byte> writer)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => writer.Advance(-1));
         var i = 0;

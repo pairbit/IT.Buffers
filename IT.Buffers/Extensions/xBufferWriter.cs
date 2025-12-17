@@ -1,42 +1,60 @@
 ﻿using System;
-using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace IT.Buffers.Extensions;
 
 public static class xBufferWriter
 {
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
-    /// <exception cref="OutOfMemoryException"></exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WriteSpan<T>(this IBufferWriter<T> writer, ReadOnlySpan<T> span)
+    public static T[] ToArrayAndReset<T>(this BufferWriter<T> writer)
     {
-        if (span.Length == 0) return;
+        var written = writer.Written;
+        if (written == 0) return [];
 
-        Debug.Assert(writer != null);
+        var array =
+#if NET5_0_OR_GREATER
+            GC.AllocateUninitializedArray<T>(written);
+#else
+            new T[written];
+#endif
 
-        Span<T> dest;
-        int destlen, len;
-        do
+        writer.TryWriteAndReset(array);
+
+        return array;
+    }
+
+    public static async ValueTask WriteAndResetAsync(this BufferWriter<byte> writer, Stream stream, CancellationToken cancellationToken)
+    {
+        if (writer._written == 0) return;
+
+        var firstBufferWritten = writer._firstBufferWritten;
+        if (firstBufferWritten > 0)
         {
-            dest = writer.GetSpan(1);
+            Debug.Assert(writer._firstBuffer.Length >= firstBufferWritten);
+            await stream.WriteAsync(writer._firstBuffer.AsMemory(0, firstBufferWritten), cancellationToken).ConfigureAwait(false);
+        }
 
-            destlen = dest.Length;
-            if (destlen == 0) throw new ArgumentOutOfRangeException(nameof(writer));
-
-            len = span.Length;
-            if (destlen >= len)
+        var buffers = writer._buffers;
+        if (buffers.Count > 0)
+        {
+            foreach (var item in buffers)
             {
-                span.CopyTo(dest);
-                writer.Advance(len);
-                return;
+                Debug.Assert(item.Written > 0);
+                await stream.WriteAsync(item.WrittenMemory, cancellationToken).ConfigureAwait(false);
+                item.Reset();
             }
+        }
 
-            span[..destlen].CopyTo(dest);
-            writer.Advance(destlen);
+        var current = writer._current;
+        if (!current.IsNull)
+        {
+            Debug.Assert(current.Written > 0);
+            await stream.WriteAsync(current.WrittenMemory, cancellationToken).ConfigureAwait(false);
+            current.Reset();
+        }
 
-            span = span[destlen..];
-        } while (true);
+        writer.ResetCore();
     }
 }
