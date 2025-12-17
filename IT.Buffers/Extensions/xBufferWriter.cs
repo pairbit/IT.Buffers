@@ -29,12 +29,12 @@ public static class xBufferWriter
     {
         if (writer._written == 0) return;
 
-        var firstBufferWritten = writer._firstBufferWritten;
-        if (firstBufferWritten > 0)
-        {
-            Debug.Assert(writer._firstBuffer.Length >= firstBufferWritten);
-            await stream.WriteAsync(writer._firstBuffer.AsMemory(0, firstBufferWritten), cancellationToken).ConfigureAwait(false);
-        }
+        //var firstBufferWritten = writer._firstBufferWritten;
+        //if (firstBufferWritten > 0)
+        //{
+        //    Debug.Assert(writer._firstBuffer.Length >= firstBufferWritten);
+        //    await stream.WriteAsync(writer._firstBuffer.AsMemory(0, firstBufferWritten), cancellationToken).ConfigureAwait(false);
+        //}
 
         var buffers = writer._buffers;
         if (buffers.Count > 0)

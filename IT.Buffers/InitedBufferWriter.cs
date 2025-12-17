@@ -10,19 +10,29 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
+public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
-    public static BufferPool<BufferWriter<T>> Pool =>
-        BufferPool<BufferWriter<T>>.Shared;
-
     internal readonly ArrayPool<T>? _arrayPool;
     internal readonly List<BufferSegment<T>> _buffers;
+
+    //TODO: add to BufferSegment
+    internal readonly T[] _firstBuffer;
+    internal int _firstBufferWritten;
 
     internal BufferSegment<T> _current;
     private int _nextBufferSize;
 
     internal long _written;
     private int _segments;
+
+    private ReadOnlySpan<T> FirstBufferWrittenSpan
+    {
+        get
+        {
+            Debug.Assert(_firstBuffer.Length >= _firstBufferWritten);
+            return new ReadOnlySpan<T>(_firstBuffer, 0, _firstBufferWritten);
+        }
+    }
 
     public int Written => checked((int)_written);
 
@@ -44,19 +54,16 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public BufferWriter() : this(0, null)
+    public InitedBufferWriter(T[] firstBuffer, int segmentsCapacity = 0, ArrayPool<T>? arrayPool = null)
     {
-
-    }
-
-    public BufferWriter(int segmentsCapacity, ArrayPool<T>? arrayPool)
-    {
-        _arrayPool = arrayPool;
+        _firstBuffer = firstBuffer ?? throw new ArgumentNullException(nameof(firstBuffer));
+        _firstBufferWritten = 0;
         _buffers = new List<BufferSegment<T>>(segmentsCapacity);
+        _arrayPool = arrayPool;
         _current = default;
-        _nextBufferSize = 0;
+        _nextBufferSize = firstBuffer.Length;
         _written = 0;
-        _segments = 0;
+        _segments = 1;
     }
 
     //public void EnsureCapacitySegments(int capacity)
@@ -76,8 +83,18 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
         if (sizeHint == 0) sizeHint = 1;
 
-        var freeMemory = _current.FreeMemory;
-        if (freeMemory.Length >= sizeHint) return freeMemory;
+        if (_current.IsNull)
+        {
+            Debug.Assert(_firstBuffer.Length >= _firstBufferWritten);
+
+            var freeCapacity = _firstBuffer.Length - _firstBufferWritten;
+            if (freeCapacity >= sizeHint) return _firstBuffer.AsMemory(_firstBufferWritten);
+        }
+        else
+        {
+            var freeMemory = _current.FreeMemory;
+            if (freeMemory.Length >= sizeHint) return freeMemory;
+        }
 
         var next = GetNextBuffer(sizeHint);
 
@@ -94,8 +111,18 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
         if (sizeHint == 0) sizeHint = 1;
 
-        var freeSpan = _current.FreeSpan;
-        if (freeSpan.Length >= sizeHint) return freeSpan;
+        if (_current.IsNull)
+        {
+            Debug.Assert(_firstBuffer.Length >= _firstBufferWritten);
+
+            var freeCapacity = _firstBuffer.Length - _firstBufferWritten;
+            if (freeCapacity >= sizeHint) return _firstBuffer.AsSpan(_firstBufferWritten);
+        }
+        else
+        {
+            var freeSpan = _current.FreeSpan;
+            if (freeSpan.Length >= sizeHint) return freeSpan;
+        }
 
         var next = GetNextBuffer(sizeHint);
 
@@ -113,7 +140,18 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
         if (count > 0)
         {
-            _current.Advance(count);
+            if (_current.IsNull)
+            {
+                var firstBufferWritten = _firstBufferWritten + count;
+                if (firstBufferWritten > _firstBuffer.Length)
+                    throw new ArgumentOutOfRangeException(nameof(count));
+
+                _firstBufferWritten = firstBufferWritten;
+            }
+            else
+            {
+                _current.Advance(count);
+            }
             _written += count;
         }
     }
@@ -125,6 +163,13 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
         if (written > 0)
         {
+            var firstBufferWritten = _firstBufferWritten;
+            if (firstBufferWritten > 0)
+            {
+                FirstBufferWrittenSpan.CopyTo(span);
+                span = span[firstBufferWritten..];
+            }
+
             if (_buffers.Count > 0)
             {
 #if NET6_0_OR_GREATER
@@ -156,6 +201,9 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     {
         if (_written == 0) return;
 
+        if (_firstBufferWritten > 0)
+            RefBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
+
         if (_buffers.Count > 0)
         {
 #if NET6_0_OR_GREATER
@@ -183,6 +231,13 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
         if (written > 0)
         {
+            var firstBufferWritten = _firstBufferWritten;
+            if (firstBufferWritten > 0)
+            {
+                FirstBufferWrittenSpan.CopyTo(span);
+                span = span[firstBufferWritten..];
+            }
+
             if (_buffers.Count > 0)
             {
 #if NET6_0_OR_GREATER
@@ -215,6 +270,9 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     {
         if (_written == 0) return;
 
+        if (_firstBufferWritten > 0)
+            RefBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
+
         if (_buffers.Count > 0)
         {
 #if NET6_0_OR_GREATER
@@ -244,6 +302,17 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     public Memory<T> GetWrittenMemory(int segment = 0)
     {
         if (segment < 0 || segment >= _segments) throw new ArgumentOutOfRangeException(nameof(segment));
+
+        var firstBuffer = _firstBuffer;
+        if (firstBuffer.Length > 0)
+        {
+            if (segment == 0)
+            {
+                Debug.Assert(firstBuffer.Length >= _firstBufferWritten);
+                return firstBuffer.AsMemory(0, _firstBufferWritten);
+            }
+            segment--;
+        }
 
         if (_buffers.Count > segment) return
 #if NET6_0_OR_GREATER
@@ -276,15 +345,19 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         ResetCore();
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    public T[] DangerousGetFirstBuffer() => _firstBuffer;
+
     // reset without list's BufferSegment element
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void ResetCore()
     {
+        _firstBufferWritten = 0;
         _buffers.Clear();
         _written = 0;
         _current = default;
-        _nextBufferSize = 0;
-        _segments = 0;
+        _nextBufferSize = _firstBuffer.Length;
+        _segments = _firstBuffer.Length == 0 ? 0 : 1;
     }
 
     private BufferSegment<T> GetNextBuffer(int sizeHint)
@@ -315,12 +388,12 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     public struct Enumerator : IEnumerator<Memory<T>>
     {
-        private readonly BufferWriter<T> _parent;
+        private readonly InitedBufferWriter<T> _parent;
         private State _state;
         private Memory<T> _current;
         private List<BufferSegment<T>>.Enumerator _buffersEnumerator;
 
-        public Enumerator(BufferWriter<T> parent)
+        public Enumerator(InitedBufferWriter<T> parent)
         {
             _parent = parent;
             _state = default;
@@ -338,13 +411,34 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
         public bool MoveNext()
         {
-            if (_state == State.Init)
+            if (_state == State.FirstBuffer)
             {
-                _state = State.Iterate;
+                _state = State.BuffersInit;
+
+                var firstBuffer = _parent._firstBuffer;
+                if (firstBuffer.Length > 0)
+                {
+                    var firstBufferWritten = _parent._firstBufferWritten;
+                    if (firstBufferWritten == 0)
+                    {
+                        _state = State.End;
+                        return false;
+                    }
+
+                    Debug.Assert(firstBuffer.Length >= firstBufferWritten);
+                    _current = firstBuffer.AsMemory(0, firstBufferWritten);
+
+                    return true;
+                }
+            }
+
+            if (_state == State.BuffersInit)
+            {
+                _state = State.BuffersIterate;
                 _buffersEnumerator = _parent._buffers.GetEnumerator();
             }
 
-            if (_state == State.Iterate)
+            if (_state == State.BuffersIterate)
             {
                 if (_buffersEnumerator.MoveNext())
                 {
@@ -378,8 +472,9 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
         enum State
         {
-            Init,
-            Iterate,
+            FirstBuffer,
+            BuffersInit,
+            BuffersIterate,
             Current,
             End
         }
