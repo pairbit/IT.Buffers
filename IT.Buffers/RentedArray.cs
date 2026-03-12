@@ -188,12 +188,13 @@ public readonly struct RentedArray<T>
 
     public T[] ToArray()
     {
-        if (_count == 0) return Empty._array!;
+        var count = Count;
+        if (count == 0) return Empty._array!;
 
         var array = _array ?? throw InvalidState();
-        var copy = new T[_count];
+        var copy = new T[count];
 
-        System.Array.Copy(array, _offset, copy, 0, _count);
+        System.Array.Copy(array, Offset, copy, 0, count);
 
         return copy;
     }
