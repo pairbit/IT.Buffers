@@ -15,7 +15,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     public static BufferPool<BufferWriter<T>> Pool =>
         BufferPool<BufferWriter<T>>.Shared;
 
-    internal readonly ArrayPool<T>? _arrayPool;
+    internal ArrayPool<T>? _arrayPool;
     internal readonly List<BufferSegment<T>> _buffers;
 
     internal BufferSegment<T> _current;
@@ -34,6 +34,17 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
     bool IAdvancedBufferWriter<T>.IsFixed => false;
 
+    public ArrayPool<T>? ArrayPool
+    {
+        get => _arrayPool;
+        set
+        {
+            if (_segments != 0) throw new InvalidOperationException();
+
+            _arrayPool = value;
+        }
+    }
+
     public int NextBufferSize
     {
         get { return _nextBufferSize; }
@@ -44,14 +55,13 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public BufferWriter() : this(0, null)
+    public BufferWriter() : this(0)
     {
 
     }
 
-    public BufferWriter(int segmentsCapacity, ArrayPool<T>? arrayPool)
+    public BufferWriter(int segmentsCapacity)
     {
-        _arrayPool = arrayPool;
         _buffers = new List<BufferSegment<T>>(segmentsCapacity);
         _current = default;
         _nextBufferSize = 0;
@@ -285,6 +295,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _current = default;
         _nextBufferSize = 0;
         _segments = 0;
+        _arrayPool = null;
     }
 
     private BufferSegment<T> GetNextBuffer(int sizeHint)
