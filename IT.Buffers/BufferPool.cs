@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IT.Buffers.Internal;
+using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -19,15 +20,7 @@ public static class BufferPool
         if (minimumLength == 0) return new([]);
         if (minimumLength > maximumLength)
         {
-            return new(
-#if NET
-                typeof(T).IsPrimitive && typeof(T) != typeof(bool) ?
-                GC.AllocateUninitializedArray<T>(minimumLength) :
-                new T[minimumLength]
-#else
-                new T[minimumLength]
-#endif
-                );
+            return new(xArray.AllocateUninitialized<T>(minimumLength));
         }
 
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
