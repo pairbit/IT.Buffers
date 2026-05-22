@@ -39,10 +39,12 @@ public class BufferWriterTest
         var i = 0;
         var e = writer.GetEnumerator();
         Assert.That(e.MoveNext(), Is.False);
-
+        writer.ArrayPool = new LimitedSharedArrayPool<byte>(0);
         for (int s = 0; s < 5; s++)
         {
             var span = writer.GetSpan();
+
+            Assert.Throws<InvalidOperationException>(() => writer.ArrayPool = null);
 
             Assert.That(writer.Segments, Is.EqualTo(s + 1));
 
@@ -60,6 +62,7 @@ public class BufferWriterTest
         }
 
         writer.Reset();
+        writer.ArrayPool = new LimitedSharedArrayPool<byte>(64);
 
         for (int s = 0; s < 5; s++)
         {

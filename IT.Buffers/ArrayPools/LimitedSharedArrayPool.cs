@@ -10,7 +10,7 @@ public sealed class LimitedSharedArrayPool<T> : ArrayPool<T>
 
     public LimitedSharedArrayPool(int maximumLength)
     {
-        if (maximumLength < BufferSize.Min || maximumLength > BufferSize.GB)
+        if (maximumLength < 0 || maximumLength > BufferSize.GB)
             throw new ArgumentOutOfRangeException(nameof(maximumLength));
 
         _maximumLength = maximumLength;
