@@ -36,11 +36,7 @@ public sealed class LimitedSharedArrayPool<T> : ArrayPool<T>
             }
             else if (clearArray)
             {
-#if NET
-                Array.Clear(array);
-#else
-                Array.Clear(array, 0, array.Length);
-#endif
+                array.Clear();
             }
         }
     }
