@@ -35,33 +35,27 @@ internal class RentedArrayTest
     public void RentTest()
     {
         var rented = BufferPool.RentArray<byte>(0);
-
         Equals(rented);
-
         Assert.That(BufferPool.TryReturn(rented), Is.False);
 
         rented = BufferPool.RentArray<byte>(1);
-
         Equals(rented, length: 16, count: 1, type: RentedArrayType.Shared);
+        Assert.That(BufferPool.TryReturn(rented), Is.True);
 
+        rented = BufferPool.RentArray<byte>(BufferSize.MB_32);
+        Equals(rented, length: BufferSize.MB_32, type: RentedArrayType.Shared);
         Assert.That(BufferPool.TryReturn(rented), Is.True);
 
         rented = BufferPool.RentArray<byte>(BufferSize.GB - 1);
-
         Equals(rented, length: BufferSize.GB, count: BufferSize.GB - 1, type: RentedArrayType.Shared);
-
         Assert.That(BufferPool.TryReturn(rented), Is.True);
 
         rented = BufferPool.RentArray<byte>(BufferSize.GB + 1);
-
         Equals(rented, length: BufferSize.GB + 1);
-
         Assert.That(BufferPool.TryReturn(rented), Is.False);
 
         rented = BufferPool.RentArray<byte>(BufferSize.MB_32, BufferSize.MB_16);
-
         Equals(rented, length: BufferSize.MB_32);
-
         Assert.That(BufferPool.TryReturn(rented), Is.False);
     }
 
