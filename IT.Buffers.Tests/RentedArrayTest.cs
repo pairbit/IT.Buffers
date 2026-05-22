@@ -58,11 +58,11 @@ internal class RentedArrayTest
 
         Assert.That(BufferPool.TryReturn(rented), Is.False);
 
-        //rented = BufferPool.RentArray<byte>(BufferSize.Max);
+        rented = BufferPool.RentArray<byte>(BufferSize.MB_32, BufferSize.MB_16);
 
-        //Equals(rented, length: BufferSize.Max);
+        Equals(rented, length: BufferSize.MB_32);
 
-        //Assert.That(BufferPool.TryReturn(rented), Is.False);
+        Assert.That(BufferPool.TryReturn(rented), Is.False);
     }
 
     private static void Equals(RentedArray<byte> array,
