@@ -14,6 +14,26 @@ public static class BufferPool
             ? RentedArrayType.None : RentedArrayType.Shared);
     }
 
+    public static RentedArray<T> RentArray<T>(int minimumLength, int maximumLength)
+    {
+        if (minimumLength == 0) return new([]);
+        if (minimumLength > maximumLength)
+        {
+            return new(
+#if NET
+                typeof(T).IsPrimitive && typeof(T) != typeof(bool) ?
+                GC.AllocateUninitializedArray<T>(minimumLength) :
+                new T[minimumLength]
+#else
+                new T[minimumLength]
+#endif
+                );
+        }
+
+        var array = ArrayPool<T>.Shared.Rent(minimumLength);
+        return new(array, 0, minimumLength, RentedArrayType.Shared);
+    }
+
     public static TBuffer Rent<TBuffer>() where TBuffer : class, IDisposable, new()
         => BufferPool<TBuffer>.Shared.Rent();
 
