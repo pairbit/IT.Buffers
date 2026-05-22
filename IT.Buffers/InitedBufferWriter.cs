@@ -54,10 +54,11 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public InitedBufferWriter(T[] firstBuffer, int segmentsCapacity = 0, ArrayPool<T>? arrayPool = null)
+    public InitedBufferWriter(T[] firstBuffer, int firstBufferWritten = 0,
+        int segmentsCapacity = 0, ArrayPool<T>? arrayPool = null)
     {
         _firstBuffer = firstBuffer ?? throw new ArgumentNullException(nameof(firstBuffer));
-        _firstBufferWritten = 0;
+        _firstBufferWritten = firstBufferWritten;
         _buffers = new List<BufferSegment<T>>(segmentsCapacity);
         _arrayPool = arrayPool;
         _current = default;
