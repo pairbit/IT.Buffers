@@ -55,24 +55,19 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public BufferWriter() : this(0)
+    public BufferWriter()
     {
-
-    }
-
-    public BufferWriter(int segmentsCapacity)
-    {
-        _buffers = new List<BufferSegment<T>>(segmentsCapacity);
+        _buffers = new List<BufferSegment<T>>();
         _current = default;
         _nextBufferSize = 0;
         _written = 0;
         _segments = 0;
     }
 
-    //public void EnsureCapacitySegments(int capacity)
-    //{
-
-    //}
+    public void EnsureCapacitySegments(int capacity)
+    {
+        _buffers.EnsureCapacity(capacity);
+    }
 
     //public void ResetWritten()
     //{
