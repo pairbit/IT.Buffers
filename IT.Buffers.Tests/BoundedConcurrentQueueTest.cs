@@ -108,6 +108,7 @@ internal class BoundedConcurrentQueueTest
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new BoundedConcurrentQueue<byte[]>(-1));
         Assert.Throws<ArgumentOutOfRangeException>(() => new BoundedConcurrentQueue<byte[]>(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new BoundedConcurrentQueue<byte[]>(31));
     }
 
     private static int Power2(int power)
