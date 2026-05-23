@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace IT.Buffers.Internal;
@@ -14,6 +15,14 @@ internal static class xArray
         // Zero is a valid bufferSize, and it is assigned the highest bucket index so that zero-length
         // buffers are not retained by the pool. The pool will return the Array.Empty singleton for these.
         return System.Numerics.BitOperations.Log2((uint)bufferSize - 1 | 15) - 3;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static int GetMaxSizeForBucket(int index)
+    {
+        int maxSize = 16 << index;
+        Debug.Assert(maxSize >= 0);
+        return maxSize;
     }
 
     public static T[] AllocateUninitialized<T>(int length)
