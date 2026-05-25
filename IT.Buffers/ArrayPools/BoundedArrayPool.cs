@@ -47,17 +47,25 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
             {
                 if (queue.TryDequeue(out var buffer))
                 {
+                    Debug.Assert(buffer.Length >= minimumLength);
                     return buffer;
                 }
             }
             else if (bucket is T[] buffer)
             {
-                var prev = Interlocked.CompareExchange(ref buckets[bucketIndex], null, buffer);
-                //TODO: нас интересует любой буффер, не обязательно этот же
-                if (prev == buffer)
+                do
                 {
-                    return buffer;
-                }
+                    Debug.Assert(buffer.Length >= minimumLength);
+
+                    var value = Interlocked.CompareExchange(ref buckets[bucketIndex], null, buffer);
+                    if (ReferenceEquals(value, buffer))
+                        return buffer;
+
+                    if (value is null)
+                        break;
+
+                    buffer = (T[])value;
+                } while (true);
             }
 
             // No buffer available.  Ensure the length we'll allocate matches that of a bucket
