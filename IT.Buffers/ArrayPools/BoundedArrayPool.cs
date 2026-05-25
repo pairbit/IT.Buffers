@@ -8,20 +8,22 @@ namespace IT.Buffers;
 
 internal class BoundedArrayPool<T> : ArrayPool<T>
 {
-    private const int NumBuckets = 27;
-    private readonly int[] _powers;
-    private readonly BoundedConcurrentQueue<T[]>?[] _buckets = new BoundedConcurrentQueue<T[]>[NumBuckets];
+    private readonly BoundedArrayPoolOptions _options;
+    private readonly BoundedConcurrentQueue<T[]>?[] _buckets = new BoundedConcurrentQueue<T[]>[BoundedArrayPoolOptions.BucketsCount];
 
-    public BoundedArrayPool(int[] powers)
+    public BoundedArrayPool(BoundedArrayPoolOptions options)
     {
-        if (powers.Length != NumBuckets)
-            throw new ArgumentOutOfRangeException(nameof(powers));
-
-        _powers = powers;
+        _options = options;
     }
 
     public override T[] Rent(int minimumLength)
     {
+        if (minimumLength < 0)
+            throw new ArgumentOutOfRangeException(nameof(minimumLength));
+
+        if (minimumLength == 0)
+            return [];
+
         int bucketIndex = xArray.SelectBucketIndex(minimumLength);
         var buckets = _buckets;
         if ((uint)bucketIndex < (uint)buckets.Length)
@@ -39,14 +41,6 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
             // No buffer available.  Ensure the length we'll allocate matches that of a bucket
             // so we can later return it.
             minimumLength = xArray.GetMaxSizeForBucket(bucketIndex);
-        }
-        else if (minimumLength == 0)
-        {
-            return [];
-        }
-        else if (minimumLength < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(minimumLength));
         }
 
         return xArray.AllocateUninitialized<T>(minimumLength);
@@ -86,7 +80,7 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
 
     private BoundedConcurrentQueue<T[]> CreateBucket(int bucketIndex)
     {
-        var bucket = new BoundedConcurrentQueue<T[]>(_powers[bucketIndex]);
+        var bucket = new BoundedConcurrentQueue<T[]>(_options.Pow2s[bucketIndex]);
         return Interlocked.CompareExchange(ref _buckets[bucketIndex], bucket, null) ?? bucket;
     }
 }
