@@ -23,5 +23,7 @@ internal class BoundedArrayPoolTest
             Random.Shared.NextBytes(array2);
             Assert.That(arrayPool.TryReturn(array), Is.True);
         }
+
+        arrayPool.Clear();
     }
 }

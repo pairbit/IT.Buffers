@@ -108,6 +108,8 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
 
         public bool TryEnqueue(T[] array)
         {
+            Debug.Assert(array != null);
+
             if (array.Length != _length)
                 throw new ArgumentException("Buffer not from pool.", nameof(array));
 
