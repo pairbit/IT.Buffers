@@ -30,6 +30,9 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
 
     public override T[] Rent(int minimumLength)
     {
+        if (minimumLength < 0)
+            throw new ArgumentOutOfRangeException(nameof(minimumLength));
+
         int bucketIndex = xArray.SelectBucketIndex(minimumLength);
         var buckets = _buckets;
         if ((uint)bucketIndex < (uint)buckets.Length)
@@ -47,10 +50,6 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
         else if (minimumLength == 0)
         {
             return [];
-        }
-        else if (minimumLength < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(minimumLength));
         }
 
         return xArray.AllocateUninitialized<T>(minimumLength);
@@ -74,14 +73,8 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
             {
                 array.Clear();
             }
-
-            var bucket = buckets[bucketIndex];
-            if (array.Length != bucket._length)
-                throw new ArgumentException("Buffer not from pool.", nameof(array));
-
-
+            return buckets[bucketIndex].TryEnqueue(array);
         }
-
         return false;
     }
 
@@ -115,6 +108,9 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
 
         public bool TryEnqueue(T[] array)
         {
+            if (array.Length != _length)
+                throw new ArgumentException("Buffer not from pool.", nameof(array));
+
             var obj = _obj ?? CreateQueue();
             if (obj is BoundedConcurrentQueue<T[]> queue)
             {
@@ -145,7 +141,7 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
                 {
                     Debug.Assert(buffer.Length == _length);
 
-                    var value = Interlocked.CompareExchange(ref _obj, null, buffer);
+                    var value = Interlocked.CompareExchange(ref _obj, _empty, buffer);
                     if (ReferenceEquals(value, buffer))
                     {
                         array = buffer;
