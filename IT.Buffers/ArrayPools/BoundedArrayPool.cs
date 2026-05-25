@@ -9,7 +9,7 @@ namespace IT.Buffers;
 internal class BoundedArrayPool<T> : ArrayPool<T>
 {
     private readonly BoundedArrayPoolOptions _options;
-    private readonly BoundedConcurrentQueue<T[]>?[] _buckets = new BoundedConcurrentQueue<T[]>[BoundedArrayPoolOptions.BucketsCount];
+    private readonly BoundedConcurrentQueue<T[]>?[] _buckets = new BoundedConcurrentQueue<T[]>[BoundedArrayPoolOptions.Length];
 
     public BoundedArrayPool(BoundedArrayPoolOptions options)
     {

@@ -1,4 +1,5 @@
-﻿using IT.Buffers.Tests.Internal.Iteration;
+﻿/*
+using IT.Buffers.Tests.Internal.Iteration;
 
 namespace IT.Buffers.Tests.Iteration;
 
@@ -17,4 +18,4 @@ internal ref struct MultipartIterationReader
         _boundary = boundary;
         _spans = spans;
     }
-}
+}*/
