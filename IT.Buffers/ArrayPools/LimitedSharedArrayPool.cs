@@ -28,16 +28,9 @@ public sealed class LimitedSharedArrayPool<T> : ArrayPool<T>
 
     public override void Return(T[] array, bool clearArray = false)
     {
-        if (array != null && array.Length > 0)
+        if (array != null && array.Length > 0 && array.Length <= _maximumLength)
         {
-            if (array.Length <= _maximumLength)
-            {
-                Shared.Return(array, clearArray);
-            }
-            else if (clearArray)
-            {
-                array.Clear();
-            }
+            Shared.Return(array, clearArray);
         }
     }
 }

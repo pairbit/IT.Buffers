@@ -8,8 +8,9 @@ namespace IT.Buffers;
 
 internal class BoundedArrayPool<T> : ArrayPool<T>
 {
-    private readonly object _null = new();
-    private readonly object _empty = new();
+    private static readonly object _null = new();
+    private static readonly object _empty = new();
+
     private readonly BoundedArrayPoolOptions _options;
     private readonly object?[] _buckets;
 
@@ -17,9 +18,8 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
     {
         _options = options;
 
-        var buckets = new object?[BoundedArrayPoolOptions.Length];
         var pow2s = options.Pow2s;
-        Debug.Assert(pow2s.Length == buckets.Length);
+        var buckets = new object?[pow2s.Length];
 
         for (int i = 0; i < buckets.Length; i++)
         {
@@ -38,9 +38,6 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
 
     public override T[] Rent(int minimumLength)
     {
-        if (minimumLength < 0)
-            throw new ArgumentOutOfRangeException(nameof(minimumLength));
-
         int bucketIndex = xArray.SelectBucketIndex(minimumLength);
         var buckets = _buckets;
         if ((uint)bucketIndex < (uint)buckets.Length)
@@ -50,14 +47,14 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
             {
                 if (queue.TryDequeue(out var buffer))
                 {
-                    Debug.Assert(buffer.Length >= minimumLength);
                     return buffer;
                 }
             }
             else if (bucket is T[] buffer)
             {
-                Debug.Assert(buffer.Length >= minimumLength);
-                if (Interlocked.CompareExchange(ref buckets[bucketIndex], null, buffer) == buffer)
+                var prev = Interlocked.CompareExchange(ref buckets[bucketIndex], null, buffer);
+                //TODO: нас интересует любой буффер, не обязательно этот же
+                if (prev == buffer)
                 {
                     return buffer;
                 }
@@ -70,6 +67,10 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
         else if (minimumLength == 0)
         {
             return [];
+        }
+        else if (minimumLength < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(minimumLength));
         }
 
         return xArray.AllocateUninitialized<T>(minimumLength);
@@ -85,15 +86,15 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
         if (array == null)
             throw new ArgumentNullException(nameof(array));
 
-        if (clearArray)
-        {
-            array.Clear();
-        }
-
         int bucketIndex = xArray.SelectBucketIndex(array.Length);
         var buckets = _buckets;
         if ((uint)bucketIndex < (uint)buckets.Length)
         {
+            if (clearArray)
+            {
+                array.Clear();
+            }
+
             if (array.Length != xArray.GetMaxSizeForBucket(bucketIndex))
                 throw new ArgumentException("Buffer not from pool.", nameof(array));
 
@@ -102,7 +103,7 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
             {
                 return queue.TryEnqueue(array);
             }
-            else if (bucket == _empty)
+            else if (ReferenceEquals(bucket, _empty))
             {
                 return Interlocked.CompareExchange(ref buckets[bucketIndex], array, _empty) == _empty;
             }
@@ -121,8 +122,10 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
             {
                 buckets[i] = null;
             }
-            else if (bucket is T[])
+            else if (bucket is T[] array)
             {
+                Debug.Assert(array.Length > 0);
+
                 buckets[i] = _empty;
             }
         }

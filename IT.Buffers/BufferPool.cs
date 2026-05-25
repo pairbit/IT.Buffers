@@ -38,14 +38,10 @@ public static class BufferPool
         var array = rentedArray.Array;
         if (array != null && array.Length > 0)
         {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                array.Clear();
-            }
             var type = rentedArray.Type;
             if (type == RentedArrayType.Shared)
             {
-                ArrayPool<T>.Shared.Return(array);
+                Return(array);
                 return true;
             }
             if (type != RentedArrayType.None)
