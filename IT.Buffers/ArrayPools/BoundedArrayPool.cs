@@ -9,18 +9,22 @@ namespace IT.Buffers;
 
 internal class BoundedArrayPool<T> : ArrayPool<T>
 {
+    private const int LastBucketIndex = 27;
     private static readonly object _empty = new();
 
-    private readonly BoundedArrayPoolOptions _options;
     private readonly Bucket[] _buckets;
+    private readonly Bucket? _lastBucket;
 
     public BoundedArrayPool(BoundedArrayPoolOptions options)
     {
-        _options = options;
-
         var pow2s = options.Pow2s;
-        var buckets = new Bucket[pow2s.Length];
-
+        var length = pow2s.Length;
+        if (length == BoundedArrayPoolOptions.MaxLength)
+        {
+            length--;
+            _lastBucket = new Bucket(LastBucketIndex, pow2s[LastBucketIndex]);
+        }
+        var buckets = new Bucket[length];
         for (int i = 0; i < buckets.Length; i++)
         {
             buckets[i] = new Bucket(i, pow2s[i]);
@@ -30,9 +34,6 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
 
     public override T[] Rent(int minimumLength)
     {
-        if (minimumLength < 0)
-            throw new ArgumentOutOfRangeException(nameof(minimumLength));
-
         int bucketIndex = xArray.SelectBucketIndex(minimumLength);
         var buckets = _buckets;
         if ((uint)bucketIndex < (uint)buckets.Length)
@@ -50,6 +51,28 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
         else if (minimumLength == 0)
         {
             return [];
+        }
+        else if (minimumLength < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(minimumLength));
+        }
+        else if (bucketIndex == LastBucketIndex)
+        {
+            if (minimumLength > BufferSize.Max)
+                throw new ArgumentOutOfRangeException(nameof(minimumLength));
+
+            var lastBucket = _lastBucket;
+            if (lastBucket != null)
+            {
+                if (lastBucket.TryDequeue(out var buffer))
+                {
+                    Debug.Assert(buffer.Length >= minimumLength);
+
+                    return buffer;
+                }
+
+                minimumLength = lastBucket._length;
+            }
         }
 
         return xArray.AllocateUninitialized<T>(minimumLength);
@@ -70,18 +93,32 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
         if ((uint)bucketIndex < (uint)buckets.Length)
         {
             if (clearArray)
-            {
                 array.Clear();
-            }
+
             return buckets[bucketIndex].TryEnqueue(array);
+        }
+        else if (bucketIndex == LastBucketIndex)
+        {
+            var lastBucket = _lastBucket;
+            if (lastBucket != null)
+            {
+                if (clearArray)
+                    array.Clear();
+
+                return lastBucket.TryEnqueue(array);
+            }
         }
         return false;
     }
 
     public void Clear()
     {
+        var lastBucket = _lastBucket;
+        if (lastBucket != null)
+            lastBucket.Clear();
+
         var buckets = _buckets;
-        for (int i = 0; i < buckets.Length; i++)
+        for (int i = buckets.Length - 1; i >= 0; i--)
         {
             buckets[i].Clear();
         }
