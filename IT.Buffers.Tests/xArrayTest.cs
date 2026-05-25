@@ -30,6 +30,6 @@ internal class xArrayTest
         Assert.That(xArray.GetMaxSizeForBucket(2), Is.EqualTo(64));
         Assert.That(xArray.GetMaxSizeForBucket(3), Is.EqualTo(128));
         Assert.That(xArray.GetMaxSizeForBucket(26), Is.EqualTo(1073741824));
-        //Assert.That(xArray.GetMaxSizeForBucket(27), Is.EqualTo(1073741824));
+        Assert.That(xArray.GetMaxSizeForBucket(27), Is.EqualTo(Array.MaxLength));
     }
 }

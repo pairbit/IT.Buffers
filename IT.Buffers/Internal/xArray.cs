@@ -20,6 +20,8 @@ internal static class xArray
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static int GetMaxSizeForBucket(int index)
     {
+        if (index == 27) return BufferSize.Max;
+
         int maxSize = 16 << index;
         Debug.Assert(maxSize >= 0);
         return maxSize;

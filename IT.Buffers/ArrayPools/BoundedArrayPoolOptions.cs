@@ -22,7 +22,7 @@ internal readonly struct BoundedArrayPoolOptions
         for (int i = 0; i < pow2s.Length; i++)
         {
             var pow2 = pow2s[i];
-            if (pow2 < -1 || pow2 > 30)
+            if (pow2 < 0 || pow2 > 30)
                 throw new ArgumentOutOfRangeException(nameof(pow2s));
         }
         _pow2s = pow2s;
