@@ -9,7 +9,7 @@ namespace IT.Buffers;
 internal class BoundedArrayPool<T> : ArrayPool<T>
 {
     private readonly object _null = new();
-    private readonly object _empty = Array.Empty<T>();
+    private readonly object _empty = new();
     private readonly BoundedArrayPoolOptions _options;
     private readonly object?[] _buckets;
 
@@ -46,22 +46,20 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
         if ((uint)bucketIndex < (uint)buckets.Length)
         {
             var bucket = buckets[bucketIndex];
-            if (bucket is not null)
+            if (bucket is BoundedConcurrentQueue<T[]> queue)
             {
-                if (bucket is BoundedConcurrentQueue<T[]> queue)
+                if (queue.TryDequeue(out var buffer))
                 {
-                    if (queue.TryDequeue(out var buffer))
-                    {
-                        Debug.Assert(buffer.Length >= minimumLength);
-                        return buffer;
-                    }
+                    Debug.Assert(buffer.Length >= minimumLength);
+                    return buffer;
                 }
-                else if (bucket is T[] buffer)
+            }
+            else if (bucket is T[] buffer)
+            {
+                Debug.Assert(buffer.Length >= minimumLength);
+                if (Interlocked.CompareExchange(ref buckets[bucketIndex], null, buffer) == buffer)
                 {
-                    if (Interlocked.CompareExchange(ref buckets[bucketIndex], null, buffer) == buffer)
-                    {
-
-                    }
+                    return buffer;
                 }
             }
 
@@ -79,6 +77,11 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
 
     public override void Return(T[] array, bool clearArray = false)
     {
+        var added = TryReturn(array, clearArray);
+    }
+
+    public bool TryReturn(T[] array, bool clearArray = false)
+    {
         if (array == null)
             throw new ArgumentNullException(nameof(array));
 
@@ -92,20 +95,20 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
         if ((uint)bucketIndex < (uint)buckets.Length)
         {
             if (array.Length != xArray.GetMaxSizeForBucket(bucketIndex))
-            {
                 throw new ArgumentException("Buffer not from pool.", nameof(array));
-            }
 
             var bucket = buckets[bucketIndex] ?? CreateQueue(bucketIndex);
             if (bucket is BoundedConcurrentQueue<T[]> queue)
             {
-                var added = queue.TryEnqueue(array);
+                return queue.TryEnqueue(array);
             }
-            else if (bucket is T[] buffer)
+            else if (bucket == _empty)
             {
-                var added = Interlocked.CompareExchange(ref buckets[bucketIndex], array, _empty) == _empty;
+                return Interlocked.CompareExchange(ref buckets[bucketIndex], array, _empty) == _empty;
             }
         }
+
+        return false;
     }
 
     public void Clear()
@@ -118,7 +121,7 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
             {
                 buckets[i] = null;
             }
-            else if (bucket is T[] buffer && buffer.Length > 0)
+            else if (bucket is T[])
             {
                 buckets[i] = _empty;
             }
