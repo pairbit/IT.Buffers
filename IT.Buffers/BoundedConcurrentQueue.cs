@@ -29,11 +29,12 @@ public sealed class BoundedConcurrentQueue<T>
     /// <param name="boundedLength">
     /// The maximum number of elements the segment can contain.  Must be a power of 2.
     /// </param>
-    public BoundedConcurrentQueue(int power2 = 5)
+    public BoundedConcurrentQueue(int pow2 = 5)
     {
-        if (power2 < 1 || power2 > 30) throw new System.ArgumentOutOfRangeException(nameof(power2));
+        if (pow2 < 1 || pow2 > 30)
+            throw new System.ArgumentOutOfRangeException(nameof(pow2));
 
-        var boundedLength = 2 << (power2 - 1);
+        var boundedLength = 2 << (pow2 - 1);
 
         Debug.Assert(boundedLength >= 2, $"Must be >= 2, got {boundedLength}");
 #if NET
