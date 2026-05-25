@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace IT.Buffers;
 
@@ -35,5 +36,20 @@ internal readonly struct BoundedArrayPoolOptions
                 throw new ArgumentOutOfRangeException(nameof(pow2s));
         }
         _pow2s = pow2s;
+    }
+
+    public BoundedArrayPoolOptions SetPow2(sbyte pow2)
+    {
+        if (pow2 < 1 || pow2 > 30)
+            throw new ArgumentOutOfRangeException(nameof(pow2));
+
+        var pow2s = _pow2s.ToArray();
+
+        for (int i = 0; i < pow2s.Length; i++)
+        {
+            pow2s[i] = pow2;
+        }
+
+        return new(pow2s);
     }
 }

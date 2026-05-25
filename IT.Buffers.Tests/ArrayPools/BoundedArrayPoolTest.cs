@@ -18,9 +18,21 @@ internal class BoundedArrayPoolTest
     }
 
     //[Test]
-    public void Test()
+    public void Test_1()
     {
         var options = new BoundedArrayPoolOptions();
+        BacketsTest(options);
+    }
+
+    //[Test]
+    public void Test_2()
+    {
+        var options = new BoundedArrayPoolOptions();
+        BacketsTest(options.SetPow2(1));
+    }
+
+    private static void BacketsTest(BoundedArrayPoolOptions options)
+    {
         var arrayPool = new BoundedArrayPool<byte>(options);
 
         var array = arrayPool.Rent(0);
