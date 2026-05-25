@@ -4,7 +4,7 @@ namespace IT.Buffers;
 
 internal readonly struct BoundedArrayPoolOptions
 {
-    internal const int Length = 27;
+    internal const int Length = 28;
     private readonly sbyte[] _pow2s;
 
     public ReadOnlySpan<sbyte> Pow2s => _pow2s;

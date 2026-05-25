@@ -21,9 +21,6 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
         if (minimumLength < 0)
             throw new ArgumentOutOfRangeException(nameof(minimumLength));
 
-        if (minimumLength == 0)
-            return [];
-
         int bucketIndex = xArray.SelectBucketIndex(minimumLength);
         var buckets = _buckets;
         if ((uint)bucketIndex < (uint)buckets.Length)
@@ -41,6 +38,10 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
             // No buffer available.  Ensure the length we'll allocate matches that of a bucket
             // so we can later return it.
             minimumLength = xArray.GetMaxSizeForBucket(bucketIndex);
+        }
+        else if (minimumLength == 0)
+        {
+            return [];
         }
 
         return xArray.AllocateUninitialized<T>(minimumLength);

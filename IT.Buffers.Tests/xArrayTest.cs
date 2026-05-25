@@ -18,6 +18,8 @@ internal class xArrayTest
        
         Assert.That(xArray.SelectBucketIndex(0), Is.EqualTo(28));
         Assert.That(xArray.SelectBucketIndex(-1), Is.EqualTo(28));
+        Assert.That(xArray.SelectBucketIndex(int.MinValue + 1), Is.EqualTo(28));
+        Assert.That(xArray.SelectBucketIndex(int.MinValue), Is.EqualTo(27));
     }
 
     [Test]
