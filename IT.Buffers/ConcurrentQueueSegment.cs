@@ -10,7 +10,7 @@ namespace IT.Buffers;
 //14/10/2022 6:41 AM
 //https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Collections/Concurrent/ConcurrentQueueSegment.cs
 [DebuggerDisplay("Capacity = {Capacity}")]
-public sealed class BoundedConcurrentQueue<T>
+public sealed class ConcurrentQueueSegment<T>
 {
     [StructLayout(LayoutKind.Auto)]
     [DebuggerDisplay("Item = {Item}, SequenceNumber = {SequenceNumber}")]
@@ -20,7 +20,7 @@ public sealed class BoundedConcurrentQueue<T>
         public int SequenceNumber;
     }
 
-    private readonly Slot[] _slots; // SOS's ThreadPool command depends on this name
+    private readonly Slot[] _slots;
     private readonly int _slotsMask;
     private PaddedHeadAndTail _headAndTail;
     private bool _preservedForObservation;
@@ -29,7 +29,7 @@ public sealed class BoundedConcurrentQueue<T>
     /// <param name="boundedLength">
     /// The maximum number of elements the segment can contain.  Must be a power of 2.
     /// </param>
-    public BoundedConcurrentQueue(int pow2 = 5)
+    public ConcurrentQueueSegment(int pow2 = 5)
     {
         if (pow2 < 1 || pow2 > 30)
             throw new System.ArgumentOutOfRangeException(nameof(pow2));

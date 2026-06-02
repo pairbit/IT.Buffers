@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace IT.Buffers.Tests;
 
-internal class BoundedConcurrentQueueTest
+internal class ConcurrentQueueSegmentTest
 {
     [Test]
     public void Power2Test()
@@ -33,7 +33,7 @@ internal class BoundedConcurrentQueueTest
     [Test]
     public void EnqueueDequeueTest()
     {
-        var queue = new BoundedConcurrentQueue<byte[]>(1);
+        var queue = new ConcurrentQueueSegment<byte[]>(1);
         
         Assert.That(queue.Capacity, Is.EqualTo(2));
         Assert.That(queue.TryEnqueue(new byte[1]), Is.True);
@@ -53,7 +53,7 @@ internal class BoundedConcurrentQueueTest
     [Test]
     public void IsEmptyTest()
     {
-        var queue = new BoundedConcurrentQueue<byte[]>(1);
+        var queue = new ConcurrentQueueSegment<byte[]>(1);
         
         Assert.That(queue.Capacity, Is.EqualTo(2));
         Assert.That(queue.IsEmpty(), Is.True);
@@ -74,7 +74,7 @@ internal class BoundedConcurrentQueueTest
     [Test]
     public void FreezeTest()
     {
-        var queue = new BoundedConcurrentQueue<byte[]>(1);
+        var queue = new ConcurrentQueueSegment<byte[]>(1);
 
         Assert.That(queue.Capacity, Is.EqualTo(2));
         Assert.That(queue.IsEmpty(), Is.True);
@@ -106,9 +106,9 @@ internal class BoundedConcurrentQueueTest
     [Test]
     public void InvalidTest()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new BoundedConcurrentQueue<byte[]>(-1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new BoundedConcurrentQueue<byte[]>(0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new BoundedConcurrentQueue<byte[]>(31));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ConcurrentQueueSegment<byte[]>(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ConcurrentQueueSegment<byte[]>(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ConcurrentQueueSegment<byte[]>(31));
     }
 
     private static int Power2(int power)

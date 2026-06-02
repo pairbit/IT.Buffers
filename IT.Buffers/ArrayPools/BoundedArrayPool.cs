@@ -130,7 +130,7 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
         public readonly int _pow2;
         public object? _obj;
 
-        public BoundedConcurrentQueue<T[]>? Queue => _obj as BoundedConcurrentQueue<T[]>;
+        public ConcurrentQueueSegment<T[]>? Queue => _obj as ConcurrentQueueSegment<T[]>;
 
         public T[]? Array => _obj as T[];
 
@@ -151,7 +151,7 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
                 throw new ArgumentException("Buffer not from pool.", nameof(array));
 
             var obj = _obj ?? CreateQueue();
-            if (obj is BoundedConcurrentQueue<T[]> queue)
+            if (obj is ConcurrentQueueSegment<T[]> queue)
             {
                 return queue.TryEnqueue(array);
             }
@@ -165,7 +165,7 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
         public bool TryDequeue([MaybeNullWhen(false)] out T[] array)
         {
             var obj = _obj;
-            if (obj is BoundedConcurrentQueue<T[]> queue)
+            if (obj is ConcurrentQueueSegment<T[]> queue)
             {
                 if (queue.TryDequeue(out array))
                 {
@@ -201,7 +201,7 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
         public void Clear()
         {
             var obj = _obj;
-            if (obj is BoundedConcurrentQueue<T[]>)
+            if (obj is ConcurrentQueueSegment<T[]>)
             {
                 _obj = null;
             }
@@ -215,7 +215,7 @@ internal class BoundedArrayPool<T> : ArrayPool<T>
 
         private object CreateQueue()
         {
-            var queue = new BoundedConcurrentQueue<T[]>(_pow2);
+            var queue = new ConcurrentQueueSegment<T[]>(_pow2);
             return Interlocked.CompareExchange(ref _obj, queue, null) ?? queue;
         }
     }
