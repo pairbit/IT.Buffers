@@ -30,4 +30,6 @@ public interface IAdvancedBufferWriter<T> : IBufferWriter<T>
         , allows ref struct
 #endif
         ;
+
+    //void Reset();
 }

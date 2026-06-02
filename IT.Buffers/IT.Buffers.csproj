@@ -1,19 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.1;net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1;net6.0;net7.0;net8.0;net9.0;net10.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Company />
-    <Description>ReadOnlySequenceBuilder, ValueBufferWriters, RentedBufferWriter, LinkedBufferWriter, BufferWriterStream</Description>
+    <Description>ReadOnlySequenceBuilder, ValueBufferWriters, BufferWriter, RentedBufferWriter, BufferWriterStream</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/pairbit/IT.Buffers</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <Authors>Ivan Tikhonov</Authors>
     <Copyright>Ivan Tikhonov © 2024</Copyright>
-    <Version>2.0.27</Version>
+    <Version>2.0.28</Version>
     <PackageTags>Buffers</PackageTags>
     <PackageReadmeFile>Readme.md</PackageReadmeFile>
     <PackageIcon>Icon.png</PackageIcon>

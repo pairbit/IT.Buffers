@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="IT.Buffers.Tests/IT.Buffers.Tests.csproj" />
+  <Project Path="IT.Buffers/IT.Buffers.csproj" />
+</Solution>

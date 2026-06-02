@@ -1,0 +1,393 @@
+﻿using IT.Buffers.Extensions;
+using IT.Buffers.Interfaces;
+using IT.Buffers.Internal;
+using System;
+using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+
+namespace IT.Buffers;
+
+public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
+{
+    public static BufferPool<BufferWriter<T>> Pool =>
+        BufferPool<BufferWriter<T>>.Shared;
+
+    internal ArrayPool<T>? _arrayPool;
+    internal readonly List<BufferSegment<T>> _buffers;
+
+    internal BufferSegment<T> _current;
+    private int _nextBufferSize;
+
+    internal long _written;
+    private int _segments;
+
+    public int Written => checked((int)_written);
+
+    public long WrittenLong => _written;
+
+    public int Segments => _segments;
+
+    bool IAdvancedBufferWriter<T>.HasMemory => true;
+
+    bool IAdvancedBufferWriter<T>.IsFixed => false;
+
+    public ArrayPool<T>? ArrayPool
+    {
+        get => _arrayPool;
+        set
+        {
+            if (_segments != 0) throw new InvalidOperationException();
+
+            _arrayPool = value;
+        }
+    }
+
+    public int NextBufferSize
+    {
+        get { return _nextBufferSize; }
+        set
+        {
+            if (value < 0 || value > BufferSize.Max) throw new ArgumentOutOfRangeException(nameof(value));
+            _nextBufferSize = value;
+        }
+    }
+
+    public BufferWriter()
+    {
+        _buffers = new List<BufferSegment<T>>();
+        _current = default;
+        _nextBufferSize = 0;
+        _written = 0;
+        _segments = 0;
+    }
+
+    public void EnsureCapacitySegments(int capacity)
+    {
+        _buffers.EnsureCapacity(capacity);
+    }
+
+    //public void ResetWritten()
+    //{
+    //    _written = 0;
+    //    _firstBufferWritten = 0;
+    //}
+
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public Memory<T> GetMemory(int sizeHint = 0)
+    {
+        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        if (sizeHint == 0) sizeHint = 1;
+
+        var freeMemory = _current.FreeMemory;
+        if (freeMemory.Length >= sizeHint) return freeMemory;
+
+        var next = GetNextBuffer(sizeHint);
+
+        if (_current.Written != 0) _buffers.Add(_current);
+
+        _current = next;
+
+        return next.FreeMemory;
+    }
+
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public Span<T> GetSpan(int sizeHint = 0)
+    {
+        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        if (sizeHint == 0) sizeHint = 1;
+
+        var freeSpan = _current.FreeSpan;
+        if (freeSpan.Length >= sizeHint) return freeSpan;
+
+        var next = GetNextBuffer(sizeHint);
+
+        if (_current.Written != 0) _buffers.Add(_current);
+
+        _current = next;
+
+        return next.FreeSpan;
+    }
+
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Advance(int count)
+    {
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count > 0)
+        {
+            _current.Advance(count);
+            _written += count;
+        }
+    }
+
+    public bool TryWrite(Span<T> span)
+    {
+        var written = _written;
+        if (span.Length < written) return false;
+
+        if (written > 0)
+        {
+            if (_buffers.Count > 0)
+            {
+#if NET6_0_OR_GREATER
+                foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+#else
+                foreach (var item in _buffers)
+#endif
+                {
+                    Debug.Assert(item.Written > 0);
+                    item.WrittenSpan.CopyTo(span);
+                    span = span[item.Written..];
+                }
+            }
+
+            if (!_current.IsNull)
+            {
+                Debug.Assert(_current.Written > 0);
+                _current.WrittenSpan.CopyTo(span);
+            }
+        }
+
+        return true;
+    }
+
+    public void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
+#endif
+    {
+        if (_written == 0) return;
+
+        if (_buffers.Count > 0)
+        {
+#if NET6_0_OR_GREATER
+            foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+#else
+            foreach (var item in _buffers)
+#endif
+            {
+                Debug.Assert(item.Written > 0);
+                RefBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
+            }
+        }
+
+        if (!_current.IsNull)
+        {
+            Debug.Assert(_current.Written > 0);
+            RefBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
+        }
+    }
+
+    public bool TryWriteAndReset(Span<T> span)
+    {
+        var written = _written;
+        if (span.Length < written) return false;
+
+        if (written > 0)
+        {
+            if (_buffers.Count > 0)
+            {
+#if NET6_0_OR_GREATER
+                foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+#else
+                foreach (var item in _buffers)
+#endif
+                {
+                    Debug.Assert(item.Written > 0);
+                    item.WrittenSpan.CopyTo(span);
+                    span = span[item.Written..];
+                    item.Reset(_arrayPool);
+                }
+            }
+
+            if (!_current.IsNull)
+            {
+                Debug.Assert(_current.Written > 0);
+                _current.WrittenSpan.CopyTo(span);
+                _current.Reset(_arrayPool);
+            }
+
+            ResetCore();
+        }
+
+        return true;
+    }
+
+    public void WriteAndReset<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+    {
+        if (_written == 0) return;
+
+        if (_buffers.Count > 0)
+        {
+#if NET6_0_OR_GREATER
+            foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+#else
+            foreach (var item in _buffers)
+#endif
+            {
+                Debug.Assert(item.Written > 0);
+                RefBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
+                item.Reset(_arrayPool);
+            }
+        }
+
+        if (!_current.IsNull)
+        {
+            Debug.Assert(_current.Written > 0);
+            RefBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
+            _current.Reset(_arrayPool);
+        }
+
+        ResetCore();
+    }
+
+    public Enumerator GetEnumerator() => new(this);
+
+    public Memory<T> GetWrittenMemory(int segment = 0)
+    {
+        if (segment < 0 || segment >= _segments) throw new ArgumentOutOfRangeException(nameof(segment));
+
+        if (_buffers.Count > segment) return
+#if NET6_0_OR_GREATER
+        System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers)[segment]
+#else
+        _buffers[segment]
+#endif
+                .WrittenMemory;
+
+        Debug.Assert(!_current.IsNull);
+        return _current.WrittenMemory;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Reset()
+    {
+        //https://github.com/pairbit/IT.Buffers/issues/7
+        //if you do a check (written == 0), a leak may occur if method Advance is not called
+        //if (_written == 0) return;
+
+#if NET6_0_OR_GREATER
+        foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+#else
+        foreach (var item in _buffers)
+#endif
+        {
+            item.Reset(_arrayPool);
+        }
+        _current.Reset(_arrayPool);
+        ResetCore();
+    }
+
+    // reset without list's BufferSegment element
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void ResetCore()
+    {
+        _buffers.Clear();
+        _written = 0;
+        _current = default;
+        _nextBufferSize = 0;
+        _segments = 0;
+        _arrayPool = null;
+    }
+
+    private BufferSegment<T> GetNextBuffer(int sizeHint)
+    {
+        BufferSegment<T> next;
+        var nextBufferSize = _nextBufferSize;
+        if (nextBufferSize >= sizeHint)
+        {
+            next = new BufferSegment<T>(Rent(nextBufferSize));
+            _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
+        }
+        else
+        {
+            next = new BufferSegment<T>(Rent(sizeHint));
+            if (nextBufferSize == 0) _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
+        }
+        _segments++;
+        return next;
+    }
+
+    private T[] Rent(int size)
+    {
+        //TODO: сделать проверку на OutOfMemoryException($"Size {sizeHint} > {Max}")
+        return (_arrayPool ?? ArrayPool<T>.Shared).Rent(size);
+    }
+
+    void IDisposable.Dispose() => Reset();
+
+    public struct Enumerator : IEnumerator<Memory<T>>
+    {
+        private readonly BufferWriter<T> _parent;
+        private State _state;
+        private Memory<T> _current;
+        private List<BufferSegment<T>>.Enumerator _buffersEnumerator;
+
+        public Enumerator(BufferWriter<T> parent)
+        {
+            _parent = parent;
+            _state = default;
+            _current = default;
+            _buffersEnumerator = default;
+        }
+
+        public readonly Memory<T> Current => _current;
+
+        readonly object IEnumerator.Current => throw new NotSupportedException();
+
+        public readonly void Dispose()
+        {
+        }
+
+        public bool MoveNext()
+        {
+            if (_state == State.Init)
+            {
+                _state = State.Iterate;
+                _buffersEnumerator = _parent._buffers.GetEnumerator();
+            }
+
+            if (_state == State.Iterate)
+            {
+                if (_buffersEnumerator.MoveNext())
+                {
+                    _current = _buffersEnumerator.Current.WrittenMemory;
+                    return true;
+                }
+
+                _buffersEnumerator.Dispose();
+                _state = State.Current;
+            }
+
+            if (_state == State.Current)
+            {
+                _state = State.End;
+                if (_parent._current.Written > 0)
+                {
+                    _current = _parent._current.WrittenMemory;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void Reset()
+        {
+            _state = default;
+            _current = default;
+            _buffersEnumerator = default;
+        }
+
+        enum State
+        {
+            Init,
+            Iterate,
+            Current,
+            End
+        }
+    }
+}

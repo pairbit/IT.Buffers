@@ -34,9 +34,7 @@ public static class BufferSize<T>
     public static readonly int Max_Half;//2^30 - 29
     public static readonly int GB;//2^30
     public static readonly int Max;//2^31 - 57
-#if NET
     public static readonly int Log2;
-#endif
 
     static BufferSize()
     {
@@ -69,8 +67,6 @@ public static class BufferSize<T>
         Max_Half = BufferSize.Max_Half / size;
         GB = BufferSize.GB / size;
         Max = BufferSize.Max / size;
-#if NET
         Log2 = BufferSize.Log2(size);
-#endif
     }
 }

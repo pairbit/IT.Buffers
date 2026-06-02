@@ -10,11 +10,9 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
+public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
-    public static BufferPool<LinkedBufferWriter<T>> Pool =>
-        BufferPool<LinkedBufferWriter<T>>.Shared;
-
+    internal readonly ArrayPool<T>? _arrayPool;
     internal readonly List<BufferSegment<T>> _buffers;
 
     //TODO: add to BufferSegment
@@ -56,51 +54,23 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public LinkedBufferWriter()
+    public InitedBufferWriter(T[] firstBuffer, int firstBufferWritten = 0,
+        int segmentsCapacity = 0, ArrayPool<T>? arrayPool = null)
     {
-        _buffers = [];
-        _firstBuffer = [];
-        _firstBufferWritten = 0;
-        _current = default;
-        _nextBufferSize = 0;
-        _written = 0;
-        _segments = 0;
-    }
-
-    public LinkedBufferWriter(int bufferSize, bool useFirstBuffer = false, int segmentsCapacity = 0
-#if NET5_0_OR_GREATER
-        , bool pinned = false
-#endif
-        )
-    {
-        if (bufferSize < 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
-
-        if (useFirstBuffer && bufferSize > 0)
-        {
-            _firstBuffer =
-#if NET5_0_OR_GREATER
-                GC.AllocateUninitializedArray<T>(bufferSize, pinned);
-#else
-                new T[bufferSize];
-#endif
-            _segments = 1;
-        }
-        else
-        {
-            _firstBuffer = [];
-            _segments = 0;
-        }
+        _firstBuffer = firstBuffer ?? throw new ArgumentNullException(nameof(firstBuffer));
+        _firstBufferWritten = firstBufferWritten;
         _buffers = new List<BufferSegment<T>>(segmentsCapacity);
-        _firstBufferWritten = 0;
+        _arrayPool = arrayPool;
         _current = default;
-        _nextBufferSize = bufferSize;
+        _nextBufferSize = firstBuffer.Length;
         _written = 0;
+        _segments = 1;
     }
 
-    //public void EnsureCapacitySegments(int capacity)
-    //{
-
-    //}
+    public void EnsureCapacitySegments(int capacity)
+    {
+        _buffers.EnsureCapacity(capacity);
+    }
 
     //public void ResetWritten()
     //{
@@ -280,7 +250,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
                     Debug.Assert(item.Written > 0);
                     item.WrittenSpan.CopyTo(span);
                     span = span[item.Written..];
-                    item.Reset();
+                    item.Reset(_arrayPool);
                 }
             }
 
@@ -288,7 +258,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             {
                 Debug.Assert(_current.Written > 0);
                 _current.WrittenSpan.CopyTo(span);
-                _current.Reset();
+                _current.Reset(_arrayPool);
             }
 
             ResetCore();
@@ -314,7 +284,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             {
                 Debug.Assert(item.Written > 0);
                 RefBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
-                item.Reset();
+                item.Reset(_arrayPool);
             }
         }
 
@@ -322,7 +292,7 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         {
             Debug.Assert(_current.Written > 0);
             RefBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
-            _current.Reset();
+            _current.Reset(_arrayPool);
         }
 
         ResetCore();
@@ -370,9 +340,9 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         foreach (var item in _buffers)
 #endif
         {
-            item.Reset();
+            item.Reset(_arrayPool);
         }
-        _current.Reset();
+        _current.Reset(_arrayPool);
         ResetCore();
     }
 
@@ -397,28 +367,34 @@ public class LinkedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         var nextBufferSize = _nextBufferSize;
         if (nextBufferSize >= sizeHint)
         {
-            next = new BufferSegment<T>(nextBufferSize);
+            next = new BufferSegment<T>(Rent(nextBufferSize));
             _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
         else
         {
-            next = new BufferSegment<T>(sizeHint);
+            next = new BufferSegment<T>(Rent(sizeHint));
             if (nextBufferSize == 0) _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
         _segments++;
         return next;
     }
 
+    private T[] Rent(int size)
+    {
+        //TODO: сделать проверку на OutOfMemoryException($"Size {sizeHint} > {Max}")
+        return (_arrayPool ?? ArrayPool<T>.Shared).Rent(size);
+    }
+
     void IDisposable.Dispose() => Reset();
 
     public struct Enumerator : IEnumerator<Memory<T>>
     {
-        private readonly LinkedBufferWriter<T> _parent;
+        private readonly InitedBufferWriter<T> _parent;
         private State _state;
         private Memory<T> _current;
         private List<BufferSegment<T>>.Enumerator _buffersEnumerator;
 
-        public Enumerator(LinkedBufferWriter<T> parent)
+        public Enumerator(InitedBufferWriter<T> parent)
         {
             _parent = parent;
             _state = default;

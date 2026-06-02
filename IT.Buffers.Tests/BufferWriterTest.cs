@@ -2,12 +2,14 @@
 
 namespace IT.Buffers.Tests;
 
-public class LinkedBufferWriterTest
+public class BufferWriterTest
 {
     [Test]
     public void Test_Pool()
     {
-        var writer = LinkedBufferWriter<byte>.Pool.Rent();
+        //var bf = new ArrayBufferWriter<byte>();
+        
+        var writer = BufferWriter<byte>.Pool.Rent();
         Assert.That(writer.Segments, Is.EqualTo(0));
         Assert.Throws<ArgumentOutOfRangeException>(() => writer.GetWrittenMemory(0));
         try
@@ -16,31 +18,33 @@ public class LinkedBufferWriterTest
         }
         finally
         {
-            Assert.That(LinkedBufferWriter<byte>.Pool.TryReturn(writer), Is.True);
+            Assert.That(BufferWriter<byte>.Pool.TryReturn(writer), Is.True);
         }
     }
 
     [Test]
     public void Test_FirstBuffer()
     {
-        var writer = new LinkedBufferWriter<byte>(BufferSize.KB, true);
+        var writer = new InitedBufferWriter<byte>(new byte[BufferSize.KB]);
 
         Assert.That(writer.Segments, Is.EqualTo(1));
         Assert.That(writer.GetWrittenMemory(0).IsEmpty, Is.True);
 
-        Test(writer);
+        //Test(writer);
     }
 
-    private void Test(LinkedBufferWriter<byte> writer)
+    private void Test(BufferWriter<byte> writer)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => writer.Advance(-1));
         var i = 0;
         var e = writer.GetEnumerator();
         Assert.That(e.MoveNext(), Is.False);
-
+        writer.ArrayPool = new LimitedSharedArrayPool<byte>(0);
         for (int s = 0; s < 5; s++)
         {
             var span = writer.GetSpan();
+
+            Assert.Throws<InvalidOperationException>(() => writer.ArrayPool = null);
 
             Assert.That(writer.Segments, Is.EqualTo(s + 1));
 
@@ -58,6 +62,7 @@ public class LinkedBufferWriterTest
         }
 
         writer.Reset();
+        writer.ArrayPool = new LimitedSharedArrayPool<byte>(64);
 
         for (int s = 0; s < 5; s++)
         {

@@ -42,11 +42,11 @@ public static class BufferSize
     {
         Debug.Assert(Max == Array.MaxLength);
     }
+#endif
 
     public static int Log2(int size) => System.Numerics.BitOperations.Log2((uint)size);
 
     public static int Log2(long size) => System.Numerics.BitOperations.Log2((ulong)size);
-#endif
 
     public static int GetDoubleCapacity(int size)
     {
