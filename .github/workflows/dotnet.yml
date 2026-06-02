@@ -12,18 +12,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest, ubuntu-24.04-arm, windows-11-arm, macos-26-intel]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: |
             3.1.x
             6.0.x
             7.0.x
             8.0.x
+            10.0.x
     
       - name: Restore
         run: dotnet restore IT.Buffers.sln
@@ -36,11 +37,11 @@ jobs:
 
   publish:
     needs: [build]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Publish IT.Buffers
-        uses: pairbit/publish-nuget@v2.6.1
+        uses: pairbit/publish-nuget@v2.6.2
         with:
             PROJECT_FILE_PATH: IT.Buffers/IT.Buffers.csproj
             NUGET_KEY: ${{secrets.NUGET}}
