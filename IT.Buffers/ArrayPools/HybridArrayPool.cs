@@ -1,9 +1,8 @@
-﻿/*
-using System.Buffers;
+﻿using System.Buffers;
 
 namespace IT.Buffers;
 
-public class HybridArrayPool<T> : ArrayPool<T>
+internal class HybridArrayPool<T> : ArrayPool<T>
 {
     public override T[] Rent(int minimumLength)
     {
@@ -14,4 +13,4 @@ public class HybridArrayPool<T> : ArrayPool<T>
     {
         throw new System.NotImplementedException();
     }
-}*/
+}

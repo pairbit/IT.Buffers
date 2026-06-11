@@ -3,27 +3,27 @@ using System.Linq;
 
 namespace IT.Buffers;
 
-public readonly struct BoundedArrayPoolOptions
+internal readonly struct HybridArrayPoolOptions
 {
     internal const int MaxLength = 28;
-    private readonly byte[] _pow2s;
+    private readonly sbyte[] _pow2s;
 
-    public ReadOnlySpan<byte> Pow2s => _pow2s;
+    public ReadOnlySpan<sbyte> Pow2s => _pow2s;
 
-    public BoundedArrayPoolOptions()
+    public HybridArrayPoolOptions()
     {
-        _pow2s = new byte[MaxLength];
+        _pow2s = new sbyte[MaxLength];
     }
 
-    public BoundedArrayPoolOptions(int length)
+    public HybridArrayPoolOptions(int length)
     {
         if (length <= 0 || length > MaxLength)
             throw new ArgumentOutOfRangeException(nameof(length));
 
-        _pow2s = new byte[length];
+        _pow2s = new sbyte[length];
     }
 
-    public BoundedArrayPoolOptions(byte[] pow2s)
+    public HybridArrayPoolOptions(sbyte[] pow2s)
     {
         var length = pow2s.Length;
         if (length == 0 || length > MaxLength)
@@ -32,13 +32,13 @@ public readonly struct BoundedArrayPoolOptions
         for (int i = 0; i < pow2s.Length; i++)
         {
             var pow2 = pow2s[i];
-            if (pow2 > 30)
+            if (pow2 < 0 || pow2 > 30)
                 throw new ArgumentOutOfRangeException(nameof(pow2s));
         }
         _pow2s = pow2s;
     }
 
-    public BoundedArrayPoolOptions SetPow2(byte pow2)
+    public HybridArrayPoolOptions SetPow2(sbyte pow2)
     {
         if (pow2 < 1 || pow2 > 30)
             throw new ArgumentOutOfRangeException(nameof(pow2));
