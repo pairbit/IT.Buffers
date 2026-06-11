@@ -89,20 +89,14 @@ public class BoundedArrayPool<T> : ArrayPool<T>
         var buckets = _buckets;
         if ((uint)bucketIndex < (uint)buckets.Length)
         {
-            if (clearArray)
-                array.Clear();
-
-            return buckets[bucketIndex].TryEnqueue(array);
+            return buckets[bucketIndex].TryEnqueue(array, clearArray);
         }
         else if (bucketIndex == LastBucketIndex)
         {
             var lastBucket = _lastBucket;
             if (lastBucket != null)
             {
-                if (clearArray)
-                    array.Clear();
-
-                return lastBucket.TryEnqueue(array);
+                return lastBucket.TryEnqueue(array, clearArray);
             }
         }
         return false;

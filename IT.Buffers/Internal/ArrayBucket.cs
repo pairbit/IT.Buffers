@@ -26,12 +26,15 @@ internal class ArrayBucket<T>
             _obj = _empty;
     }
 
-    public bool TryEnqueue(T[] array)
+    public bool TryEnqueue(T[] array, bool clearArray = false)
     {
         Debug.Assert(array != null);
 
         if (array.Length != _length)
             throw new ArgumentException("Buffer not from pool.", nameof(array));
+
+        if (clearArray)
+            array.Clear();
 
         var obj = _obj ?? CreateQueue();
         if (obj is BoundedConcurrentQueue<T[]> queue)
