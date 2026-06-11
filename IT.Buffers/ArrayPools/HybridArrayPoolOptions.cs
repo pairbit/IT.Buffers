@@ -47,11 +47,6 @@ public readonly struct HybridArrayPoolOptions
         _pow2s = pow2s;
     }
 
-    public int GetSharedMaxIndex()
-    {
-        return _pow2s.LastIndexOf(Pow2_Shared);
-    }
-
     public HybridArrayPoolOptions SetPow2(byte pow2)
     {
         if (pow2 < 1 || pow2 > Pow2_Shared)
@@ -65,6 +60,11 @@ public readonly struct HybridArrayPoolOptions
         }
 
         return new(pow2s);
+    }
+
+    internal int GetSharedMaxIndex()
+    {
+        return _pow2s.LastIndexOf(Pow2_Shared);
     }
 
     public static HybridArrayPoolOptions Create() => new([
