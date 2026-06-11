@@ -31,7 +31,14 @@ internal class HybridArrayPoolTest
         BacketsTest(options);
     }
 
-    private static void BacketsTest(HybridArrayPoolOptions options)
+    //[Test]
+    public void Test_3()
+    {
+        var options = new HybridArrayPoolOptions(27);
+        BacketsTest(options.SetPow2(31), 27);
+    }
+
+    private static void BacketsTest(HybridArrayPoolOptions options, int lastIndex = HybridArrayPoolOptions.MaxLength)
     {
         var arrayPool = new HybridArrayPool<byte>(options);
 
@@ -47,7 +54,7 @@ internal class HybridArrayPoolTest
             arrayPool.Return(array);
 
             var array2 = arrayPool.Rent(length);
-            Assert.That(ReferenceEquals(array, array2), Is.True);
+            Assert.That(ReferenceEquals(array, array2), Is.EqualTo(i < lastIndex));
 
             Random.Shared.NextBytes(array2);
             arrayPool.Return(array);

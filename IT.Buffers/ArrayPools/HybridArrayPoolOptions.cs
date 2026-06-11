@@ -38,6 +38,12 @@ internal readonly struct HybridArrayPoolOptions
             if (pow2 > Pow2_Shared)
                 throw new ArgumentOutOfRangeException(nameof(pow2s));
         }
+
+        if (length == MaxLength && pow2s[MaxLength - 1] > 30)
+        {
+            throw new ArgumentOutOfRangeException(nameof(pow2s));
+        }
+
         _pow2s = pow2s;
     }
 
