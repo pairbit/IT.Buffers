@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace IT.Buffers;
 
-internal readonly struct BoundedArrayPoolOptions
+public readonly struct BoundedArrayPoolOptions
 {
     internal const int MaxLength = 28;
     private readonly sbyte[] _pow2s;

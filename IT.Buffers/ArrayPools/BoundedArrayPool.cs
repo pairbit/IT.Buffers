@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace IT.Buffers;
 
-internal class BoundedArrayPool<T> : ArrayPool<T>
+public class BoundedArrayPool<T> : ArrayPool<T>
 {
     private const int LastBucketIndex = 27;
     private static readonly object _empty = new();
