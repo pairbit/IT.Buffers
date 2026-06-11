@@ -30,8 +30,23 @@ internal class HybridArrayPool<T> : ArrayPool<T>
             sharedMaxIndex++;
             _sharedMaxIndex = sharedMaxIndex;
             length -= sharedMaxIndex;
+
+            if (length > 0)
+            {
+                var buckets = new ArrayBucket<T>[length];
+                for (int i = 0; i < buckets.Length; i++)
+                {
+                    var index = sharedMaxIndex + i;
+                    buckets[i] = new ArrayBucket<T>(index, pow2s[index]);
+                }
+                _buckets = buckets;
+            }
+            else
+            {
+                _buckets = [];
+            }
         }
-        if (length > 0)
+        else
         {
             var buckets = new ArrayBucket<T>[length];
             for (int i = 0; i < buckets.Length; i++)
@@ -39,10 +54,6 @@ internal class HybridArrayPool<T> : ArrayPool<T>
                 buckets[i] = new ArrayBucket<T>(i, pow2s[i]);
             }
             _buckets = buckets;
-        }
-        else
-        {
-            _buckets = [];
         }
     }
 
@@ -74,7 +85,7 @@ internal class HybridArrayPool<T> : ArrayPool<T>
         {
             throw new ArgumentOutOfRangeException(nameof(minimumLength));
         }
-        else if (bucketIndex == LastBucketIndex)
+        else if (bucketIndex == LastBucketIndex - _sharedMaxIndex)
         {
             if (minimumLength > BufferSize.Max)
                 throw new ArgumentOutOfRangeException(nameof(minimumLength));
@@ -114,7 +125,7 @@ internal class HybridArrayPool<T> : ArrayPool<T>
             {
                 buckets[bucketIndex].TryEnqueue(array, clearArray);
             }
-            else if (bucketIndex == LastBucketIndex)
+            else if (bucketIndex == LastBucketIndex - _sharedMaxIndex)
             {
                 var lastBucket = _lastBucket;
                 if (lastBucket != null)

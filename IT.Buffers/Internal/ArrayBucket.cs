@@ -26,6 +26,11 @@ internal class ArrayBucket<T>
             _obj = _empty;
     }
 
+    public override string ToString()
+    {
+        return $"{_pow2},{_length}";
+    }
+
     public bool TryEnqueue(T[] array, bool clearArray = false)
     {
         Debug.Assert(array != null);
