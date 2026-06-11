@@ -77,14 +77,6 @@ internal class HybridArrayPool<T> : ArrayPool<T>
 
             minimumLength = bucket._length;
         }
-        else if (minimumLength == 0)
-        {
-            return [];
-        }
-        else if (minimumLength < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(minimumLength));
-        }
         else if (bucketIndex == LastBucketIndex - _sharedMaxIndex)
         {
             if (minimumLength > BufferSize.Max)
