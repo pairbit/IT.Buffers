@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace IT.Buffers;
 
-internal class HybridArrayPool<T> : ArrayPool<T>
+public class HybridArrayPool<T> : ArrayPool<T>
 {
     private const int LastBucketIndex = 27;
 

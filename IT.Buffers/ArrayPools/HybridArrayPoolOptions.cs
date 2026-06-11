@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace IT.Buffers;
 
-internal readonly struct HybridArrayPoolOptions
+public readonly struct HybridArrayPoolOptions
 {
     internal const int MaxLength = 28;
     private const byte Pow2_Shared = 31;
