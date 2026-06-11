@@ -33,6 +33,8 @@ internal class ArrayBucket<T>
         if (array.Length != _length)
             throw new ArgumentException("Buffer not from pool.", nameof(array));
 
+        //TODO: можно переписать создание очереди, только в случае, когда массив уже есть
+        
         var obj = _obj ?? CreateQueue();
         if (obj is BoundedConcurrentQueue<T[]> queue)
         {
