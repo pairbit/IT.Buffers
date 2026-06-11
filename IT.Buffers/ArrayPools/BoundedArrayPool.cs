@@ -187,10 +187,14 @@ public class BoundedArrayPool<T> : ArrayPool<T>
                         return true;
                     }
 
-                    if (value is null)
+                    if (value is T[] otherBuffer)
+                    {
+                        buffer = otherBuffer;
+                    }
+                    else
+                    {
                         break;
-
-                    buffer = (T[])value;
+                    }
                 } while (true);
             }
 
