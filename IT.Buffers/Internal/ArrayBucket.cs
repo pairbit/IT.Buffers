@@ -33,17 +33,22 @@ internal class ArrayBucket<T>
         if (array.Length != _length)
             throw new ArgumentException("Buffer not from pool.", nameof(array));
 
-        if (clearArray)
-            array.Clear();
-
         var obj = _obj ?? CreateQueue();
         if (obj is BoundedConcurrentQueue<T[]> queue)
         {
+            if (clearArray)
+                array.Clear();
+
             return queue.TryEnqueue(array);
         }
 
         if (ReferenceEquals(obj, _empty))
+        {
+            if (clearArray)
+                array.Clear();
+
             return Interlocked.CompareExchange(ref _obj, array, _empty) == _empty;
+        }
 
         return false;
     }
