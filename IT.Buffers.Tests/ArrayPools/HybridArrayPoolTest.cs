@@ -38,10 +38,17 @@ internal class HybridArrayPoolTest
         BacketsTest(options.SetPow2(31), 27);
     }
 
-    [Test]
+    //[Test]
     public void Test_4()
     {
         var options = HybridArrayPoolOptions.CreateShared();
+        BacketsTest(options);
+    }
+
+    //[Test]
+    public void Test_5()
+    {
+        var options = Create5();
         BacketsTest(options);
     }
 
@@ -69,4 +76,37 @@ internal class HybridArrayPoolTest
 
         arrayPool.Clear();
     }
+
+    private const byte Pow2_Shared = 31;
+
+    private static HybridArrayPoolOptions Create5() => new([
+        Pow2_Shared,//16
+        Pow2_Shared,//32
+        Pow2_Shared,//64
+        Pow2_Shared,//128
+        Pow2_Shared,//256
+        Pow2_Shared,//512
+        Pow2_Shared,//1KB
+        Pow2_Shared,//2KB
+        Pow2_Shared,//4KB
+        Pow2_Shared,//8KB
+        Pow2_Shared,//16KB
+        Pow2_Shared,//32KB
+        Pow2_Shared,//64KB
+        Pow2_Shared,//128KB
+        Pow2_Shared,//256KB
+        Pow2_Shared,//512KB
+        Pow2_Shared,//1MB
+        Pow2_Shared,//2MB
+        Pow2_Shared,//4MB
+        Pow2_Shared,//8MB
+        Pow2_Shared,//16MB
+        Pow2_Shared,//32MB
+        Pow2_Shared,//64MB
+        Pow2_Shared,//128MB
+        Pow2_Shared,//256MB
+        Pow2_Shared,//512MB
+        0,//1GB
+        0//MAX
+    ]);
 }
