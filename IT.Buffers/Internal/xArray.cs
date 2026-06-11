@@ -29,6 +29,7 @@ internal static class xArray
 
     public static T[] AllocateUninitialized<T>(int length)
     {
+        Debug.Assert(length > 0);
 #if NET
         return typeof(T).IsPrimitive && typeof(T) != typeof(bool) ?
             GC.AllocateUninitializedArray<T>(length) :
