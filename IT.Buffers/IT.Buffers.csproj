@@ -13,7 +13,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <Authors>Ivan Tikhonov</Authors>
     <Copyright>Ivan Tikhonov © 2024</Copyright>
-    <Version>2.0.28</Version>
+    <Version>2.0.29</Version>
     <PackageTags>Buffers</PackageTags>
     <PackageReadmeFile>Readme.md</PackageReadmeFile>
     <PackageIcon>Icon.png</PackageIcon>
