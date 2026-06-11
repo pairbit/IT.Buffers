@@ -38,6 +38,13 @@ internal class HybridArrayPoolTest
         BacketsTest(options.SetPow2(31), 27);
     }
 
+    [Test]
+    public void Test_4()
+    {
+        var options = HybridArrayPoolOptions.CreateShared();
+        BacketsTest(options);
+    }
+
     private static void BacketsTest(HybridArrayPoolOptions options, int lastIndex = HybridArrayPoolOptions.MaxLength)
     {
         var arrayPool = new HybridArrayPool<byte>(options);

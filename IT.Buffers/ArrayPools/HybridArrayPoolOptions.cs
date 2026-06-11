@@ -97,4 +97,35 @@ public readonly struct HybridArrayPoolOptions
         0,//1GB
         0//MAX
     ]);
+
+    public static HybridArrayPoolOptions CreateShared(byte pow2Max = 0) => new([
+        Pow2_Shared,//16
+        Pow2_Shared,//32
+        Pow2_Shared,//64
+        Pow2_Shared,//128
+        Pow2_Shared,//256
+        Pow2_Shared,//512
+        Pow2_Shared,//1KB
+        Pow2_Shared,//2KB
+        Pow2_Shared,//4KB
+        Pow2_Shared,//8KB
+        Pow2_Shared,//16KB
+        Pow2_Shared,//32KB
+        Pow2_Shared,//64KB
+        Pow2_Shared,//128KB
+        Pow2_Shared,//256KB
+        Pow2_Shared,//512KB
+        Pow2_Shared,//1MB
+        Pow2_Shared,//2MB
+        Pow2_Shared,//4MB
+        Pow2_Shared,//8MB
+        Pow2_Shared,//16MB
+        Pow2_Shared,//32MB
+        Pow2_Shared,//64MB
+        Pow2_Shared,//128MB
+        Pow2_Shared,//256MB
+        Pow2_Shared,//512MB
+        Pow2_Shared,//1GB
+        pow2Max//MAX
+    ]);
 }
