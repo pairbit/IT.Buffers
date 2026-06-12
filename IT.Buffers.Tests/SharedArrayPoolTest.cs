@@ -11,15 +11,17 @@ internal class SharedArrayPoolTest
     {
         var shared = ArrayPool<byte>.Shared;
 
+        Assert.That(SharedArrayPool<byte>.TrimCallbackCreated, Is.True);
+
         var r1 = shared.Rent(8 * 1024);
         var r2 = shared.Rent(8 * 1024);
 
         shared.Return(r1);
         shared.Return(r2);
 
+        var index = SharedArrayPoolStatics.GetPartitionIndex();
 
-
-        Assert.That(SharedArrayPool<byte>.TrimCallbackCreated, Is.True);
+        
     }
 
     static class SharedArrayPool<T>
