@@ -14,7 +14,8 @@ public static class xIBufferWriterByte
 
         do
         {
-            int read = await stream.ReadAsync(writer.GetMemory(), cancellationToken).ConfigureAwait(false);
+            var memory = writer.GetMemory();
+            int read = await stream.ReadAsync(memory, cancellationToken).ConfigureAwait(false);
             if (read == 0) break;
 
             writer.Advance(read);

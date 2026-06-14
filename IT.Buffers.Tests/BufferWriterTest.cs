@@ -78,6 +78,27 @@ public class BufferWriterTest
     }
 
     [Test]
+    public async Task Test_WriteAsync()
+    {
+        var writer = new BufferWriter<byte>();
+        try
+        {
+            var bytes = new byte[BufferSize.MB];
+            Random.Shared.NextBytes(bytes);
+            var stream = new MemoryStream(bytes);
+
+            await writer.WriteAsync(stream);
+
+            Assert.That(writer.Written, Is.EqualTo(bytes.Length));
+            Assert.That(writer.Segments, Is.EqualTo(17));
+        }
+        finally
+        {
+            writer.Reset();
+        }
+    }
+
+    [Test]
     public void Test_Pool()
     {
         var writer = BufferWriter<byte>.Pool.Rent();
