@@ -10,58 +10,51 @@ public static class xBufferWriter
     public static T[] ToArrayAndReset<T>(this BufferWriter<T> writer)
     {
         var written = writer.Written;
-        if (written == 0)
+        if (written > 0)
         {
-            writer.Reset();
-            return [];
+            var array =
+#if NET5_0_OR_GREATER
+                System.GC.AllocateUninitializedArray<T>(written);
+#else
+                new T[written];
+#endif
+            writer.TryWriteToAndReset(array);
+
+            return array;
         }
 
-        var array =
-#if NET5_0_OR_GREATER
-            System.GC.AllocateUninitializedArray<T>(written);
-#else
-            new T[written];
-#endif
-
-        writer.TryWriteToAndReset(array);
-
-        return array;
+        writer.Reset();
+        return [];
     }
 
     public static async ValueTask WriteToAndResetAsync(this BufferWriter<byte> writer, Stream stream, CancellationToken cancellationToken)
     {
-        if (writer._written == 0)
+        if (writer._written > 0)
+        {
+            var buffers = writer._buffers;
+            if (buffers.Count > 0)
+            {
+                foreach (var item in buffers)
+                {
+                    Debug.Assert(item.Written > 0);
+                    await stream.WriteAsync(item.WrittenMemory, cancellationToken).ConfigureAwait(false);
+                    item.Reset(writer._arrayPool);
+                }
+            }
+
+            var current = writer._current;
+            if (!current.IsNull)
+            {
+                Debug.Assert(current.Written > 0);
+                await stream.WriteAsync(current.WrittenMemory, cancellationToken).ConfigureAwait(false);
+                current.Reset(writer._arrayPool);
+            }
+
+            writer.ResetCore();
+        }
+        else
         {
             writer.Reset();
-            return;
         }
-
-        //var firstBufferWritten = writer._firstBufferWritten;
-        //if (firstBufferWritten > 0)
-        //{
-        //    Debug.Assert(writer._firstBuffer.Length >= firstBufferWritten);
-        //    await stream.WriteAsync(writer._firstBuffer.AsMemory(0, firstBufferWritten), cancellationToken).ConfigureAwait(false);
-        //}
-
-        var buffers = writer._buffers;
-        if (buffers.Count > 0)
-        {
-            foreach (var item in buffers)
-            {
-                Debug.Assert(item.Written > 0);
-                await stream.WriteAsync(item.WrittenMemory, cancellationToken).ConfigureAwait(false);
-                item.Reset(writer._arrayPool);
-            }
-        }
-
-        var current = writer._current;
-        if (!current.IsNull)
-        {
-            Debug.Assert(current.Written > 0);
-            await stream.WriteAsync(current.WrittenMemory, cancellationToken).ConfigureAwait(false);
-            current.Reset(writer._arrayPool);
-        }
-
-        writer.ResetCore();
     }
 }
