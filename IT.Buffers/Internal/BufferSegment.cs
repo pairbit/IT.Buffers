@@ -17,7 +17,7 @@ internal struct BufferSegment<T>
 
     public readonly int Written => _written;
 
-    public readonly int Capacity => _buffer == null ? 0 : _buffer.Length;
+    public readonly int Capacity => _buffer.Length;
 
     public readonly Memory<T> FreeMemory => _buffer.AsMemory(_written);
 
