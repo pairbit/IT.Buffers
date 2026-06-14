@@ -97,13 +97,7 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             if (freeMemory.Length >= sizeHint) return freeMemory;
         }
 
-        var next = GetNextBuffer(sizeHint);
-
-        if (_current.Written != 0) _buffers.Add(_current);
-
-        _current = next;
-
-        return next.FreeMemory;
+        return GetNextBuffer(sizeHint).FreeMemory;
     }
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
@@ -125,13 +119,7 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             if (freeSpan.Length >= sizeHint) return freeSpan;
         }
 
-        var next = GetNextBuffer(sizeHint);
-
-        if (_current.Written != 0) _buffers.Add(_current);
-
-        _current = next;
-
-        return next.FreeSpan;
+        return GetNextBuffer(sizeHint).FreeSpan;
     }
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
@@ -384,7 +372,26 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             next = new BufferSegment<T>(Rent(sizeHint));
             if (nextBufferSize == 0) _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
-        _segments++;
+
+        if (_current.IsNull)
+        {
+            _segments++;
+        }
+        else
+        {
+            if (_current.Written > 0)
+            {
+                _buffers.Add(_current);
+                _segments++;
+            }
+            else
+            {
+                _current.Reset(_arrayPool);
+            }
+        }
+
+        _current = next;
+
         return next;
     }
 
