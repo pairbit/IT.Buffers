@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace IT.Buffers.Extensions;
 
@@ -9,7 +8,6 @@ public static class xIBufferWriter
 {
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     /// <exception cref="OutOfMemoryException"></exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WriteSpan<T>(this IBufferWriter<T> writer, ReadOnlySpan<T> span)
     {
         if (span.Length == 0) return;

@@ -10,7 +10,11 @@ public static class xBufferWriter
     public static T[] ToArrayAndReset<T>(this BufferWriter<T> writer)
     {
         var written = writer.Written;
-        if (written == 0) return [];
+        if (written == 0)
+        {
+            writer.Reset();
+            return [];
+        }
 
         var array =
 #if NET5_0_OR_GREATER
@@ -26,7 +30,11 @@ public static class xBufferWriter
 
     public static async ValueTask WriteToAndResetAsync(this BufferWriter<byte> writer, Stream stream, CancellationToken cancellationToken)
     {
-        if (writer._written == 0) return;
+        if (writer._written == 0)
+        {
+            writer.Reset();
+            return;
+        }
 
         //var firstBufferWritten = writer._firstBufferWritten;
         //if (firstBufferWritten > 0)

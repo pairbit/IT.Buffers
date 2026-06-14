@@ -159,28 +159,32 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         , allows ref struct
 #endif
     {
-        if (_written == 0) return;
-
-        if (_buffers.Count > 0)
+        if (_written > 0)
         {
+            if (_buffers.Count > 0)
+            {
 #if NET6_0_OR_GREATER
             foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
 #else
-            foreach (var item in _buffers)
+                foreach (var item in _buffers)
 #endif
-            {
-                Debug.Assert(item.Written > 0);
-                RefBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
+                {
+                    Debug.Assert(item.Written > 0);
+                    RefBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
+                }
             }
-        }
 
-        if (!_current.IsNull)
-        {
-            Debug.Assert(_current.Written > 0);
-            RefBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
+            if (!_current.IsNull)
+            {
+                Debug.Assert(_current.Written > 0);
+                RefBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
+            }
         }
     }
 
+    /// <summary>
+    /// It is not reset if false
+    /// </summary>
     public bool TryWriteToAndReset(Span<T> span)
     {
         var written = _written;
@@ -212,36 +216,45 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
             ResetCore();
         }
+        else
+        {
+            Reset();
+        }
 
         return true;
     }
 
     public void WriteToAndReset<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
     {
-        if (_written == 0) return;
-
-        if (_buffers.Count > 0)
+        if (_written > 0)
         {
+            if (_buffers.Count > 0)
+            {
 #if NET6_0_OR_GREATER
             foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
 #else
-            foreach (var item in _buffers)
+                foreach (var item in _buffers)
 #endif
-            {
-                Debug.Assert(item.Written > 0);
-                RefBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
-                item.Reset(_arrayPool);
+                {
+                    Debug.Assert(item.Written > 0);
+                    RefBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
+                    item.Reset(_arrayPool);
+                }
             }
-        }
 
-        if (!_current.IsNull)
+            if (!_current.IsNull)
+            {
+                Debug.Assert(_current.Written > 0);
+                RefBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
+                _current.Reset(_arrayPool);
+            }
+
+            ResetCore();
+        }
+        else
         {
-            Debug.Assert(_current.Written > 0);
-            RefBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
-            _current.Reset(_arrayPool);
+            Reset();
         }
-
-        ResetCore();
     }
 
     public Enumerator GetEnumerator() => new(this);

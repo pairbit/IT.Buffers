@@ -1,14 +1,43 @@
-﻿using System.Buffers;
+﻿using IT.Buffers.Extensions;
+using System.Buffers;
 
 namespace IT.Buffers.Tests;
 
 public class BufferWriterTest
 {
     [Test]
+    public void Test_ToArrayAndReset()
+    {
+        var writer = new BufferWriter<byte>();
+
+        Assert.That(writer.ToArrayAndReset(), Is.Empty);
+
+        var span = writer.GetSpan();
+        Assert.That(writer.Segments, Is.EqualTo(1));
+
+        Assert.That(writer.ToArrayAndReset(), Is.Empty);
+
+        Assert.That(writer.Segments, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void Test_TryWriteToAndReset()
+    {
+        var writer = new BufferWriter<byte>();
+
+        Assert.That(writer.TryWriteToAndReset(default), Is.True);
+
+        var span = writer.GetSpan();
+        Assert.That(writer.Segments, Is.EqualTo(1));
+
+        Assert.That(writer.TryWriteToAndReset(default), Is.True);
+
+        Assert.That(writer.Segments, Is.EqualTo(0));
+    }
+
+    [Test]
     public void Test_Pool()
     {
-        //var bf = new ArrayBufferWriter<byte>();
-        
         var writer = BufferWriter<byte>.Pool.Rent();
         Assert.That(writer.Segments, Is.EqualTo(0));
         Assert.Throws<ArgumentOutOfRangeException>(() => writer.GetWrittenMemory(0));
