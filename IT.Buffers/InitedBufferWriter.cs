@@ -157,7 +157,7 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public bool TryWrite(Span<T> span)
+    public bool TryWriteTo(Span<T> span)
     {
         var written = _written;
         if (span.Length < written) return false;
@@ -195,7 +195,7 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         return true;
     }
 
-    public void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+    public void WriteTo<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
 #if NET9_0_OR_GREATER
         , allows ref struct
 #endif

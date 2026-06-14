@@ -121,7 +121,7 @@ public class ValueBufferWriterTest
         Span<byte> bytes = stackalloc byte[writer.Written + 10];
         var span = bytes.Slice(5, writer.Written);
 
-        Assert.That(writer.TryWrite(span), Is.True);
+        Assert.That(writer.TryWriteTo(span), Is.True);
         Assert.That(data.SequenceEqual(span), Is.True);
 
         span.Clear();
@@ -134,9 +134,9 @@ public class ValueBufferWriterTest
         Assert.That(spanBuffer.Written, Is.EqualTo(0));
 
 #if NET9_0_OR_GREATER
-        writer.Write(ref spanBuffer);
+        writer.WriteTo(ref spanBuffer);
 #else
-        writer.TryWrite(spanBuffer.GetSpan(writer.Written));
+        writer.TryWriteTo(spanBuffer.GetSpan(writer.Written));
         spanBuffer.Advance(writer.Written);
 #endif
         Assert.That(spanBuffer.Written, Is.EqualTo(span.Length));
@@ -151,7 +151,7 @@ public class ValueBufferWriterTest
         var array = new byte[writer.Written + 10];
         var memory = array.AsMemory(5, writer.Written);
 
-        Assert.That(writer.TryWrite(memory.Span), Is.True);
+        Assert.That(writer.TryWriteTo(memory.Span), Is.True);
         Assert.That(data.SequenceEqual(memory.Span), Is.True);
 
         memory.Span.Clear();
@@ -163,7 +163,7 @@ public class ValueBufferWriterTest
         Assert.That(memoryBuffer.FreeCapacity, Is.EqualTo(memory.Length));
         Assert.That(memoryBuffer.Written, Is.EqualTo(0));
 
-        writer.Write(ref memoryBuffer);
+        writer.WriteTo(ref memoryBuffer);
 
         Assert.That(memoryBuffer.Written, Is.EqualTo(memory.Length));
         Assert.That(memoryBuffer.GetSpan().IsEmpty, Is.True);
@@ -177,7 +177,7 @@ public class ValueBufferWriterTest
     {
         var array = new byte[writer.Written];
 
-        Assert.That(writer.TryWrite(array), Is.True);
+        Assert.That(writer.TryWriteTo(array), Is.True);
         Assert.That(data.SequenceEqual(array), Is.True);
 
         array.AsSpan().Clear();
@@ -189,7 +189,7 @@ public class ValueBufferWriterTest
         Assert.That(arrayBuffer.FreeCapacity, Is.EqualTo(array.Length));
         Assert.That(arrayBuffer.Written, Is.EqualTo(0));
 
-        writer.Write(ref arrayBuffer);
+        writer.WriteTo(ref arrayBuffer);
 
         Assert.That(arrayBuffer.Written, Is.EqualTo(array.Length));
         Assert.That(arrayBuffer.GetSpan().IsEmpty, Is.True);

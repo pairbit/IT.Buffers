@@ -23,9 +23,9 @@ public interface IAdvancedBufferWriter<T> : IBufferWriter<T>
 
     Memory<T> GetWrittenMemory(int segment = 0);
 
-    bool TryWrite(Span<T> span);
+    bool TryWriteTo(Span<T> span);
 
-    void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+    void WriteTo<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
 #if NET9_0_OR_GREATER
         , allows ref struct
 #endif

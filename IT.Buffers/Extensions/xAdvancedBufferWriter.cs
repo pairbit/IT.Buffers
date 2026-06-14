@@ -20,7 +20,7 @@ public static class xAdvancedBufferWriter
             new T[written];
 #endif
 
-        writer.TryWrite(array);
+        writer.TryWriteTo(array);
 
         return array;
     }
