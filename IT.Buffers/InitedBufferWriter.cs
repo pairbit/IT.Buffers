@@ -263,39 +263,48 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
             ResetCore();
         }
+        else
+        {
+            Reset();
+        }
 
         return true;
     }
 
     public void WriteToAndReset<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
     {
-        if (_written == 0) return;
-
-        if (_firstBufferWritten > 0)
-            RefBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
-
-        if (_buffers.Count > 0)
+        if (_written > 0)
         {
-#if NET6_0_OR_GREATER
-            foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
-#else
-            foreach (var item in _buffers)
-#endif
+            if (_firstBufferWritten > 0)
+                RefBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
+
+            if (_buffers.Count > 0)
             {
-                Debug.Assert(item.Written > 0);
-                RefBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
-                item.Reset(_arrayPool);
+#if NET6_0_OR_GREATER
+                foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+#else
+                foreach (var item in _buffers)
+#endif
+                {
+                    Debug.Assert(item.Written > 0);
+                    RefBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
+                    item.Reset(_arrayPool);
+                }
             }
-        }
 
-        if (!_current.IsNull)
+            if (!_current.IsNull)
+            {
+                Debug.Assert(_current.Written > 0);
+                RefBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
+                _current.Reset(_arrayPool);
+            }
+
+            ResetCore();
+        }
+        else
         {
-            Debug.Assert(_current.Written > 0);
-            RefBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
-            _current.Reset(_arrayPool);
+            Reset();
         }
-
-        ResetCore();
     }
 
     public Enumerator GetEnumerator() => new(this);
