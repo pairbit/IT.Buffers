@@ -12,14 +12,20 @@ public static class xIBufferWriterByte
     {
         if (stream == null) throw new ArgumentNullException(nameof(stream));
 
+        var memory = writer.GetMemory();
         do
         {
-            var memory = writer.GetMemory();
             int read = await stream.ReadAsync(memory, cancellationToken).ConfigureAwait(false);
-            if (read == 0) break;
+            if (read == 0)
+                break;
 
             writer.Advance(read);
 
+            memory = memory.Slice(read);
+            if (memory.Length == 0)
+            {
+                memory = writer.GetMemory();
+            }
         } while (true);
     }
 }

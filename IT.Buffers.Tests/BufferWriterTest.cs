@@ -87,10 +87,14 @@ public class BufferWriterTest
             Random.Shared.NextBytes(bytes);
             var stream = new MemoryStream(bytes);
 
+            writer.GetSpan(BufferSize.KB_128);
+            writer.NextBufferSize = BufferSize.KB_64;
+
             await writer.WriteAsync(stream);
 
             Assert.That(writer.Written, Is.EqualTo(bytes.Length));
-            Assert.That(writer.Segments, Is.EqualTo(17));
+            Assert.That(writer.Segments, Is.EqualTo(5));
+            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB));
         }
         finally
         {

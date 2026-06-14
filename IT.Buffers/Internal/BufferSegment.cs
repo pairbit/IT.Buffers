@@ -17,7 +17,7 @@ internal struct BufferSegment<T>
 
     public readonly int Written => _written;
 
-    public readonly int Capacity => _buffer.Length;
+    public readonly int Capacity => _buffer == null ? 0 : _buffer.Length;
 
     public readonly Memory<T> FreeMemory => _buffer.AsMemory(_written);
 
@@ -28,6 +28,8 @@ internal struct BufferSegment<T>
         _buffer = buffer;
         _written = 0;
     }
+
+    public override string ToString() => $"{Capacity} - {_written}";
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int count)
