@@ -181,7 +181,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public bool TryWriteAndReset(Span<T> span)
+    public bool TryWriteToAndReset(Span<T> span)
     {
         var written = _written;
         if (span.Length < written) return false;
@@ -216,7 +216,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         return true;
     }
 
-    public void WriteAndReset<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+    public void WriteToAndReset<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
     {
         if (_written == 0) return;
 

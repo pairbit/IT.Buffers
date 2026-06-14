@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,17 +14,17 @@ public static class xBufferWriter
 
         var array =
 #if NET5_0_OR_GREATER
-            GC.AllocateUninitializedArray<T>(written);
+            System.GC.AllocateUninitializedArray<T>(written);
 #else
             new T[written];
 #endif
 
-        writer.TryWriteAndReset(array);
+        writer.TryWriteToAndReset(array);
 
         return array;
     }
 
-    public static async ValueTask WriteAndResetAsync(this BufferWriter<byte> writer, Stream stream, CancellationToken cancellationToken)
+    public static async ValueTask WriteToAndResetAsync(this BufferWriter<byte> writer, Stream stream, CancellationToken cancellationToken)
     {
         if (writer._written == 0) return;
 
