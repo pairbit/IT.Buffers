@@ -52,6 +52,22 @@ public class BufferWriterTest
     }
 
     [Test]
+    public async Task Test_WriteToAndResetAsync()
+    {
+        var writer = new BufferWriter<byte>();
+        var stream = new BufferWriterStream(new BufferWriter<byte>());
+
+        await writer.WriteToAndResetAsync(stream);
+
+        var span = writer.GetSpan();
+        Assert.That(writer.Segments, Is.EqualTo(1));
+
+        await writer.WriteToAndResetAsync(stream);
+
+        Assert.That(writer.Segments, Is.EqualTo(0));
+    }
+
+    [Test]
     public void Test_Pool()
     {
         var writer = BufferWriter<byte>.Pool.Rent();

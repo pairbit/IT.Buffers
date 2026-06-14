@@ -27,7 +27,7 @@ public static class xBufferWriter
         return [];
     }
 
-    public static async ValueTask WriteToAndResetAsync(this BufferWriter<byte> writer, Stream stream, CancellationToken cancellationToken)
+    public static async ValueTask WriteToAndResetAsync(this BufferWriter<byte> writer, Stream stream, CancellationToken cancellationToken = default)
     {
         if (writer._written > 0)
         {

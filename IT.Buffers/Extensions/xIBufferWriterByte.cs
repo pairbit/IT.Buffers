@@ -8,7 +8,7 @@ namespace IT.Buffers.Extensions;
 
 public static class xIBufferWriterByte
 {
-    public static async Task WriteAsync(this IBufferWriter<byte> writer, Stream stream, CancellationToken cancellationToken)
+    public static async Task WriteAsync(this IBufferWriter<byte> writer, Stream stream, CancellationToken cancellationToken = default)
     {
         if (stream == null) throw new ArgumentNullException(nameof(stream));
 
