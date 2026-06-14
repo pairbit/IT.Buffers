@@ -6,6 +6,16 @@ namespace IT.Buffers.Tests;
 public class BufferWriterTest
 {
     [Test]
+    public void Test_GetSpanGetSpan()
+    {
+        var writer = new BufferWriter<byte>();
+
+        var span = writer.GetSpan();
+        var span2 = writer.GetSpan();
+        var span3 = writer.GetSpan(32);
+    }
+
+    [Test]
     public void Test_ToArrayAndReset()
     {
         var writer = new BufferWriter<byte>();
