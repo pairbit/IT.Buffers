@@ -164,7 +164,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             if (_buffers.Count > 0)
             {
 #if NET6_0_OR_GREATER
-            foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+                foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
 #else
                 foreach (var item in _buffers)
 #endif
@@ -231,7 +231,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             if (_buffers.Count > 0)
             {
 #if NET6_0_OR_GREATER
-            foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+                foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
 #else
                 foreach (var item in _buffers)
 #endif

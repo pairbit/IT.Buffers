@@ -36,6 +36,22 @@ public class BufferWriterTest
     }
 
     [Test]
+    public void Test_WriteToAndReset()
+    {
+        var writer = new BufferWriter<byte>();
+        var writer2 = new BufferWriter<byte>();
+
+        writer.WriteToAndReset(ref writer2);
+
+        var span = writer.GetSpan();
+        Assert.That(writer.Segments, Is.EqualTo(1));
+
+        writer.WriteToAndReset(ref writer2);
+
+        Assert.That(writer.Segments, Is.EqualTo(0));
+    }
+
+    [Test]
     public void Test_Pool()
     {
         var writer = BufferWriter<byte>.Pool.Rent();
