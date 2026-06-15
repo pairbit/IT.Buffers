@@ -99,7 +99,7 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
 
     public void ResetWritten() => _written = 0;
 
-    public readonly bool TryWrite(Span<T> span)
+    public readonly bool TryWriteTo(Span<T> span)
     {
         var written = _written;
         if (span.Length < written) return false;
@@ -113,7 +113,7 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
         return true;
     }
 
-    public readonly void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+    public readonly void WriteTo<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
 #if NET9_0_OR_GREATER
         , allows ref struct
 #endif

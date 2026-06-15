@@ -97,13 +97,7 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             if (freeMemory.Length >= sizeHint) return freeMemory;
         }
 
-        var next = GetNextBuffer(sizeHint);
-
-        if (_current.Written != 0) _buffers.Add(_current);
-
-        _current = next;
-
-        return next.FreeMemory;
+        return GetNextBuffer(sizeHint).FreeMemory;
     }
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
@@ -125,13 +119,7 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             if (freeSpan.Length >= sizeHint) return freeSpan;
         }
 
-        var next = GetNextBuffer(sizeHint);
-
-        if (_current.Written != 0) _buffers.Add(_current);
-
-        _current = next;
-
-        return next.FreeSpan;
+        return GetNextBuffer(sizeHint).FreeSpan;
     }
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
@@ -157,7 +145,7 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public bool TryWrite(Span<T> span)
+    public bool TryWriteTo(Span<T> span)
     {
         var written = _written;
         if (span.Length < written) return false;
@@ -195,7 +183,7 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         return true;
     }
 
-    public void Write<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+    public void WriteTo<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
 #if NET9_0_OR_GREATER
         , allows ref struct
 #endif
@@ -225,7 +213,7 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public bool TryWriteAndReset(Span<T> span)
+    public bool TryWriteToAndReset(Span<T> span)
     {
         var written = _written;
         if (span.Length < written) return false;
@@ -263,39 +251,48 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
             ResetCore();
         }
+        else
+        {
+            Reset();
+        }
 
         return true;
     }
 
-    public void WriteAndReset<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+    public void WriteToAndReset<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
     {
-        if (_written == 0) return;
-
-        if (_firstBufferWritten > 0)
-            RefBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
-
-        if (_buffers.Count > 0)
+        if (_written > 0)
         {
-#if NET6_0_OR_GREATER
-            foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
-#else
-            foreach (var item in _buffers)
-#endif
+            if (_firstBufferWritten > 0)
+                RefBufferWriter.WriteSpan(ref writer, FirstBufferWrittenSpan);
+
+            if (_buffers.Count > 0)
             {
-                Debug.Assert(item.Written > 0);
-                RefBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
-                item.Reset(_arrayPool);
+#if NET6_0_OR_GREATER
+                foreach (ref var item in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_buffers))
+#else
+                foreach (var item in _buffers)
+#endif
+                {
+                    Debug.Assert(item.Written > 0);
+                    RefBufferWriter.WriteSpan(ref writer, item.WrittenSpan);
+                    item.Reset(_arrayPool);
+                }
             }
-        }
 
-        if (!_current.IsNull)
+            if (!_current.IsNull)
+            {
+                Debug.Assert(_current.Written > 0);
+                RefBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
+                _current.Reset(_arrayPool);
+            }
+
+            ResetCore();
+        }
+        else
         {
-            Debug.Assert(_current.Written > 0);
-            RefBufferWriter.WriteSpan(ref writer, _current.WrittenSpan);
-            _current.Reset(_arrayPool);
+            Reset();
         }
-
-        ResetCore();
     }
 
     public Enumerator GetEnumerator() => new(this);
@@ -375,7 +372,26 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             next = new BufferSegment<T>(Rent(sizeHint));
             if (nextBufferSize == 0) _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
         }
-        _segments++;
+
+        if (_current.IsNull)
+        {
+            _segments++;
+        }
+        else
+        {
+            if (_current.Written > 0)
+            {
+                _buffers.Add(_current);
+                _segments++;
+            }
+            else
+            {
+                _current.Reset(_arrayPool);
+            }
+        }
+
+        _current = next;
+
         return next;
     }
 

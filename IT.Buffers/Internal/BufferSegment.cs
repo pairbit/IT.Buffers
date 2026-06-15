@@ -29,6 +29,8 @@ internal struct BufferSegment<T>
         _written = 0;
     }
 
+    public override string ToString() => $"{Capacity} - {_written}";
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int count)
     {
