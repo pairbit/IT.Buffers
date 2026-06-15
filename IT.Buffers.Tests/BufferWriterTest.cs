@@ -86,9 +86,9 @@ public class BufferWriterTest
             var bytes = new byte[BufferSize.MB];
             Random.Shared.NextBytes(bytes);
             var stream = new MemoryStream(bytes);
-
-            writer.GetSpan(BufferSize.KB_128);
+            
             writer.NextBufferSize = BufferSize.KB_64;
+            writer.GetSpan(BufferSize.KB_128);
 
             await writer.WriteAsync(stream);
 
