@@ -49,10 +49,9 @@ internal sealed class ConfigurableMemoryPool<T> : MemoryPool<T>
 
         public void Dispose()
         {
-            var array = _array;
-            if (array != null)
+            if (_array != null)
             {
-                array = Interlocked.Exchange(ref _array, null);
+                var array = Interlocked.Exchange(ref _array, null);
                 if (array != null)
                 {
                     _pool._pool.Return(array, _pool._clearArray);
