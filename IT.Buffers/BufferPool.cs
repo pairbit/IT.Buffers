@@ -8,6 +8,13 @@ namespace IT.Buffers;
 
 public static class BufferPool
 {
+    public static MemoryPool<T> CreateMemoryPool<T>(ArrayPool<T> pool, bool clearArray, int defaultBufferSize,
+        int maxBufferSize = BufferSize.Max) =>
+        new ConfigurableMemoryPool<T>(pool, defaultBufferSize, maxBufferSize, clearArray);
+
+    public static MemoryPool<T> CreateMemoryPool<T>(ArrayPool<T> pool, int maxBufferSize = BufferSize.Max) =>
+        new ConfigurableMemoryPool<T>(pool, BufferSize<T>.KB_4, maxBufferSize, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+
     public static RentedArray<T> RentArray<T>(int minimumLength)
     {
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
