@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Threading;
 
 namespace IT.Buffers;
 
@@ -51,8 +52,11 @@ internal sealed class ConfigurableMemoryPool<T> : MemoryPool<T>
             var array = _array;
             if (array != null)
             {
-                _array = null;
-                _pool._pool.Return(array, _pool._clearArray);
+                array = Interlocked.Exchange(ref _array, null);
+                if (array != null)
+                {
+                    _pool._pool.Return(array, _pool._clearArray);
+                }
             }
         }
     }
