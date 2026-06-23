@@ -20,6 +20,24 @@ internal class xArrayTest
         Assert.That(xArray.SelectBucketIndex(-1), Is.EqualTo(28));
         Assert.That(xArray.SelectBucketIndex(int.MinValue + 1), Is.EqualTo(28));
         Assert.That(xArray.SelectBucketIndex(int.MinValue), Is.EqualTo(27));
+
+        var indexes = new List<int>();
+        var bufferSize = BufferSize.KB_32;
+        float bufferGrowthFactor = 1.19f;//1.19 or 1.4
+        int maxBufferSize = BufferSize.Max;
+        //var size = BufferSize.Max;
+
+        do
+        {
+            //size -= bufferSize;
+            indexes.Add(xArray.SelectBucketIndex(bufferSize));
+
+            var newSize = (int)Math.Floor(bufferSize * bufferGrowthFactor);
+            if ((uint)newSize > maxBufferSize)
+                newSize = maxBufferSize;
+
+            bufferSize = newSize;
+        } while (bufferSize < maxBufferSize);
     }
 
     [Test]
