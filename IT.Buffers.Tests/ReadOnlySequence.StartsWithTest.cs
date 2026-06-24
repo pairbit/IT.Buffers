@@ -48,7 +48,7 @@ public class ReadOnlySequence_StartsWithTest
             Assert.That(seq.StartsWith("--bo-"u8), Is.False);
             Assert.That(seq.StartsWith("---++"u8), Is.False);
             Assert.That(seq.StartsWith("---"u8), Is.False);
-            Assert.That(seq.StartsWith("++-"u8), Is.False);
+            Assert.That(seq.StartsWith("++--"u8), Is.False);
 
             Assert.That(seq.StartsWith(memory2.SplitBySegments(i)), Is.False);
             Assert.That(span.StartsWith(memory2.SplitBySegments(i)), Is.False);
