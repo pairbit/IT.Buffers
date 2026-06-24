@@ -8,7 +8,9 @@ public class ReadOnlySequence_StartsWithTest
     public void StartsWithTest()
     {
         var span = "--bo"u8;
+        var span2 = "--bo2"u8;
         var memory = span.ToArray().AsMemory();
+        var memory2 = span2.ToArray().AsMemory();
         var length = span.Length;
 
         for (int i = 1; i <= length; i++)
@@ -23,6 +25,9 @@ public class ReadOnlySequence_StartsWithTest
             Assert.That(seq.StartsWith(seq.Slice(0, 2)), Is.True);
             Assert.That(seq.StartsWith(seq.Slice(0, 3)), Is.True);
             Assert.That(seq.StartsWith(seq), Is.True);
+
+            Assert.That(span.StartsWith(seq), Is.True);
+            Assert.That(span2.StartsWith(seq), Is.True);
 
             var current = seq.Start;
             Assert.That(seq.StartsWith("-"u8, ref current), Is.True);
@@ -44,6 +49,9 @@ public class ReadOnlySequence_StartsWithTest
             Assert.That(seq.StartsWith("---++"u8), Is.False);
             Assert.That(seq.StartsWith("---"u8), Is.False);
             Assert.That(seq.StartsWith("++"u8), Is.False);
+
+            Assert.That(seq.StartsWith(memory2.SplitBySegments(i)), Is.False);
+            Assert.That(span.StartsWith(memory2.SplitBySegments(i)), Is.False);
         }
     }
 
