@@ -19,6 +19,11 @@ public class ReadOnlySequence_StartsWithTest
             Assert.That(seq.StartsWith("--b"u8), Is.True);
             Assert.That(seq.StartsWith("--bo"u8), Is.True);
 
+            Assert.That(seq.StartsWith(seq.Slice(0, 1)), Is.True);
+            Assert.That(seq.StartsWith(seq.Slice(0, 2)), Is.True);
+            Assert.That(seq.StartsWith(seq.Slice(0, 3)), Is.True);
+            Assert.That(seq.StartsWith(seq), Is.True);
+
             var current = seq.Start;
             Assert.That(seq.StartsWith("-"u8, ref current), Is.True);
             Assert.That(seq.Slice(current).SequenceEqual("-bo"u8), Is.True);
