@@ -1,10 +1,29 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 
 namespace IT.Buffers.Extensions;
 
 public static class xReadOnlySpan
 {
+    public static bool StartsWith<T>(this ReadOnlySpan<T> span, in ReadOnlySequence<T> value)
+        where T : IEquatable<T>
+#if NET7_0_OR_GREATER
+        ?
+#endif
+    {
+        if (value.IsSingleSegment) return span.StartsWith(value.First.Span);
+        if (value.Length > span.Length) return false;
+        foreach (var memory in value)
+        {
+            if (!memory.Span.SequenceEqual(span.Slice(0, memory.Length)))
+                return false;
+
+            span = span.Slice(memory.Length);
+        }
+        return true;
+    }
+
     public static int IndexOfPart<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value, out int length)
         where T : IEquatable<T>
 #if NET7_0_OR_GREATER

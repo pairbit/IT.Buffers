@@ -189,6 +189,19 @@ public static class xReadOnlySequence
         return new(null, -1);
     }
 
+    public static bool StartsWith<T>(this in ReadOnlySequence<T> sequence, in ReadOnlySequence<T> value)
+        where T : IEquatable<T>
+#if NET7_0_OR_GREATER
+        ?
+#endif
+    {
+        if (sequence.IsSingleSegment) return sequence.First.Span.StartsWith(value);
+        if (value.IsSingleSegment) return sequence.StartsWith(value.First.Span);
+        if (value.Length > sequence.Length) return false;
+
+        return sequence.Slice(0, value.Length).SequenceEqual(value);
+    }
+
     public static bool StartsWith<T>(this in ReadOnlySequence<T> sequence, ReadOnlySpan<T> value)
         where T : IEquatable<T>
 #if NET7_0_OR_GREATER
@@ -330,7 +343,7 @@ public static class xReadOnlySequence
             other = other[span.Length..];
         }
 
-        return true;
+        return other.IsEmpty;
     }
 
     public static bool SequenceEqual<T>(this in ReadOnlySequence<T> first, in ReadOnlySequence<T> other, IEqualityComparer<T>? comparer = null)
