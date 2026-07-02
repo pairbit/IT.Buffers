@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,21 +8,21 @@ namespace IT.Buffers;
 
 public sealed class ReadOnlySequenceStream : Stream
 {
+    private readonly Disposing? _dispose;
     private ReadOnlySequence<byte> _sequence;
     private SequencePosition _position;
     private long _absolutePosition;
     private bool _isDisposed;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ReadOnlySequenceStream"/> class over the specified <see cref="ReadOnlySequence{Byte}"/>.
-    /// </summary>
-    /// <param name="source">The <see cref="ReadOnlySequence{Byte}"/> to wrap.</param>
-    public ReadOnlySequenceStream(ReadOnlySequence<byte> sequence)
+    public delegate void Disposing(in ReadOnlySequence<byte> sequence);
+
+    public ReadOnlySequenceStream(ReadOnlySequence<byte> sequence, Disposing? dispose = null)
     {
         _sequence = sequence;
         _position = sequence.Start;
         _absolutePosition = 0;
         _isDisposed = false;
+        _dispose = dispose;
     }
 
     public override bool CanRead => !_isDisposed;
@@ -265,9 +264,13 @@ public sealed class ReadOnlySequenceStream : Stream
 
     protected override void Dispose(bool disposing)
     {
-        _isDisposed = true;
-        _sequence = default;
-        base.Dispose(disposing);
+        if (!_isDisposed)
+        {
+            _isDisposed = true;
+            _dispose?.Invoke(_sequence);
+            _sequence = default;
+            base.Dispose(disposing);
+        }
     }
 
     private static void CheckCopyToArguments(Stream destination, int bufferSize)
