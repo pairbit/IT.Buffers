@@ -51,6 +51,7 @@ public class ReadOnlySequenceTest
             Assert.That(rented.SequenceEqual(rented));
 
             Assert.That(rented.SequenceCompareTo(buffer), Is.Zero);
+            Assert.That(buffer.SequenceCompareTo(rented), Is.Zero);
             Assert.That(rented.SequenceCompareTo(single), Is.Zero);
             Assert.That(single.SequenceCompareTo(rented), Is.Zero);
             Assert.That(rented.SequenceCompareTo(rented), Is.Zero);
@@ -68,6 +69,7 @@ public class ReadOnlySequenceTest
                 Assert.That(rented.SequenceCompareTo(singleShort), Is.EqualTo(1));
                 Assert.That(rented.SequenceCompareTo(seqShort), Is.EqualTo(1));
 
+                Assert.That(bufferShort.Span.SequenceCompareTo(rented), Is.EqualTo(-1));
                 Assert.That(singleShort.SequenceCompareTo(rented), Is.EqualTo(-1));
                 Assert.That(seqShort.SequenceCompareTo(rented), Is.EqualTo(-1));
             }

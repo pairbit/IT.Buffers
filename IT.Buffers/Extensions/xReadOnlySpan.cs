@@ -6,6 +6,15 @@ namespace IT.Buffers.Extensions;
 
 public static class xReadOnlySpan
 {
+    public static int SequenceCompareTo<T>(this ReadOnlySpan<T> first, in ReadOnlySequence<T> other)
+        where T : IComparable<T>
+#if NET7_0_OR_GREATER
+        ?
+#endif
+    {
+        return -other.SequenceCompareTo(first);
+    }
+
     public static bool StartsWith<T>(this ReadOnlySpan<T> span, in ReadOnlySequence<T> value)
         where T : IEquatable<T>
 #if NET7_0_OR_GREATER
