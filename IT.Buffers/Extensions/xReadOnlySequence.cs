@@ -400,10 +400,8 @@ public static class xReadOnlySequence
         ?
 #endif
     {
-        if (first.IsSingleSegment && other.IsSingleSegment)
-        {
-            return first.FirstSpan.SequenceCompareTo(other.FirstSpan);
-        }
+        if (first.IsSingleSegment) return -other.SequenceCompareTo(first.FirstSpan);
+        if (other.IsSingleSegment) return first.SequenceCompareTo(other.FirstSpan);
 
         // walk both sequences in tandem, comparing the overlapping window each step and short-circuiting on
         // the first non-zero result; empty segments are skipped by the refill loops
