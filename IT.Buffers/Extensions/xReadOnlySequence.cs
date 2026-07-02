@@ -393,4 +393,68 @@ public static class xReadOnlySequence
 
         return true;
     }
+
+    public static int SequenceCompareTo<T>(this in ReadOnlySequence<T> first, in ReadOnlySequence<T> other)
+        where T : IComparable<T>
+#if NET7_0_OR_GREATER
+        ?
+#endif
+    {
+        if (first.IsSingleSegment && other.IsSingleSegment)
+        {
+            return first.FirstSpan.SequenceCompareTo(other.FirstSpan);
+        }
+
+        // walk both sequences in tandem, comparing the overlapping window each step and short-circuiting on
+        // the first non-zero result; empty segments are skipped by the refill loops
+        var firstPos = first.Start;
+        var otherPos = other.Start;
+        ReadOnlySpan<T> a = default, b = default;
+        while (true)
+        {
+            while (a.IsEmpty && first.TryGet(ref firstPos, out var aNext)) a = aNext.Span;
+            while (b.IsEmpty && other.TryGet(ref otherPos, out var bNext)) b = bNext.Span;
+
+            if (a.IsEmpty || b.IsEmpty) break; // at least one sequence is exhausted
+
+            var shared = Math.Min(a.Length, b.Length);
+            var cmp = a.Slice(0, shared).SequenceCompareTo(b.Slice(0, shared));
+            if (cmp != 0) return cmp;
+
+            a = a.Slice(shared);
+            b = b.Slice(shared);
+        }
+
+        // everything in the overlap matched, so the longer sequence sorts after the shorter
+        return first.Length.CompareTo(other.Length);
+    }
+
+    public static int SequenceCompareTo<T>(this in ReadOnlySequence<T> first, ReadOnlySpan<T> other)
+        where T : IComparable<T>
+#if NET7_0_OR_GREATER
+        ?
+#endif
+    {
+        if (first.IsSingleSegment) return first.FirstSpan.SequenceCompareTo(other);
+
+        long firstLength = first.Length;
+        int otherLength = other.Length;
+        var firstPos = first.Start;
+        ReadOnlySpan<T> a = default;
+        while (true)
+        {
+            while (a.IsEmpty && first.TryGet(ref firstPos, out var aNext)) a = aNext.Span;
+            if (a.IsEmpty || other.IsEmpty) break;
+
+            var shared = Math.Min(a.Length, other.Length);
+            var cmp = a.Slice(0, shared).SequenceCompareTo(other.Slice(0, shared));
+            if (cmp != 0) return cmp;
+
+            a = a.Slice(shared);
+            other = other.Slice(shared);
+        }
+
+        // overlap matched, so the longer input sorts after the shorter
+        return firstLength.CompareTo((long)otherLength);
+    }
 }
