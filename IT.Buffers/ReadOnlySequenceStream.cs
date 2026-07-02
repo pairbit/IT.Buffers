@@ -8,6 +8,8 @@ namespace IT.Buffers;
 
 public sealed class ReadOnlySequenceStream : Stream
 {
+    private static readonly Task<int> TaskOfZero = Task.FromResult(0);
+
     private readonly Disposing? _dispose;
     private ReadOnlySequence<byte> _sequence;
     private SequencePosition _position;
@@ -142,8 +144,13 @@ public sealed class ReadOnlySequenceStream : Stream
             return Task.FromCanceled<int>(cancellationToken);
         }
 
-        int n = Read(buffer, offset, count);
-        return Task.FromResult(n);
+        int readed = Read(buffer, offset, count);
+        if (readed == 0)
+        {
+            return TaskOfZero;
+        }
+
+        return Task.FromResult(readed);
     }
 
     public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
