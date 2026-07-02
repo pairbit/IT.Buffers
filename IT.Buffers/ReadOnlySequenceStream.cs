@@ -151,7 +151,7 @@ public sealed class ReadOnlySequenceStream : Stream
         EnsureNotDisposed();
 
         cancellationToken.ThrowIfCancellationRequested();
-        
+
         return new ValueTask<int>(Read(buffer.Span));
     }
 
