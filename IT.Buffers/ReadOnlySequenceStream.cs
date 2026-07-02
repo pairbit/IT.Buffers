@@ -144,7 +144,7 @@ public sealed class ReadOnlySequenceStream : Stream
             return Task.FromCanceled<int>(cancellationToken);
         }
 
-        int readed = Read(buffer, offset, count);
+        int readed = Read(new Span<byte>(buffer, offset, count));
         if (readed == 0)
         {
             return TaskOfZero;
