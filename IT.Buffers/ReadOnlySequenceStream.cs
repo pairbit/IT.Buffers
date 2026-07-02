@@ -156,9 +156,14 @@ public sealed class ReadOnlySequenceStream : Stream
     public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         EnsureNotDisposed();
-
+#if NET
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return ValueTask.FromCanceled<int>(cancellationToken);
+        }
+#else
         cancellationToken.ThrowIfCancellationRequested();
-
+#endif
         return new ValueTask<int>(Read(buffer.Span));
     }
 
