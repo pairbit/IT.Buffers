@@ -96,16 +96,16 @@ public sealed class ReadOnlySequenceStream : Stream
         }
 
         ReadOnlySequence<byte> remaining = _sequence.Slice(_position);
-        int n = (int)Math.Min(remaining.Length, buffer.Length);
-        if (n <= 0)
+        int length = (int)Math.Min(remaining.Length, buffer.Length);
+        if (length <= 0)
         {
             return 0;
         }
 
-        remaining.Slice(0, n).CopyTo(buffer);
-        _position = _sequence.GetPosition(n, _position);
-        _absolutePosition += n;
-        return n;
+        remaining.Slice(0, length).CopyTo(buffer);
+        _position = _sequence.GetPosition(length, _position);
+        _absolutePosition += length;
+        return length;
     }
 
     public override int ReadByte()
