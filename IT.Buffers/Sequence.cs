@@ -54,7 +54,22 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         }
     }
 
-    public ReadOnlySequence<T> AsReadOnly => this;
+    public ReadOnlySequence<T> AsReadOnly
+    {
+        get
+        {
+            var last = _last;
+            if (last != null)
+            {
+                var first = _first;
+                if (first != null)
+                {
+                    return new(first, first.Start, last, last.End);
+                }
+            }
+            return Empty;
+        }
+    }
 
     public SequencePosition Start => _first != null ? new(_first, _first.Start) : default;
 
@@ -64,11 +79,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
 
     public static implicit operator ReadOnlySequence<T>(Sequence<T>? sequence)
-    {
-        return sequence?._first is { } first && sequence._last is { } last
-            ? new ReadOnlySequence<T>(first, first.Start, last, last.End)
-            : Empty;
-    }
+        => sequence == null ? Empty : sequence.AsReadOnly;
 
     public void AdvanceTo(SequencePosition position)
     {
