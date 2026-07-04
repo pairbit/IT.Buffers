@@ -4,7 +4,9 @@ namespace IT.Buffers;
 
 public abstract class GrowableArrayPool<T> : ArrayPool<T>
 {
-    public abstract T[] RentNext(in ReadOnlySequence<byte> previous);
+    public virtual T[] RentNext(in ReadOnlySequence<byte> previous)
+        => RentNext(BufferSize.GetSizeLastChunk(previous));
 
-    public abstract T[] RentNext(int previousLength);
+    public virtual T[] RentNext(int previousLength)
+        => Rent(BufferSize.GetDoubleCapacity(previousLength));
 }
