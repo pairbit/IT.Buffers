@@ -14,13 +14,10 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     public static BufferPool<Sequence<T>> Pool => BufferPool<Sequence<T>>.Shared;
 
     private readonly Stack<Segment> _stack;
-    private int _nextBufferSize;
-
     private ArrayPool<T>? _arrayPool;
-
     private Segment? _first;
-
     private Segment? _last;
+    private int _nextBufferSize;
 
     public Sequence()
     {
