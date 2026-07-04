@@ -25,7 +25,7 @@ internal class SequenceTest
             var stream = new MemoryStream(bytes);
 
             sequence.NextBufferSize = BufferSize.KB_64;
-            //sequence.GetSpan(BufferSize.KB_128);
+            sequence.GetSpan(BufferSize.KB_128);
 
             await sequence.WriteAsync(stream);
 
@@ -34,8 +34,7 @@ internal class SequenceTest
             Assert.That(ros.End, Is.EqualTo(sequence.End));
 
             Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
-            //Assert.That(sequence.Segments, Is.EqualTo(5));
-            //Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.MB));
+            Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.MB));
         }
         finally
         {

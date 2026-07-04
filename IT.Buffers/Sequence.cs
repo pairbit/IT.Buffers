@@ -161,14 +161,33 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         if (_last == null || _last.FreeLength < sizeHint)
         {
-            var minBufferSize = Math.Max(NextBufferSize, sizeHint);
+            var array = _nextBufferSize >= sizeHint ? RentNext() : Rent(sizeHint);
 
             var segment = GetOrNewSegment();
-            segment.Assign((_arrayPool ?? ArrayPool<T>.Shared).Rent(minBufferSize));
+            segment.Assign(array);
             Append(segment);
         }
 
         return _last!;
+    }
+
+    private T[] Rent(int sizeHint)
+    {
+        return (_arrayPool ?? ArrayPool<T>.Shared).Rent(sizeHint);
+    }
+
+    private T[] RentNext()
+    {
+        var arrayPool = _arrayPool;
+        if (arrayPool == null)
+        {
+            return GrowableArrayPool<T>.Shared.RentNext(ref _nextBufferSize);
+        }
+        if (arrayPool is GrowableArrayPool<T> growableArrayPool)
+        {
+            return growableArrayPool.RentNext(ref _nextBufferSize);
+        }
+        return arrayPool.Rent(_nextBufferSize);
     }
 
     private Segment GetOrNewSegment()
