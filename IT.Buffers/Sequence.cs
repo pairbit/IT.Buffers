@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -45,6 +44,8 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         _arrayPool = arrayPool;
     }
 
+    private string DebuggerDisplay => $"Length: {AsReadOnlySequence.Length}";
+
     public int MinimumSpanLength { get; set; } = 0;
 
     public bool AutoIncreaseMinimumSpanLength { get; set; } = true;
@@ -53,7 +54,6 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     public long Length => AsReadOnlySequence.Length;
 
-    private string DebuggerDisplay => $"Length: {AsReadOnlySequence.Length}";
 
     public static implicit operator ReadOnlySequence<T>(Sequence<T>? sequence)
     {
@@ -128,9 +128,6 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             Append(segment);
         }
     }
-
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public void Dispose() => Reset();
 
     public void Reset()
     {
@@ -395,6 +392,8 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             }
         }
     }
+
+    void IDisposable.Dispose() => Reset();
 
     internal static class Requires
     {
