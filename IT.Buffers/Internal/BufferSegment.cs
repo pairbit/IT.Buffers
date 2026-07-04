@@ -17,7 +17,7 @@ internal struct BufferSegment<T>
 
     public readonly int Written => _written;
 
-    public readonly int Capacity => _buffer.Length;
+    public readonly int Capacity => _buffer == null ? 0 : _buffer.Length;
 
     public readonly Memory<T> FreeMemory => _buffer.AsMemory(_written);
 
@@ -35,7 +35,7 @@ internal struct BufferSegment<T>
     public void Advance(int count)
     {
         var written = _written + count;
-        if ((uint)written > _buffer.Length)
+        if ((uint)written > Capacity)
             throw new ArgumentOutOfRangeException(nameof(count));
 
         _written = written;

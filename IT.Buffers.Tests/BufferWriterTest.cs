@@ -10,6 +10,8 @@ public class BufferWriterTest
     {
         var writer = new BufferWriter<byte>();
 
+        Assert.Throws<ArgumentOutOfRangeException>(() => writer.Advance(1));
+
         var span = writer.GetSpan();
         writer.Advance(1);
 

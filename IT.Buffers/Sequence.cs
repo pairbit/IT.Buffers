@@ -122,8 +122,9 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     public void Advance(int count)
     {
-        Segment? last = _last ?? throw new InvalidOperationException();
-        last.Advance(count);
+        if (_last == null) throw new ArgumentOutOfRangeException(nameof(count));
+
+        _last.Advance(count);
     }
 
     public Memory<T> GetMemory(int sizeHint = 0) => GetSegment(sizeHint).FreeMemory;

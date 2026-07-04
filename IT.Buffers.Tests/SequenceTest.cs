@@ -18,12 +18,14 @@ internal class SequenceTest
     [Test]
     public void Advance_Test()
     {
-        var writer = new Sequence<byte>();
+        var sequence = new Sequence<byte>();
 
-        var span = writer.GetSpan();
-        writer.Advance(1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => sequence.Advance(1));
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => writer.Advance(int.MaxValue));
+        var span = sequence.GetSpan();
+        sequence.Advance(1);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => sequence.Advance(int.MaxValue));
     }
 
     [Test]
