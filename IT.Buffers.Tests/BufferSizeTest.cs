@@ -6,6 +6,16 @@ namespace IT.Buffers.Tests;
 public class BufferSizeTest
 {
     [Test]
+    public void GetDoubleCapacityTest()
+    {
+        Assert.That(BufferSize.GetDoubleCapacity(-16), Is.EqualTo(BufferSize.Max));
+
+        Assert.That(BufferSize.GetDoubleCapacity(16), Is.EqualTo(32));
+        Assert.That(BufferSize.GetDoubleCapacity(BufferSize.MB), Is.EqualTo(BufferSize.MB_2));
+        Assert.That(BufferSize.GetDoubleCapacity(BufferSize.GB), Is.EqualTo(BufferSize.Max));
+    }
+
+    [Test]
     public void Test()
     {
         Assert.That(BufferSize<char>.KB_256, Is.EqualTo(BufferSize.KB_128));

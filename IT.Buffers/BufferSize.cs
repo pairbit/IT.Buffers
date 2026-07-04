@@ -50,7 +50,7 @@ public static class BufferSize
 
     public static int GetDoubleCapacity(int size)
     {
-        var newSize = unchecked(size * 2);
+        var newSize = unchecked(size << 1);
         if ((uint)newSize > Max)
         {
             newSize = Max;
