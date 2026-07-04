@@ -3,25 +3,25 @@ using System.Buffers;
 
 namespace IT.Buffers;
 
-public abstract class GrowableArrayPool<T> : ArrayPool<T>
+public abstract class GrowingArrayPool<T> : ArrayPool<T>
 {
-    public static readonly GrowableArrayPool<T> OneOfEachSize = new DoubleSharedGrowableArrayPool<T>();
-    public static readonly GrowableArrayPool<T> TwoOfEachSize = Create(1.4f);
-    public static readonly GrowableArrayPool<T> ThreeOfEachSize = Create(1.26f);
-    public static readonly GrowableArrayPool<T> FourOfEachSize = Create(1.19f);
+    public static readonly GrowingArrayPool<T> OneOfEachSize = new DoubleSharedGrowingArrayPool<T>();
+    public static readonly GrowingArrayPool<T> TwoOfEachSize = Create(1.4f);
+    public static readonly GrowingArrayPool<T> ThreeOfEachSize = Create(1.26f);
+    public static readonly GrowingArrayPool<T> FourOfEachSize = Create(1.19f);
 
     public abstract T[] RentNext(ref int length);
 
     //public virtual T[] RentNext(in ReadOnlySequence<byte> previous)
     //    => RentNext(BufferSize.GetSizeLastChunk(previous));
 
-    public static GrowableArrayPool<T> Create(float bufferGrowthFactor, int maxBufferSize = BufferSize.Max)
+    public static GrowingArrayPool<T> Create(float bufferGrowthFactor, int maxBufferSize = BufferSize.Max)
     {
-        return new SharedGrowableArrayPool<T>(bufferGrowthFactor, maxBufferSize);
+        return new SharedGrowingArrayPool<T>(bufferGrowthFactor, maxBufferSize);
     }
 }
 
-internal class SharedGrowableArrayPool<T> : GrowableArrayPool<T>
+internal class SharedGrowingArrayPool<T> : GrowingArrayPool<T>
 {
     private readonly float _bufferGrowthFactor;
     private readonly int _maxBufferSize;
@@ -30,7 +30,7 @@ internal class SharedGrowableArrayPool<T> : GrowableArrayPool<T>
 
     public float BufferGrowthFactor => _bufferGrowthFactor;
 
-    public SharedGrowableArrayPool(float bufferGrowthFactor, int maxBufferSize)
+    public SharedGrowingArrayPool(float bufferGrowthFactor, int maxBufferSize)
     {
         if (bufferGrowthFactor <= 0) throw new ArgumentOutOfRangeException(nameof(bufferGrowthFactor));
         if (maxBufferSize < 0 || maxBufferSize > BufferSize.Max)
@@ -44,7 +44,7 @@ internal class SharedGrowableArrayPool<T> : GrowableArrayPool<T>
     {
         var array = Rent(length);
 
-        var newSize = (int)Math.Floor(length * BufferGrowthFactor);
+        var newSize = (int)Math.Floor(length * _bufferGrowthFactor);
         var maxSize = _maxBufferSize;
         length = (uint)newSize > maxSize ? maxSize : newSize;
 
@@ -58,7 +58,7 @@ internal class SharedGrowableArrayPool<T> : GrowableArrayPool<T>
         => Shared.Return(array, clearArray);
 }
 
-internal class DoubleSharedGrowableArrayPool<T> : GrowableArrayPool<T>
+internal class DoubleSharedGrowingArrayPool<T> : GrowingArrayPool<T>
 {
     public override T[] RentNext(ref int length)
     {
@@ -76,7 +76,7 @@ internal class DoubleSharedGrowableArrayPool<T> : GrowableArrayPool<T>
         => Shared.Return(array, clearArray);
 }
 
-internal abstract class GrowableMemoryPool<T> : MemoryPool<T>
+internal abstract class GrowingMemoryPool<T> : MemoryPool<T>
 {
     public abstract IMemoryOwner<T> RentNext(ref int previousLength);
 

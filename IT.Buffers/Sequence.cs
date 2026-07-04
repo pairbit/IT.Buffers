@@ -180,11 +180,11 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         var arrayPool = _arrayPool;
         if (arrayPool == null)
         {
-            return GrowableArrayPool<T>.OneOfEachSize.RentNext(ref _nextBufferSize);
+            return GrowingArrayPool<T>.OneOfEachSize.RentNext(ref _nextBufferSize);
         }
-        if (arrayPool is GrowableArrayPool<T> growableArrayPool)
+        if (arrayPool is GrowingArrayPool<T> growingArrayPool)
         {
-            return growableArrayPool.RentNext(ref _nextBufferSize);
+            return growingArrayPool.RentNext(ref _nextBufferSize);
         }
         return arrayPool.Rent(_nextBufferSize);
     }

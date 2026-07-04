@@ -52,7 +52,7 @@ internal class SequenceTest
             Random.Shared.NextBytes(bytes);
             var stream = new MemoryStream(bytes);
 
-            sequence.ArrayPool = GrowableArrayPool<byte>.TwoOfEachSize;
+            sequence.ArrayPool = GrowingArrayPool<byte>.TwoOfEachSize;
 
             sequence.NextBufferSize = BufferSize.KB_64;
 
@@ -81,7 +81,7 @@ internal class SequenceTest
             Random.Shared.NextBytes(bytes);
             var stream = new MemoryStream(bytes);
 
-            sequence.ArrayPool = GrowableArrayPool<byte>.FourOfEachSize;
+            sequence.ArrayPool = GrowingArrayPool<byte>.FourOfEachSize;
             sequence.NextBufferSize = BufferSize.KB;
 
             await sequence.WriteAsync(stream);
