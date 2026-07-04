@@ -2,8 +2,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
@@ -19,9 +17,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     public static BufferPool<Sequence<T>> Pool => BufferPool<Sequence<T>>.Shared;
 
-    private readonly Stack<Segment> _stack = new();
-
-    private MemoryPool<T>? _memoryPool;
+    private readonly Stack<Segment> _stack;
 
     private ArrayPool<T>? _arrayPool;
 
@@ -31,9 +27,17 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     public Sequence()
     {
+        _stack = new();
     }
 
     private string DebuggerDisplay => $"Length: {AsReadOnlySequence.Length}";
+
+#if NET
+    public int EnsureCapacitySegments(int capacity)
+    {
+        return _stack.EnsureCapacity(capacity);
+    }
+#endif
 
     public ArrayPool<T>? ArrayPool
     {
@@ -167,15 +171,8 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         if (minBufferSize.HasValue)
         {
             Segment? segment = GetOrNewSegment();
-            if (_arrayPool != null)
-            {
-                segment.Assign(_arrayPool.Rent(minBufferSize.Value == -1 ? DefaultLengthFromArrayPool : minBufferSize.Value));
-            }
-            else
-            {
-                segment.Assign(_memoryPool!.Rent(minBufferSize.Value));
-            }
-
+            
+            segment.Assign((_arrayPool ?? ArrayPool<T>.Shared).Rent(minBufferSize.Value == -1 ? DefaultLengthFromArrayPool : minBufferSize.Value));
             Append(segment);
         }
 
@@ -253,11 +250,6 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     {
         internal static readonly Segment Empty = new();
 
-        /// <summary>
-        /// A value indicating whether the element may contain references (and thus must be cleared).
-        /// </summary>
-        private static readonly bool MayContainReferences = !typeof(T).GetTypeInfo().IsPrimitive;
-
 #pragma warning disable SA1011 // Closing square brackets should be spaced correctly
         /// <summary>
         /// Gets the backing array, when using an <see cref="ArrayPool{T}"/> instead of a <see cref="MemoryPool{T}"/>.
@@ -287,15 +279,9 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         internal Span<T> RemainingSpan => AvailableMemory.Span.Slice(End);
 
         /// <summary>
-        /// Gets the tracker for the underlying array for this segment, which can be used to recycle the array when we're disposed of.
-        /// Will be <see langword="null"/> if using an array pool, in which case the memory is held by <see cref="_array"/>.
-        /// </summary>
-        internal IMemoryOwner<T>? MemoryOwner { get; private set; }
-
-        /// <summary>
         /// Gets the full memory owned by the <see cref="MemoryOwner"/>.
         /// </summary>
-        internal Memory<T> AvailableMemory => _array ?? MemoryOwner?.Memory ?? default;
+        internal Memory<T> AvailableMemory => _array ?? default;
 
         /// <summary>
         /// Gets the number of elements that are committed in this segment.
@@ -317,13 +303,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         /// <summary>
         /// Gets a value indicating whether this segment refers to memory that came from outside and that we cannot write to nor recycle.
         /// </summary>
-        internal bool IsForeignMemory => _array == null && MemoryOwner == null;
-
-        internal void Assign(IMemoryOwner<T> memoryOwner)
-        {
-            MemoryOwner = memoryOwner;
-            Memory = memoryOwner.Memory;
-        }
+        internal bool IsForeignMemory => _array == null;
 
         internal void Assign(T[] array)
         {
@@ -339,7 +319,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         internal void ResetMemory(ArrayPool<T>? arrayPool)
         {
-            if (MayContainReferences)
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 AvailableMemory.Span.Slice(Start, End - Start).Clear();
             }
@@ -348,15 +328,11 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             RunningIndex = 0;
             Start = 0;
             End = 0;
-            if (_array != null)
+            var array = _array;
+            if (array != null)
             {
-                arrayPool!.Return(_array);
+                (arrayPool ?? ArrayPool<T>.Shared).Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
                 _array = null;
-            }
-            else
-            {
-                MemoryOwner?.Dispose();
-                MemoryOwner = null;
             }
         }
 
@@ -388,7 +364,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         internal void AdvanceTo(int offset)
         {
             Debug.Assert(offset >= Start, "Trying to rewind.");
-            if (MayContainReferences)
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 AvailableMemory.Span.Slice(Start, offset - Start).Clear();
             }

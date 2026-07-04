@@ -67,9 +67,9 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _segments = 1;
     }
 
-    public void EnsureCapacitySegments(int capacity)
+    public int EnsureCapacitySegments(int capacity)
     {
-        _buffers.EnsureCapacity(capacity);
+        return _buffers.EnsureCapacity(capacity);
     }
 
     //public void ResetWritten()

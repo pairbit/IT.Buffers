@@ -58,15 +58,11 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     public BufferWriter()
     {
         _buffers = new List<BufferSegment<T>>();
-        _current = default;
-        _nextBufferSize = 0;
-        _written = 0;
-        _segments = 0;
     }
 
-    public void EnsureCapacitySegments(int capacity)
+    public int EnsureCapacitySegments(int capacity)
     {
-        _buffers.EnsureCapacity(capacity);
+        return _buffers.EnsureCapacity(capacity);
     }
 
     //public void ResetWritten()
