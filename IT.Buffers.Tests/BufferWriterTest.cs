@@ -6,6 +6,17 @@ namespace IT.Buffers.Tests;
 public class BufferWriterTest
 {
     [Test]
+    public void Advance_Test()
+    {
+        var writer = new BufferWriter<byte>();
+
+        var span = writer.GetSpan();
+        writer.Advance(1);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => writer.Advance(int.MaxValue));
+    }
+
+    [Test]
     public void Test_GetSpanGetSpan()
     {
         var writer = new BufferWriter<byte>();

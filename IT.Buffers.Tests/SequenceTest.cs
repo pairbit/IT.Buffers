@@ -16,6 +16,17 @@ internal class SequenceTest
     }
 
     [Test]
+    public void Advance_Test()
+    {
+        var writer = new Sequence<byte>();
+
+        var span = writer.GetSpan();
+        writer.Advance(1);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => writer.Advance(int.MaxValue));
+    }
+
+    [Test]
     public async Task WriteStream_OneOfEachSize_Test()
     {
         var sequence = new Sequence<byte>();

@@ -35,7 +35,8 @@ internal struct BufferSegment<T>
     public void Advance(int count)
     {
         var written = _written + count;
-        if (written > _buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
+        if ((uint)written > _buffer.Length)
+            throw new ArgumentOutOfRangeException(nameof(count));
 
         _written = written;
     }

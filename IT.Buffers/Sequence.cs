@@ -323,7 +323,8 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
 
             var end = End + count;
-            if (end > Memory.Length) throw new ArgumentOutOfRangeException(nameof(count));
+            if ((uint)end > Memory.Length)
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             End = end;
         }
