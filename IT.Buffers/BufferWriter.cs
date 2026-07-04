@@ -103,7 +103,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         if (count > 0)
         {
             _current.Advance(count);
-            _written += count;
+            _written = checked(_written + count);
         }
     }
 
