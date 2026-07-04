@@ -11,8 +11,6 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 {
     private const int MaximumAutoGrowSize = 32 * 1024;
 
-    private static readonly int DefaultLengthFromArrayPool = 1 + (4095 / Unsafe.SizeOf<T>());
-
     private static readonly ReadOnlySequence<T> Empty = new(Segment.Empty, 0, Segment.Empty, 0);
 
     public static BufferPool<Sequence<T>> Pool => BufferPool<Sequence<T>>.Shared;
@@ -165,26 +163,15 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     private Segment GetSegment(int sizeHint)
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        if (sizeHint == 0) sizeHint = 1;
 
-        if (sizeHint == 0)
+        if (_last == null || _last.FreeLength < sizeHint)
         {
-            if (_last == null || _last.FreeLength == 0)
-            {
-                var segment = GetOrNewSegment();
-                segment.Assign((_arrayPool ?? ArrayPool<T>.Shared).Rent(DefaultLengthFromArrayPool));
-                Append(segment);
-            }
-        }
-        else
-        {
-            if (_last == null || _last.FreeLength < sizeHint)
-            {
-                var minBufferSize = Math.Max(MinimumSpanLength, sizeHint);
+            var minBufferSize = Math.Max(MinimumSpanLength, sizeHint);
 
-                var segment = GetOrNewSegment();
-                segment.Assign((_arrayPool ?? ArrayPool<T>.Shared).Rent(minBufferSize));
-                Append(segment);
-            }
+            var segment = GetOrNewSegment();
+            segment.Assign((_arrayPool ?? ArrayPool<T>.Shared).Rent(minBufferSize));
+            Append(segment);
         }
 
         return _last!;
