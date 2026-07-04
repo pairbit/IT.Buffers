@@ -30,7 +30,7 @@ internal class SequenceTest
 
             await sequence.WriteAsync(stream);
 
-            var ros = sequence.AsReadOnlySequence;
+            var ros = sequence.AsReadOnly;
             var start = sequence.End;
 
             Assert.That(ros.Start, Is.EqualTo(sequence.Start));
@@ -45,7 +45,7 @@ internal class SequenceTest
             Random.Shared.NextBytes(lastBuffer);
             sequence.Write(lastBuffer);
 
-            ros = sequence.AsReadOnlySequence;
+            ros = sequence.AsReadOnly;
             Assert.That(ros.Start, Is.EqualTo(sequence.Start));
             Assert.That(ros.End, Is.EqualTo(sequence.End));
 
@@ -78,7 +78,7 @@ internal class SequenceTest
 
             await sequence.WriteAsync(stream);
 
-            var ros = sequence.AsReadOnlySequence;
+            var ros = sequence.AsReadOnly;
             Assert.That(ros.Start, Is.EqualTo(sequence.Start));
             Assert.That(ros.End, Is.EqualTo(sequence.End));
 
@@ -106,7 +106,7 @@ internal class SequenceTest
 
             await sequence.WriteAsync(stream);
 
-            var ros = sequence.AsReadOnlySequence;
+            var ros = sequence.AsReadOnly;
             Assert.That(ros.Start, Is.EqualTo(sequence.Start));
             Assert.That(ros.End, Is.EqualTo(sequence.End));
 

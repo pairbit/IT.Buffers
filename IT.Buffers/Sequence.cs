@@ -27,7 +27,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         _stack = new();
     }
 
-    private string DebuggerDisplay => $"Length: {AsReadOnlySequence.Length}";
+    private string DebuggerDisplay => $"Length: {AsReadOnly.Length}";
 
 #if NET
     public int EnsureCapacitySegments(int capacity)
@@ -57,13 +57,13 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         }
     }
 
-    public ReadOnlySequence<T> AsReadOnlySequence => this;
+    public ReadOnlySequence<T> AsReadOnly => this;
 
     public SequencePosition Start => _first != null ? new(_first, _first.Start) : default;
 
     public SequencePosition End => _last != null ? new(_last, _last.End) : default;
 
-    public long Length => AsReadOnlySequence.Length;
+    public long Length => AsReadOnly.Length;
 
 
     public static implicit operator ReadOnlySequence<T>(Sequence<T>? sequence)
