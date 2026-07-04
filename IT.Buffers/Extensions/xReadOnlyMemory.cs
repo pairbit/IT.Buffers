@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IT.Buffers.Interfaces;
+using System;
 using System.Buffers;
 
 namespace IT.Buffers.Extensions;
@@ -41,16 +42,16 @@ public static class xReadOnlyMemory
 
 
     public static ReadOnlySequence<T> Split<T>(this Memory<T> memory,
-        int bufferSize, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
-        => Split((ReadOnlyMemory<T>)memory, bufferSize, growthPolicy);
+        int bufferSize, IBufferGrowthStrategy? growthStrategy = null)
+        => Split((ReadOnlyMemory<T>)memory, bufferSize, growthStrategy);
 
     public static ReadOnlySequence<T> SplitAndRent<T>(this Memory<T> memory,
-        int bufferSize, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double,
+        int bufferSize, IBufferGrowthStrategy? growthStrategy = null,
         bool isRented = false)
-        => SplitAndRent((ReadOnlyMemory<T>)memory, bufferSize, growthPolicy, isRented);
+        => SplitAndRent((ReadOnlyMemory<T>)memory, bufferSize, growthStrategy, isRented);
 
     public static ReadOnlySequence<T> Split<T>(this ReadOnlyMemory<T> memory,
-        int bufferSize, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
+        int bufferSize, IBufferGrowthStrategy? growthStrategy = null)
     {
         if (memory.IsEmpty) return ReadOnlySequence<T>.Empty;
 
@@ -66,10 +67,12 @@ public static class xReadOnlyMemory
         memory = memory[bufferSize..];
         var end = start;
 
+        if (growthStrategy == null)
+            growthStrategy = BufferGrowthStrategy.OneOfEachSize;
+
         do
         {
-            if (growthPolicy == BufferGrowthPolicy.Double)
-                bufferSize = BufferSize.GetDoubleCapacity(bufferSize);
+            bufferSize = growthStrategy.Grow(bufferSize);
 
             if (memory.Length < bufferSize) bufferSize = memory.Length;
 
@@ -82,7 +85,7 @@ public static class xReadOnlyMemory
     }
 
     public static ReadOnlySequence<T> SplitAndRent<T>(this ReadOnlyMemory<T> memory,
-        int bufferSize, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double,
+        int bufferSize, IBufferGrowthStrategy? growthStrategy = null,
         bool isRented = false)
     {
         if (memory.IsEmpty) return ReadOnlySequence<T>.Empty;
@@ -109,10 +112,12 @@ public static class xReadOnlyMemory
         memory = memory[bufferSize..];
         var end = start;
 
+        if (growthStrategy == null)
+            growthStrategy = BufferGrowthStrategy.OneOfEachSize;
+
         do
         {
-            if (growthPolicy == BufferGrowthPolicy.Double)
-                bufferSize = BufferSize.GetDoubleCapacity(bufferSize);
+            bufferSize = growthStrategy.Grow(bufferSize);
 
             if (memory.Length < bufferSize) bufferSize = memory.Length;
 

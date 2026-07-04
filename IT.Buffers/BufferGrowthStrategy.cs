@@ -61,7 +61,7 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
         return new BufferGrowthStrategy(bufferGrowthFactor, maxBufferSize);
     }
 
-    internal class Single : IBufferGrowthStrategy
+    class Single : IBufferGrowthStrategy
     {
         public static readonly Single Instance = new();
 
@@ -70,7 +70,7 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
         public int Grow(int size) => size;
     }
 
-    internal class Double : IBufferGrowthStrategy
+    class Double : IBufferGrowthStrategy
     {
         public static readonly Double Instance = new();
 
@@ -82,7 +82,7 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
         }
     }
 
-    internal class DoubleWithMax : IBufferGrowthStrategy
+    class DoubleWithMax : IBufferGrowthStrategy
     {
         private readonly int _maxBufferSize;
 

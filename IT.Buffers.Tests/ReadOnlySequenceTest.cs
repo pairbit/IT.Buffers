@@ -85,11 +85,11 @@ public class ReadOnlySequenceTest
             if (i > 1)
                 Assert.That(BufferPool.TryReturn(splitDouble) > 0, Is.True);
 
-            var splitFixed = buffer.AsMemory().Split(buffer.Length / 5, BufferGrowthPolicy.Fixed);
+            var splitFixed = buffer.AsMemory().Split(buffer.Length / 5, BufferGrowthStrategy.Off);
             Assert.That(rented.SequenceEqual(splitFixed));
             Assert.That(BufferPool.TryReturn(splitFixed), Is.EqualTo(0));
 
-            splitFixed = buffer.AsMemory().SplitAndRent(buffer.Length / 5, BufferGrowthPolicy.Fixed);
+            splitFixed = buffer.AsMemory().SplitAndRent(buffer.Length / 5, BufferGrowthStrategy.Off);
             Assert.That(rented.SequenceEqual(splitFixed));
 
             if (i > 1) 
