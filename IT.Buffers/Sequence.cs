@@ -155,29 +155,25 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
-        int? minBufferSize = null;
         if (sizeHint == 0)
         {
             if (_last == null || _last.WritableBytes == 0)
             {
-                // We're going to need more memory. Take whatever size the pool wants to give us.
-                minBufferSize = -1;
+                Segment? segment = GetOrNewSegment();
+                segment.Assign((_arrayPool ?? ArrayPool<T>.Shared).Rent(DefaultLengthFromArrayPool));
+                Append(segment);
             }
         }
         else
         {
             if (_last == null || _last.WritableBytes < sizeHint)
             {
-                minBufferSize = Math.Max(MinimumSpanLength, sizeHint);
-            }
-        }
+                var minBufferSize = Math.Max(MinimumSpanLength, sizeHint);
 
-        if (minBufferSize.HasValue)
-        {
-            Segment? segment = GetOrNewSegment();
-            
-            segment.Assign((_arrayPool ?? ArrayPool<T>.Shared).Rent(minBufferSize.Value == -1 ? DefaultLengthFromArrayPool : minBufferSize.Value));
-            Append(segment);
+                Segment? segment = GetOrNewSegment();
+                segment.Assign((_arrayPool ?? ArrayPool<T>.Shared).Rent(minBufferSize));
+                Append(segment);
+            }
         }
 
         return _last!;
