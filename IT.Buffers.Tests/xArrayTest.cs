@@ -22,8 +22,8 @@ internal class xArrayTest
         Assert.That(xArray.SelectBucketIndex(int.MinValue), Is.EqualTo(27));
 
         var indexes = new List<int>();
-        var bufferSize = BufferSize.KB_32;
-        float bufferGrowthFactor = 1.19f;//1.19 or 1.4
+        var bufferSize = BufferSize.KB_64;
+        float bufferGrowthFactor = 1.4f;//1.19а or 1.4а
         int maxBufferSize = BufferSize.Max;
         //var size = BufferSize.Max;
 

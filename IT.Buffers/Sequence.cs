@@ -125,7 +125,6 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     {
         Segment? last = _last ?? throw new InvalidOperationException();
         last.Advance(count);
-        ConsiderMinimumSizeIncrease();
     }
 
     public Memory<T> GetMemory(int sizeHint = 0) => GetSegment(sizeHint).FreeMemory;
@@ -181,7 +180,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         var arrayPool = _arrayPool;
         if (arrayPool == null)
         {
-            return GrowableArrayPool<T>.Double.RentNext(ref _nextBufferSize);
+            return GrowableArrayPool<T>.OneOfEachSize.RentNext(ref _nextBufferSize);
         }
         if (arrayPool is GrowableArrayPool<T> growableArrayPool)
         {
@@ -243,18 +242,6 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         recycledSegment.ResetMemory(_arrayPool);
         _stack.Push(recycledSegment);
         return nextSegment;
-    }
-
-    private void ConsiderMinimumSizeIncrease()
-    {
-        if (NextBufferSize < BufferSize.Max)
-        {
-            int autoSize = Math.Min(BufferSize.Max, (int)Math.Min(int.MaxValue, Length / 2));
-            if (NextBufferSize < autoSize)
-            {
-                NextBufferSize = autoSize;
-            }
-        }
     }
 
     private class Segment : ReadOnlySequenceSegment<T>

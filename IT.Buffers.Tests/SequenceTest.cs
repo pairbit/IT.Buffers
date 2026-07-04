@@ -15,7 +15,7 @@ internal class SequenceTest
     }
 
     [Test]
-    public async Task Test_WriteAsync()
+    public async Task WriteStream_OneOfEachSize_Test()
     {
         var sequence = new Sequence<byte>();
         try
@@ -35,6 +35,63 @@ internal class SequenceTest
 
             Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
             Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.MB));
+        }
+        finally
+        {
+            sequence.Reset();
+        }
+    }
+
+    [Test]
+    public async Task WriteStream_TwoOfEachSize_Test()
+    {
+        var sequence = new Sequence<byte>();
+        try
+        {
+            var bytes = new byte[BufferSize.MB];
+            Random.Shared.NextBytes(bytes);
+            var stream = new MemoryStream(bytes);
+
+            sequence.ArrayPool = GrowableArrayPool<byte>.TwoOfEachSize;
+
+            sequence.NextBufferSize = BufferSize.KB_64;
+
+            await sequence.WriteAsync(stream);
+
+            var ros = sequence.AsReadOnlySequence;
+            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
+            Assert.That(ros.End, Is.EqualTo(sequence.End));
+
+            Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
+            Assert.That(sequence.NextBufferSize, Is.LessThanOrEqualTo(BufferSize.KB_512));
+        }
+        finally
+        {
+            sequence.Reset();
+        }
+    }
+
+    [Test]
+    public async Task WriteStream_FourOfEachSize_Test()
+    {
+        var sequence = new Sequence<byte>();
+        try
+        {
+            var bytes = new byte[BufferSize.MB];
+            Random.Shared.NextBytes(bytes);
+            var stream = new MemoryStream(bytes);
+
+            sequence.ArrayPool = GrowableArrayPool<byte>.FourOfEachSize;
+            sequence.NextBufferSize = BufferSize.KB;
+
+            await sequence.WriteAsync(stream);
+
+            var ros = sequence.AsReadOnlySequence;
+            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
+            Assert.That(ros.End, Is.EqualTo(sequence.End));
+
+            Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
+            Assert.That(sequence.NextBufferSize, Is.LessThanOrEqualTo(BufferSize.KB_256));
         }
         finally
         {
