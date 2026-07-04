@@ -17,34 +17,34 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     private static readonly ReadOnlySequence<T> Empty = new(Segment.Empty, 0, Segment.Empty, 0);
 
-    private readonly Stack<Segment> _segmentPool = new();
+    public static BufferPool<Sequence<T>> Pool => BufferPool<Sequence<T>>.Shared;
 
-    private readonly MemoryPool<T>? _memoryPool;
+    private readonly Stack<Segment> _stack = new();
 
-    private readonly ArrayPool<T>? _arrayPool;
+    private MemoryPool<T>? _memoryPool;
+
+    private ArrayPool<T>? _arrayPool;
 
     private Segment? _first;
 
     private Segment? _last;
 
     public Sequence()
-        : this(ArrayPool<T>.Create())
     {
-    }
-
-    public Sequence(MemoryPool<T> memoryPool)
-    {
-        Requires.NotNull(memoryPool, nameof(memoryPool));
-        _memoryPool = memoryPool;
-    }
-
-    public Sequence(ArrayPool<T> arrayPool)
-    {
-        Requires.NotNull(arrayPool, nameof(arrayPool));
-        _arrayPool = arrayPool;
     }
 
     private string DebuggerDisplay => $"Length: {AsReadOnlySequence.Length}";
+
+    public ArrayPool<T>? ArrayPool
+    {
+        get => _arrayPool;
+        set
+        {
+            if (_last != null) throw new InvalidOperationException();
+
+            _arrayPool = value;
+        }
+    }
 
     public int MinimumSpanLength { get; set; } = 0;
 
@@ -80,16 +80,18 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         int firstIndex = position.GetInteger();
 
         // Before making any mutations, confirm that the block specified belongs to this sequence.
-        Segment? current = this._first;
+        var current = _first;
         while (current != firstSegment && current != null)
         {
             current = current.Next;
         }
 
-        Requires.Argument(current != null, nameof(position), "Position does not represent a valid position in this sequence.");
+        if (current == null)
+            throw new ArgumentException("Position does not represent a valid position in this sequence.", nameof(position));
 
         // Also confirm that the position is not a prior position in the block.
-        Requires.Argument(firstIndex >= current.Start, nameof(position), "Position must not be earlier than current position.");
+        if (firstIndex < current.Start)
+            throw new ArgumentException("Position must not be earlier than current position.", nameof(position));
 
         // Now repeat the loop, performing the mutations.
         current = _first;
@@ -123,7 +125,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     {
         if (memory.Length > 0)
         {
-            Segment? segment = _segmentPool.Count > 0 ? _segmentPool.Pop() : new Segment();
+            var segment = GetOrNewSegment();
             segment.AssignForeign(memory);
             Append(segment);
         }
@@ -131,18 +133,20 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     public void Reset()
     {
-        Segment? current = _first;
+        var current = _first;
         while (current != null)
         {
             current = RecycleAndGetNext(current);
         }
 
         _first = _last = null;
+        _arrayPool = null;
     }
 
     private Segment GetSegment(int sizeHint)
     {
-        Requires.Range(sizeHint >= 0, nameof(sizeHint));
+        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+
         int? minBufferSize = null;
         if (sizeHint == 0)
         {
@@ -162,7 +166,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         if (minBufferSize.HasValue)
         {
-            Segment? segment = _segmentPool.Count > 0 ? _segmentPool.Pop() : new Segment();
+            Segment? segment = GetOrNewSegment();
             if (_arrayPool != null)
             {
                 segment.Assign(_arrayPool.Rent(minBufferSize.Value == -1 ? DefaultLengthFromArrayPool : minBufferSize.Value));
@@ -176,6 +180,15 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         }
 
         return _last!;
+    }
+
+    private Segment GetOrNewSegment()
+    {
+        if (!_stack.TryPop(out var segment))
+        {
+            segment = new Segment();
+        }
+        return segment;
     }
 
     private void Append(Segment segment)
@@ -220,7 +233,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         Segment? recycledSegment = segment;
         Segment? nextSegment = segment.Next;
         recycledSegment.ResetMemory(_arrayPool);
-        _segmentPool.Push(recycledSegment);
+        _stack.Push(recycledSegment);
         return nextSegment;
     }
 
@@ -356,21 +369,21 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             // Trim any slack on this segment.
             if (!IsForeignMemory)
             {
-                // When setting Memory, we start with index 0 instead of this.Start because
+                // When setting Memory, we start with index 0 instead of Start because
                 // the first segment has an explicit index set anyway,
                 // and we don't want to double-count it here.
                 Memory = AvailableMemory.Slice(0, Start + Length);
             }
         }
 
-        /// <summary>
-        /// Commits more elements as written in this segment.
-        /// </summary>
-        /// <param name="count">The number of elements written.</param>
         internal void Advance(int count)
         {
-            Requires.Range(count >= 0 && End + count <= Memory.Length, nameof(count));
-            End += count;
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+
+            var end = End + count;
+            if (end > Memory.Length) throw new ArgumentOutOfRangeException(nameof(count));
+
+            End = end;
         }
 
         /// <summary>
@@ -394,104 +407,4 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     }
 
     void IDisposable.Dispose() => Reset();
-
-    internal static class Requires
-    {
-        /// <summary>
-        /// Throws an <see cref="ArgumentOutOfRangeException"/> if a condition does not evaluate to true.
-        /// </summary>
-        [DebuggerStepThrough]
-        public static void Range([DoesNotReturnIf(false)] bool condition, string parameterName, string? message = null)
-        {
-            if (!condition)
-            {
-                FailRange(parameterName, message);
-            }
-        }
-
-        /// <summary>
-        /// Throws an <see cref="ArgumentOutOfRangeException"/> if a condition does not evaluate to true.
-        /// </summary>
-        /// <returns>Nothing.  This method always throws.</returns>
-        [DebuggerStepThrough]
-        public static Exception FailRange(string parameterName, string? message = null)
-        {
-            if (string.IsNullOrEmpty(message))
-            {
-                throw new ArgumentOutOfRangeException(parameterName);
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException(parameterName, message);
-            }
-        }
-
-        /// <summary>
-        /// Throws an exception if the specified parameter's value is null.
-        /// </summary>
-        /// <typeparam name="T">The type of the parameter.</typeparam>
-        /// <param name="value">The value of the argument.</param>
-        /// <param name="parameterName">The name of the parameter to include in any thrown exception.</param>
-        /// <returns>The value of the parameter.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <see langword="null"/>.</exception>
-        [DebuggerStepThrough]
-        public static T NotNull<T>([NotNull] T value, string parameterName)
-            where T : class // ensures value-types aren't passed to a null checking method
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(parameterName);
-            }
-
-            return value;
-        }
-
-        /// <summary>
-        /// Throws an ArgumentException if a condition does not evaluate to true.
-        /// </summary>
-        [DebuggerStepThrough]
-        public static void Argument([DoesNotReturnIf(false)] bool condition, string parameterName, string message)
-        {
-            if (!condition)
-            {
-                throw new ArgumentException(message, parameterName);
-            }
-        }
-
-        /// <summary>
-        /// Throws an ArgumentException if a condition does not evaluate to true.
-        /// </summary>
-        [DebuggerStepThrough]
-        public static void Argument([DoesNotReturnIf(false)] bool condition, string parameterName, string message, object arg1)
-        {
-            if (!condition)
-            {
-                throw new ArgumentException(String.Format(message, arg1), parameterName);
-            }
-        }
-
-        /// <summary>
-        /// Throws an ArgumentException if a condition does not evaluate to true.
-        /// </summary>
-        [DebuggerStepThrough]
-        public static void Argument([DoesNotReturnIf(false)] bool condition, string parameterName, string message, object arg1, object arg2)
-        {
-            if (!condition)
-            {
-                throw new ArgumentException(String.Format(message, arg1, arg2), parameterName);
-            }
-        }
-
-        /// <summary>
-        /// Throws an ArgumentException if a condition does not evaluate to true.
-        /// </summary>
-        [DebuggerStepThrough]
-        public static void Argument([DoesNotReturnIf(false)] bool condition, string parameterName, string message, params object[] args)
-        {
-            if (!condition)
-            {
-                throw new ArgumentException(String.Format(message, args), parameterName);
-            }
-        }
-    }
 }
