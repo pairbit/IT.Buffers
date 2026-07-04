@@ -250,48 +250,20 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     {
         internal static readonly Segment Empty = new();
 
-#pragma warning disable SA1011 // Closing square brackets should be spaced correctly
-        /// <summary>
-        /// Gets the backing array, when using an <see cref="ArrayPool{T}"/> instead of a <see cref="MemoryPool{T}"/>.
-        /// </summary>
         private T[]? _array;
-#pragma warning restore SA1011 // Closing square brackets should be spaced correctly
 
-        /// <summary>
-        /// Gets the position within <see cref="ReadOnlySequenceSegment{T}.Memory"/> where the data starts.
-        /// </summary>
-        /// <remarks>This may be nonzero as a result of calling <see cref="Sequence{T}.AdvanceTo(SequencePosition)"/>.</remarks>
         internal int Start { get; private set; }
 
-        /// <summary>
-        /// Gets the position within <see cref="ReadOnlySequenceSegment{T}.Memory"/> where the data ends.
-        /// </summary>
         internal int End { get; private set; }
 
-        /// <summary>
-        /// Gets the tail of memory that has not yet been committed.
-        /// </summary>
-        internal Memory<T> RemainingMemory => AvailableMemory.Slice(End);
-
-        /// <summary>
-        /// Gets the tail of memory that has not yet been committed.
-        /// </summary>
-        internal Span<T> RemainingSpan => AvailableMemory.Span.Slice(End);
-
-        /// <summary>
-        /// Gets the full memory owned by the <see cref="MemoryOwner"/>.
-        /// </summary>
-        internal Memory<T> AvailableMemory => _array ?? default;
-
-        /// <summary>
-        /// Gets the number of elements that are committed in this segment.
-        /// </summary>
         internal int Length => End - Start;
 
-        /// <summary>
-        /// Gets the amount of writable bytes in this segment.
-        /// It is the amount of bytes between <see cref="Length"/> and <see cref="End"/>.
-        /// </summary>
+        internal Memory<T> RemainingMemory => AvailableMemory.Slice(End);
+
+        internal Span<T> RemainingSpan => AvailableMemory.Span.Slice(End);
+
+        internal Memory<T> AvailableMemory => _array ?? default;
+
         internal int WritableBytes => AvailableMemory.Length - End;
 
         internal new Segment? Next
@@ -300,9 +272,6 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             set => base.Next = value;
         }
 
-        /// <summary>
-        /// Gets a value indicating whether this segment refers to memory that came from outside and that we cannot write to nor recycle.
-        /// </summary>
         internal bool IsForeignMemory => _array == null;
 
         internal void Assign(T[] array)
