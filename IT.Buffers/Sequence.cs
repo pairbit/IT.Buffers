@@ -161,7 +161,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         if (_last == null || _last.FreeLength < sizeHint)
         {
-            var array = _nextBufferSize >= sizeHint ? RentNext() : Rent(sizeHint);
+            var array = sizeHint > _nextBufferSize ? Rent(sizeHint) : RentNext();
 
             var segment = GetOrNewSegment();
             segment.Assign(array);
@@ -181,7 +181,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         var arrayPool = _arrayPool;
         if (arrayPool == null)
         {
-            return GrowableArrayPool<T>.Shared.RentNext(ref _nextBufferSize);
+            return GrowableArrayPool<T>.Double.RentNext(ref _nextBufferSize);
         }
         if (arrayPool is GrowableArrayPool<T> growableArrayPool)
         {

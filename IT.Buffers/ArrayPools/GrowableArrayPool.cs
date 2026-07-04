@@ -5,7 +5,7 @@ namespace IT.Buffers;
 
 internal abstract class GrowableArrayPool<T> : ArrayPool<T>
 {
-    public static new readonly GrowableArrayPool<T> Shared = new SharedGrowableArrayPool<T>();
+    public static readonly GrowableArrayPool<T> Double = new SharedGrowableArrayPool<T>();
 
     public virtual int MaxBufferSize => BufferSize.Max;
 
@@ -28,7 +28,7 @@ internal class SharedGrowableArrayPool<T> : GrowableArrayPool<T>
 {
     public override T[] RentNext(ref int nextLength)
     {
-        var array = ArrayPool<T>.Shared.Rent(nextLength);
+        var array = Shared.Rent(nextLength);
 
         nextLength = BufferSize.GetDoubleCapacity(nextLength, MaxBufferSize);
 
@@ -36,10 +36,10 @@ internal class SharedGrowableArrayPool<T> : GrowableArrayPool<T>
     }
 
     public override T[] Rent(int minimumLength)
-        => ArrayPool<T>.Shared.Rent(minimumLength);
+        => Shared.Rent(minimumLength);
 
     public override void Return(T[] array, bool clearArray = false)
-        => ArrayPool<T>.Shared.Return(array, clearArray);
+        => Shared.Return(array, clearArray);
 }
 
 internal abstract class GrowableMemoryPool<T> : MemoryPool<T>
