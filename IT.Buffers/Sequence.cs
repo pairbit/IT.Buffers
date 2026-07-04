@@ -319,10 +319,6 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         internal void ResetMemory(ArrayPool<T>? arrayPool)
         {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                AvailableMemory.Span.Slice(Start, End - Start).Clear();
-            }
             Memory = default;
             Next = null;
             RunningIndex = 0;
@@ -331,6 +327,10 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             var array = _array;
             if (array != null)
             {
+                //if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                //{
+                //    array.AsSpan(Start, End - Start).Clear();
+                //}
                 (arrayPool ?? ArrayPool<T>.Shared).Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
                 _array = null;
             }
