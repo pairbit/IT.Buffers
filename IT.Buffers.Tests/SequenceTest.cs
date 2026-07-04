@@ -49,11 +49,19 @@ internal class SequenceTest
             Assert.That(ros.Start, Is.EqualTo(sequence.Start));
             Assert.That(ros.End, Is.EqualTo(sequence.End));
 
+            Assert.That(sequence.Length, Is.EqualTo(bytes.Length + lastBuffer.Length));
+            Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.KB_32));
+
             var lastROS = ros.Slice(start);
             Assert.That(lastROS.Length, Is.EqualTo(lastBuffer.Length));
             Assert.That(lastROS.SequenceEqual(lastBuffer), Is.True);
 
-            Assert.That(sequence.Length, Is.EqualTo(bytes.Length + lastBuffer.Length));
+            sequence.AdvanceTo(start);
+            ros = sequence.AsReadOnly;
+            Assert.That(ros.SequenceEqual(lastROS), Is.True);
+            Assert.That(ros.Length, Is.EqualTo(lastBuffer.Length));
+            Assert.That(ros.SequenceEqual(lastBuffer), Is.True);
+
             Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.KB_32));
         }
         finally
