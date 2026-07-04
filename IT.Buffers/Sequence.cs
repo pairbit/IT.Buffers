@@ -18,6 +18,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     public static BufferPool<Sequence<T>> Pool => BufferPool<Sequence<T>>.Shared;
 
     private readonly Stack<Segment> _stack;
+    private int _nextBufferSize;
 
     private ArrayPool<T>? _arrayPool;
 
@@ -47,6 +48,16 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             if (_last != null) throw new InvalidOperationException();
 
             _arrayPool = value;
+        }
+    }
+
+    public int NextBufferSize
+    {
+        get { return _nextBufferSize; }
+        set
+        {
+            if (value < 0 || value > BufferSize.Max) throw new ArgumentOutOfRangeException(nameof(value));
+            _nextBufferSize = value;
         }
     }
 
