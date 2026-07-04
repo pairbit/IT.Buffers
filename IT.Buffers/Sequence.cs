@@ -125,9 +125,9 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         ConsiderMinimumSizeIncrease();
     }
 
-    public Memory<T> GetMemory(int sizeHint) => GetSegment(sizeHint).FreeMemory;
+    public Memory<T> GetMemory(int sizeHint = 0) => GetSegment(sizeHint).FreeMemory;
 
-    public Span<T> GetSpan(int sizeHint) => GetSegment(sizeHint).FreeSpan;
+    public Span<T> GetSpan(int sizeHint = 0) => GetSegment(sizeHint).FreeSpan;
 
     public void Append(ReadOnlyMemory<T> memory)
     {
@@ -157,7 +157,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         if (sizeHint == 0)
         {
-            if (_last == null || _last.WritableBytes == 0)
+            if (_last == null || _last.FreeLength == 0)
             {
                 var segment = GetOrNewSegment();
                 segment.Assign((_arrayPool ?? ArrayPool<T>.Shared).Rent(DefaultLengthFromArrayPool));
@@ -166,7 +166,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         }
         else
         {
-            if (_last == null || _last.WritableBytes < sizeHint)
+            if (_last == null || _last.FreeLength < sizeHint)
             {
                 var minBufferSize = Math.Max(MinimumSpanLength, sizeHint);
 
@@ -259,13 +259,13 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         internal int Length => End - Start;
 
+        internal int FreeLength => AvailableMemory.Length - End;
+
         internal Memory<T> FreeMemory => AvailableMemory.Slice(End);
 
         internal Span<T> FreeSpan => AvailableMemory.Span.Slice(End);
 
         internal Memory<T> AvailableMemory => _array ?? default;
-
-        internal int WritableBytes => AvailableMemory.Length - End;
 
         internal new Segment? Next
         {
