@@ -338,7 +338,9 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         internal void AdvanceTo(int offset)
         {
-            Debug.Assert(offset >= Start, "Trying to rewind.");
+            Debug.Assert(offset >= Start);
+            Debug.Assert(offset <= End);
+
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 AvailableMemory.Span.Slice(Start, offset - Start).Clear();
