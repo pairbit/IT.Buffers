@@ -250,6 +250,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     {
         internal static readonly Segment Empty = new();
 
+        //TODO: remove and replace to MemoryMarshal.TryGetArray(Memory)
         private T[]? _array;
 
         internal int Start { get; private set; }
