@@ -48,12 +48,12 @@ public static class BufferSize
 
     public static int Log2(long size) => System.Numerics.BitOperations.Log2((ulong)size);
 
-    public static int GetDoubleCapacity(int size)
+    public static int GetDoubleCapacity(int size, int max = Max)
     {
         var newSize = unchecked(size << 1);
-        if ((uint)newSize > Max)
+        if ((uint)newSize > max)
         {
-            newSize = Max;
+            newSize = max;
         }
         return newSize;
     }
