@@ -16,17 +16,17 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     private static readonly int DefaultLengthFromArrayPool = 1 + (4095 / Unsafe.SizeOf<T>());
 
-    private static readonly ReadOnlySequence<T> Empty = new(SequenceSegment.Empty, 0, SequenceSegment.Empty, 0);
+    private static readonly ReadOnlySequence<T> Empty = new(Segment.Empty, 0, Segment.Empty, 0);
 
-    private readonly Stack<SequenceSegment> _segmentPool = new();
+    private readonly Stack<Segment> _segmentPool = new();
 
     private readonly MemoryPool<T>? _memoryPool;
 
     private readonly ArrayPool<T>? _arrayPool;
 
-    private SequenceSegment? _first;
+    private Segment? _first;
 
-    private SequenceSegment? _last;
+    private Segment? _last;
 
     public Sequence()
         : this(ArrayPool<T>.Create())
@@ -64,14 +64,14 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     public void AdvanceTo(SequencePosition position)
     {
-        var firstSegment = (SequenceSegment?)position.GetObject();
+        var firstSegment = (Segment?)position.GetObject();
         if (firstSegment == null)
         {
             // Emulate PipeReader behavior which is to just return for default(SequencePosition)
             return;
         }
 
-        if (ReferenceEquals(firstSegment, SequenceSegment.Empty) && Length == 0)
+        if (ReferenceEquals(firstSegment, Segment.Empty) && Length == 0)
         {
             // We were called with our own empty buffer segment.
             return;
@@ -80,7 +80,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         int firstIndex = position.GetInteger();
 
         // Before making any mutations, confirm that the block specified belongs to this sequence.
-        SequenceSegment? current = this._first;
+        Segment? current = this._first;
         while (current != firstSegment && current != null)
         {
             current = current.Next;
@@ -110,7 +110,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     public void Advance(int count)
     {
-        SequenceSegment? last = _last ?? throw new InvalidOperationException();
+        Segment? last = _last ?? throw new InvalidOperationException();
         last.Advance(count);
         ConsiderMinimumSizeIncrease();
     }
@@ -123,7 +123,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     {
         if (memory.Length > 0)
         {
-            SequenceSegment? segment = _segmentPool.Count > 0 ? _segmentPool.Pop() : new SequenceSegment();
+            Segment? segment = _segmentPool.Count > 0 ? _segmentPool.Pop() : new Segment();
             segment.AssignForeign(memory);
             Append(segment);
         }
@@ -134,7 +134,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     public void Reset()
     {
-        SequenceSegment? current = _first;
+        Segment? current = _first;
         while (current != null)
         {
             current = RecycleAndGetNext(current);
@@ -143,7 +143,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         _first = _last = null;
     }
 
-    private SequenceSegment GetSegment(int sizeHint)
+    private Segment GetSegment(int sizeHint)
     {
         Requires.Range(sizeHint >= 0, nameof(sizeHint));
         int? minBufferSize = null;
@@ -165,7 +165,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         if (minBufferSize.HasValue)
         {
-            SequenceSegment? segment = _segmentPool.Count > 0 ? _segmentPool.Pop() : new SequenceSegment();
+            Segment? segment = _segmentPool.Count > 0 ? _segmentPool.Pop() : new Segment();
             if (_arrayPool != null)
             {
                 segment.Assign(_arrayPool.Rent(minBufferSize.Value == -1 ? DefaultLengthFromArrayPool : minBufferSize.Value));
@@ -181,7 +181,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         return _last!;
     }
 
-    private void Append(SequenceSegment segment)
+    private void Append(Segment segment)
     {
         if (_last == null)
         {
@@ -197,7 +197,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             else
             {
                 // The last block is completely unused. Replace it instead of appending to it.
-                SequenceSegment? current = _first;
+                Segment? current = _first;
                 if (_first != _last)
                 {
                     while (current!.Next != _last)
@@ -218,10 +218,10 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         }
     }
 
-    private SequenceSegment? RecycleAndGetNext(SequenceSegment segment)
+    private Segment? RecycleAndGetNext(Segment segment)
     {
-        SequenceSegment? recycledSegment = segment;
-        SequenceSegment? nextSegment = segment.Next;
+        Segment? recycledSegment = segment;
+        Segment? nextSegment = segment.Next;
         recycledSegment.ResetMemory(_arrayPool);
         _segmentPool.Push(recycledSegment);
         return nextSegment;
@@ -239,9 +239,9 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         }
     }
 
-    private class SequenceSegment : ReadOnlySequenceSegment<T>
+    private class Segment : ReadOnlySequenceSegment<T>
     {
-        internal static readonly SequenceSegment Empty = new();
+        internal static readonly Segment Empty = new();
 
         /// <summary>
         /// A value indicating whether the element may contain references (and thus must be cleared).
@@ -298,9 +298,9 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         /// </summary>
         internal int WritableBytes => AvailableMemory.Length - End;
 
-        internal new SequenceSegment? Next
+        internal new Segment? Next
         {
-            get => (SequenceSegment?)base.Next;
+            get => (Segment?)base.Next;
             set => base.Next = value;
         }
 
@@ -351,7 +351,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             }
         }
 
-        internal void SetNext(SequenceSegment segment)
+        internal void SetNext(Segment segment)
         {
             Next = segment;
             segment.RunningIndex = RunningIndex + Start + Length;
