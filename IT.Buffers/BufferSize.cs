@@ -58,6 +58,16 @@ public static class BufferSize
         return newSize;
     }
 
+    public static int GetDoubleCapacity(int size, int max)
+    {
+        var newSize = unchecked(size << 1);
+        if ((uint)newSize > max)
+        {
+            newSize = max;
+        }
+        return newSize;
+    }
+
     public static int GetSizeLastChunk<T>(in ReadOnlySequence<T> seq)
     {
         if (seq.IsSingleSegment)

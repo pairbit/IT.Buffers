@@ -154,4 +154,32 @@ internal class SequenceTest
             sequence.Reset();
         }
     }
+
+    [Test]
+    public async Task WriteStream_Test()
+    {
+        var sequence = new Sequence<byte>();
+        try
+        {
+            var bytes = new byte[BufferSize.MB];
+            Random.Shared.NextBytes(bytes);
+            var stream = new MemoryStream(bytes);
+
+            sequence.GrowthStrategy = BufferGrowthStrategy.Off;
+            sequence.NextBufferSize = BufferSize.KB;
+
+            await sequence.WriteAsync(stream);
+
+            var ros = sequence.AsReadOnly;
+            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
+            Assert.That(ros.End, Is.EqualTo(sequence.End));
+
+            Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
+            Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.KB));
+        }
+        finally
+        {
+            sequence.Reset();
+        }
+    }
 }
