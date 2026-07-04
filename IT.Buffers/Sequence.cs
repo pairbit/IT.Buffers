@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IT.Buffers.Interfaces;
+using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,6 +16,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     private readonly Stack<Segment> _stack;
     private ArrayPool<T>? _arrayPool;
+    private IBufferGrowthStrategy? _growthStrategy;
     private Segment? _first;
     private Segment? _last;
     private int _nextBufferSize;
@@ -42,6 +44,12 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
             _arrayPool = value;
         }
+    }
+
+    public IBufferGrowthStrategy? GrowthStrategy
+    {
+        get => _growthStrategy;
+        set => _growthStrategy = value;
     }
 
     public int NextBufferSize
@@ -171,7 +179,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         if (_last == null || _last.FreeLength < sizeHint)
         {
-            var array = sizeHint > _nextBufferSize ? Rent(sizeHint) : RentNext();
+            var array = sizeHint > _nextBufferSize ? Rent(sizeHint) : RentAndGrow();
 
             var segment = GetOrNewSegment();
             segment.Assign(array);
@@ -186,18 +194,13 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         return (_arrayPool ?? ArrayPool<T>.Shared).Rent(sizeHint);
     }
 
-    private T[] RentNext()
+    private T[] RentAndGrow()
     {
-        var arrayPool = _arrayPool;
-        if (arrayPool == null)
-        {
-            return GrowingArrayPool<T>.OneOfEachSize.RentNext(ref _nextBufferSize);
-        }
-        if (arrayPool is GrowingArrayPool<T> growingArrayPool)
-        {
-            return growingArrayPool.RentNext(ref _nextBufferSize);
-        }
-        return arrayPool.Rent(_nextBufferSize);
+        var array = Rent(_nextBufferSize);
+
+        _nextBufferSize = (_growthStrategy ?? BufferGrowthStrategy.OneOfEachSize).Grow(_nextBufferSize);
+
+        return array;
     }
 
     private Segment GetOrNewSegment()
