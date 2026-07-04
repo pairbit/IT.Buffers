@@ -331,10 +331,6 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             Memory = array;
         }
 
-        /// <summary>
-        /// Assigns this (recyclable) segment a new area in memory.
-        /// </summary>
-        /// <param name="memory">A memory block obtained from outside, that we do not own and should not recycle.</param>
         internal void AssignForeign(ReadOnlyMemory<T> memory)
         {
             Memory = memory;
@@ -343,7 +339,10 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         internal void ResetMemory(ArrayPool<T>? arrayPool)
         {
-            ClearReferences(Start, End - Start);
+            if (MayContainReferences)
+            {
+                AvailableMemory.Span.Slice(Start, End - Start).Clear();
+            }
             Memory = default;
             Next = null;
             RunningIndex = 0;
@@ -386,23 +385,14 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             End = end;
         }
 
-        /// <summary>
-        /// Removes some elements from the start of this segment.
-        /// </summary>
-        /// <param name="offset">The number of elements to ignore from the start of the underlying array.</param>
         internal void AdvanceTo(int offset)
         {
             Debug.Assert(offset >= Start, "Trying to rewind.");
-            ClearReferences(Start, offset - Start);
-            Start = offset;
-        }
-
-        private void ClearReferences(int startIndex, int length)
-        {
             if (MayContainReferences)
             {
-                AvailableMemory.Span.Slice(startIndex, length).Clear();
+                AvailableMemory.Span.Slice(Start, offset - Start).Clear();
             }
+            Start = offset;
         }
     }
 
