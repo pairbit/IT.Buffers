@@ -159,7 +159,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         {
             if (_last == null || _last.WritableBytes == 0)
             {
-                Segment? segment = GetOrNewSegment();
+                var segment = GetOrNewSegment();
                 segment.Assign((_arrayPool ?? ArrayPool<T>.Shared).Rent(DefaultLengthFromArrayPool));
                 Append(segment);
             }
@@ -170,7 +170,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             {
                 var minBufferSize = Math.Max(MinimumSpanLength, sizeHint);
 
-                Segment? segment = GetOrNewSegment();
+                var segment = GetOrNewSegment();
                 segment.Assign((_arrayPool ?? ArrayPool<T>.Shared).Rent(minBufferSize));
                 Append(segment);
             }
