@@ -6,6 +6,22 @@ namespace IT.Buffers.Tests;
 internal class SequenceTest
 {
     [Test]
+    public void LeakTest()
+    {
+        var sequence = new Sequence<object>();
+        var span = sequence.GetSpan(BufferSize.KB);
+        for (int i = 0; i < span.Length; i++)
+        {
+            span[i] = new object();
+        }
+        sequence.Reset();
+        for (int i = 0; i < span.Length; i++)
+        {
+            Assert.That(span[i], Is.Null);
+        }
+    }
+
+    [Test]
     public void Test_GetSpanGetSpan()
     {
         var sequence = new Sequence<byte>();

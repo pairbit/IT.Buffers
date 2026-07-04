@@ -225,7 +225,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             else
             {
                 // The last block is completely unused. Replace it instead of appending to it.
-                Segment? current = _first;
+                var current = _first;
                 if (_first != _last)
                 {
                     while (current!.Next != _last)
@@ -248,10 +248,9 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     private Segment? RecycleAndGetNext(Segment segment)
     {
-        Segment? recycledSegment = segment;
-        Segment? nextSegment = segment.Next;
-        recycledSegment.ResetMemory(_arrayPool);
-        _stack.Push(recycledSegment);
+        var nextSegment = segment.Next;
+        segment.ResetMemory(_arrayPool);
+        _stack.Push(segment);
         return nextSegment;
     }
 
@@ -306,12 +305,8 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             var array = _array;
             if (array != null)
             {
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                {
-                    array.AsSpan(Start, End - Start).Clear();
-                }
-                (arrayPool ?? ArrayPool<T>.Shared).Return(array, clearArray: false);
                 _array = null;
+                (arrayPool ?? ArrayPool<T>.Shared).Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
             }
         }
 

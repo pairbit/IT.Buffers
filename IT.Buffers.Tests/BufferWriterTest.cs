@@ -6,6 +6,22 @@ namespace IT.Buffers.Tests;
 public class BufferWriterTest
 {
     [Test]
+    public void LeakTest()
+    {
+        var writer = new BufferWriter<object>();
+        var span = writer.GetSpan(BufferSize.KB);
+        for (int i = 0; i < span.Length; i++)
+        {
+            span[i] = new object();
+        }
+        writer.Reset();
+        for (int i = 0; i < span.Length; i++)
+        {
+            Assert.That(span[i], Is.Null);
+        }
+    }
+
+    [Test]
     public void Advance_Test()
     {
         var writer = new BufferWriter<byte>();
