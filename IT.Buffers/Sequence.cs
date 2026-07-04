@@ -9,8 +9,6 @@ namespace IT.Buffers;
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public class Sequence<T> : IBufferWriter<T>, IDisposable
 {
-    private const int MaximumAutoGrowSize = 32 * 1024;
-
     private static readonly ReadOnlySequence<T> Empty = new(Segment.Empty, 0, Segment.Empty, 0);
 
     public static BufferPool<Sequence<T>> Pool => BufferPool<Sequence<T>>.Shared;
@@ -58,10 +56,6 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             _nextBufferSize = value;
         }
     }
-
-    public int MinimumSpanLength { get; set; } = 0;
-
-    public bool AutoIncreaseMinimumSpanLength { get; set; } = true;
 
     public ReadOnlySequence<T> AsReadOnlySequence => this;
 
@@ -167,7 +161,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         if (_last == null || _last.FreeLength < sizeHint)
         {
-            var minBufferSize = Math.Max(MinimumSpanLength, sizeHint);
+            var minBufferSize = Math.Max(NextBufferSize, sizeHint);
 
             var segment = GetOrNewSegment();
             segment.Assign((_arrayPool ?? ArrayPool<T>.Shared).Rent(minBufferSize));
@@ -234,12 +228,12 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     private void ConsiderMinimumSizeIncrease()
     {
-        if (AutoIncreaseMinimumSpanLength && MinimumSpanLength < MaximumAutoGrowSize)
+        if (NextBufferSize < BufferSize.Max)
         {
-            int autoSize = Math.Min(MaximumAutoGrowSize, (int)Math.Min(int.MaxValue, Length / 2));
-            if (MinimumSpanLength < autoSize)
+            int autoSize = Math.Min(BufferSize.Max, (int)Math.Min(int.MaxValue, Length / 2));
+            if (NextBufferSize < autoSize)
             {
-                MinimumSpanLength = autoSize;
+                NextBufferSize = autoSize;
             }
         }
     }

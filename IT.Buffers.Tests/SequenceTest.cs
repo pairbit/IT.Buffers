@@ -24,7 +24,7 @@ internal class SequenceTest
             Random.Shared.NextBytes(bytes);
             var stream = new MemoryStream(bytes);
 
-            //sequence.NextBufferSize = BufferSize.KB_64;
+            sequence.NextBufferSize = BufferSize.KB_64;
             //sequence.GetSpan(BufferSize.KB_128);
 
             await sequence.WriteAsync(stream);
