@@ -125,9 +125,9 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         ConsiderMinimumSizeIncrease();
     }
 
-    public Memory<T> GetMemory(int sizeHint) => GetSegment(sizeHint).RemainingMemory;
+    public Memory<T> GetMemory(int sizeHint) => GetSegment(sizeHint).FreeMemory;
 
-    public Span<T> GetSpan(int sizeHint) => GetSegment(sizeHint).RemainingSpan;
+    public Span<T> GetSpan(int sizeHint) => GetSegment(sizeHint).FreeSpan;
 
     public void Append(ReadOnlyMemory<T> memory)
     {
@@ -258,9 +258,9 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         internal int Length => End - Start;
 
-        internal Memory<T> RemainingMemory => AvailableMemory.Slice(End);
+        internal Memory<T> FreeMemory => AvailableMemory.Slice(End);
 
-        internal Span<T> RemainingSpan => AvailableMemory.Span.Slice(End);
+        internal Span<T> FreeSpan => AvailableMemory.Span.Slice(End);
 
         internal Memory<T> AvailableMemory => _array ?? default;
 
