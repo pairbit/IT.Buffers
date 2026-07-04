@@ -1,4 +1,5 @@
 ﻿using IT.Buffers.Extensions;
+using System.Buffers;
 
 namespace IT.Buffers.Tests;
 
@@ -30,11 +31,30 @@ internal class SequenceTest
             await sequence.WriteAsync(stream);
 
             var ros = sequence.AsReadOnlySequence;
+            var start = sequence.End;
+
             Assert.That(ros.Start, Is.EqualTo(sequence.Start));
             Assert.That(ros.End, Is.EqualTo(sequence.End));
 
             Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
+            Assert.That(ros.SequenceEqual(bytes), Is.True);
             Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.MB));
+
+            sequence.NextBufferSize = BufferSize.KB;
+            var lastBuffer = new byte[BufferSize.KB_80];
+            Random.Shared.NextBytes(lastBuffer);
+            sequence.Write(lastBuffer);
+
+            ros = sequence.AsReadOnlySequence;
+            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
+            Assert.That(ros.End, Is.EqualTo(sequence.End));
+
+            var lastROS = ros.Slice(start);
+            Assert.That(lastROS.Length, Is.EqualTo(lastBuffer.Length));
+            Assert.That(lastROS.SequenceEqual(lastBuffer), Is.True);
+
+            Assert.That(sequence.Length, Is.EqualTo(bytes.Length + lastBuffer.Length));
+            Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.KB_32));
         }
         finally
         {
