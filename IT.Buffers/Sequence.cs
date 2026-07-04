@@ -56,6 +56,10 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
     public ReadOnlySequence<T> AsReadOnlySequence => this;
 
+    public SequencePosition Start => _first != null ? new(_first, _first.Start) : default;
+
+    public SequencePosition End => _last != null ? new(_last, _last.End) : default;
+
     public long Length => AsReadOnlySequence.Length;
 
 
@@ -327,11 +331,11 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
             var array = _array;
             if (array != null)
             {
-                //if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                //{
-                //    array.AsSpan(Start, End - Start).Clear();
-                //}
-                (arrayPool ?? ArrayPool<T>.Shared).Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                {
+                    array.AsSpan(Start, End - Start).Clear();
+                }
+                (arrayPool ?? ArrayPool<T>.Shared).Return(array, clearArray: false);
                 _array = null;
             }
         }
