@@ -97,9 +97,11 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
         if (current == null)
             throw new ArgumentException("Position does not represent a valid position in this sequence.", nameof(position));
 
-        // Also confirm that the position is not a prior position in the block.
         if (firstIndex < current.Start)
             throw new ArgumentException("Position must not be earlier than current position.", nameof(position));
+
+        if (firstIndex > current.End)
+            throw new ArgumentException("Position must not be more recent than current position.", nameof(position));
 
         // Now repeat the loop, performing the mutations.
         current = _first;
