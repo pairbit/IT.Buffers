@@ -15,6 +15,6 @@ internal class SequenceTest
 
         var span = sequence.GetSpan();
         var span2 = sequence.GetSpan();
-        var span3 = sequence.GetSpan(32);
+        var span3 = sequence.GetSpan(span.Length + 1);
     }
 }

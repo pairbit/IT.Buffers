@@ -9,10 +9,16 @@ public class BufferWriterTest
     public void Test_GetSpanGetSpan()
     {
         var writer = new BufferWriter<byte>();
+        Assert.That(writer.Segments, Is.EqualTo(0));
 
         var span = writer.GetSpan();
+        Assert.That(writer.Segments, Is.EqualTo(1));
+
         var span2 = writer.GetSpan();
-        var span3 = writer.GetSpan(32);
+        Assert.That(writer.Segments, Is.EqualTo(1));
+
+        var span3 = writer.GetSpan(span.Length + 1);
+        Assert.That(writer.Segments, Is.EqualTo(1));
     }
 
     [Test]
