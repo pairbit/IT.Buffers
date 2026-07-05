@@ -288,7 +288,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         if (current.FreeLength >= sizeHint) return current;
         if (current.IsNull)
         {
-            var growthStrategy = _growthStrategy ?? BufferGrowthStrategy.OneOfEachSize;
+            var growthStrategy = _growthStrategy ?? BufferGrowthStrategy.DoubleFirst;
 
             var bufferSize = _nextBufferSize;
             if (bufferSize == 0)
@@ -319,13 +319,13 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         var nextBufferSize = _nextBufferSize;
         if (nextBufferSize >= sizeHint)
         {
-            _nextBufferSize = (_growthStrategy ?? BufferGrowthStrategy.OneOfEachSize).Grow(nextBufferSize);
+            _nextBufferSize = (_growthStrategy ?? BufferGrowthStrategy.DoubleFirst).Grow(nextBufferSize);
             return _current = new BufferSegment<T>(Rent(nextBufferSize));
         }
         else 
         {
             if (nextBufferSize == 0)
-                _nextBufferSize = (_growthStrategy ?? BufferGrowthStrategy.OneOfEachSize).GetBufferSize<T>();
+                _nextBufferSize = (_growthStrategy ?? BufferGrowthStrategy.DoubleFirst).GetBufferSize<T>();
 
             return _current = new BufferSegment<T>(Rent(sizeHint));
         }

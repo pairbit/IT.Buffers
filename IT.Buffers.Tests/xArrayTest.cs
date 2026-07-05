@@ -23,7 +23,7 @@ internal class xArrayTest
 
         var indexes = new List<int>();
         var bufferSize = BufferSize.KB_64;
-        float bufferGrowthFactor = 2f;//1.19f or 1.26f or 1.4f
+        float bufferGrowthFactor = 1.19f;//1.19f or 1.26f or 1.4f
         int maxBufferSize = BufferSize.Max;
         //var size = BufferSize.Max;
 
