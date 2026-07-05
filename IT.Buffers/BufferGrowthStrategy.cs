@@ -12,27 +12,35 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
     public static readonly IBufferGrowthStrategy FourOfEachSize = Create(1.19f);
 
     private readonly float _bufferGrowthFactor;
+    private readonly int _firstBufferSize;
+    private readonly int _nextBufferSize;
     private readonly int _maxBufferSize;
 
-    private BufferGrowthStrategy(float bufferGrowthFactor)
-    {
-        if (bufferGrowthFactor <= 0) throw new ArgumentOutOfRangeException(nameof(bufferGrowthFactor));
+    public int FirstBufferSize => _firstBufferSize;
 
-        _bufferGrowthFactor = bufferGrowthFactor;
-        _maxBufferSize = BufferSize.Max;
-    }
+    public int NextBufferSize => _nextBufferSize;
 
-    private BufferGrowthStrategy(float bufferGrowthFactor, int maxBufferSize)
+    protected BufferGrowthStrategy(float bufferGrowthFactor, int firstBufferSize, int nextBufferSize, int maxBufferSize)
     {
-        if (bufferGrowthFactor <= 0) throw new ArgumentOutOfRangeException(nameof(bufferGrowthFactor));
+        if (bufferGrowthFactor <= 0)
+            throw new ArgumentOutOfRangeException(nameof(bufferGrowthFactor));
+
         if (maxBufferSize < 0 || maxBufferSize > BufferSize.Max)
             throw new ArgumentOutOfRangeException(nameof(maxBufferSize));
 
+        if (firstBufferSize < 0 || firstBufferSize > maxBufferSize)
+            throw new ArgumentOutOfRangeException(nameof(firstBufferSize));
+
+        if (nextBufferSize < 0 || nextBufferSize > maxBufferSize)
+            throw new ArgumentOutOfRangeException(nameof(nextBufferSize));
+
         _bufferGrowthFactor = bufferGrowthFactor;
+        _firstBufferSize = firstBufferSize;
+        _nextBufferSize = nextBufferSize;
         _maxBufferSize = maxBufferSize;
     }
 
-    public int Grow(int size)
+    public virtual int Grow(int size)
     {
         var newSize = (int)Math.Floor(size * _bufferGrowthFactor);
         var maxSize = _maxBufferSize;
@@ -47,23 +55,31 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
         if (bufferGrowthFactor == 2)
             return Double.Instance;
 
-        return new BufferGrowthStrategy(bufferGrowthFactor);
+        return new BufferGrowthStrategy(bufferGrowthFactor, BufferSize.KB_16, BufferSize.KB_8, BufferSize.Max);
     }
 
-    public static IBufferGrowthStrategy Create(float bufferGrowthFactor, int maxBufferSize)
+    public static IBufferGrowthStrategy Create(
+        float bufferGrowthFactor,
+        int firstBufferSize = BufferSize.KB_16,
+        int nextBufferSize = BufferSize.KB_8,
+        int maxBufferSize = BufferSize.Max)
     {
-        if (bufferGrowthFactor == 1)
-            return Single.Instance;
+        //if (bufferGrowthFactor == 1)
+        //    return Single.Instance;
 
-        if (bufferGrowthFactor == 2)
-            return new DoubleWithMax(maxBufferSize);
+        //if (bufferGrowthFactor == 2)
+        //    return Double.Instance;
 
-        return new BufferGrowthStrategy(bufferGrowthFactor, maxBufferSize);
+        return new BufferGrowthStrategy(bufferGrowthFactor, firstBufferSize, nextBufferSize, maxBufferSize);
     }
 
     class Single : IBufferGrowthStrategy
     {
         public static readonly Single Instance = new();
+
+        public int FirstBufferSize => BufferSize.KB_64;
+
+        public int NextBufferSize => BufferSize.KB_64;
 
         private Single() { }
 
@@ -76,27 +92,13 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
 
         private Double() { }
 
+        public int FirstBufferSize => BufferSize.KB_16;
+
+        public int NextBufferSize => BufferSize.KB_8;
+
         public int Grow(int size)
         {
             return BufferSize.GetDoubleCapacity(size);
-        }
-    }
-
-    class DoubleWithMax : IBufferGrowthStrategy
-    {
-        private readonly int _maxBufferSize;
-
-        public DoubleWithMax(int maxBufferSize)
-        {
-            if (maxBufferSize < 0 || maxBufferSize > BufferSize.Max)
-                throw new ArgumentOutOfRangeException(nameof(maxBufferSize));
-
-            _maxBufferSize = maxBufferSize;
-        }
-
-        public int Grow(int size)
-        {
-            return BufferSize.GetDoubleCapacity(size, _maxBufferSize);
         }
     }
 }

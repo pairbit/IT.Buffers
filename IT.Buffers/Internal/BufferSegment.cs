@@ -23,6 +23,8 @@ internal struct BufferSegment<T>
 
     public readonly Span<T> FreeSpan => _buffer.AsSpan(_written);
 
+    public readonly int FreeLength => _buffer == null ? 0 : _buffer.Length - _written;
+
     public BufferSegment(T[] buffer)
     {
         _buffer = buffer;
