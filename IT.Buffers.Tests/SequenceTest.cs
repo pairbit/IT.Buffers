@@ -39,6 +39,7 @@ internal class SequenceTest
         Assert.Throws<ArgumentOutOfRangeException>(() => sequence.Advance(1));
 
         var span = sequence.GetSpan();
+        Assert.Throws<InvalidOperationException>(() => sequence.ArrayPool = null);
         sequence.Advance(1);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => sequence.Advance(int.MaxValue));

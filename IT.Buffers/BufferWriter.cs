@@ -14,8 +14,9 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
     public static BufferPool<BufferWriter<T>> Pool =>
         BufferPool<BufferWriter<T>>.Shared;
-
+    
     internal ArrayPool<T>? _arrayPool;
+    private IBufferGrowthStrategy? _growthStrategy;
     internal readonly List<BufferSegment<T>> _buffers;
 
     internal BufferSegment<T> _current;
@@ -43,6 +44,12 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
             _arrayPool = value;
         }
+    }
+
+    public IBufferGrowthStrategy? GrowthStrategy
+    {
+        get => _growthStrategy;
+        set => _growthStrategy = value;
     }
 
     public int NextBufferSize
@@ -297,7 +304,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         if (nextBufferSize >= sizeHint)
         {
             next = new BufferSegment<T>(Rent(nextBufferSize));
-            _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
+            _nextBufferSize = (_growthStrategy ?? BufferGrowthStrategy.OneOfEachSize).Grow(nextBufferSize);
         }
         else
         {
