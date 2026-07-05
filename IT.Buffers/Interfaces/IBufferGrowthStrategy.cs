@@ -2,9 +2,9 @@
 
 public interface IBufferGrowthStrategy
 {
-    int FirstBufferSize { get; }
+    int GetBufferSize<T>();
 
-    int NextBufferSize { get; }
+    int GetFirstBufferSize(int size);
 
     int Grow(int size);
 }

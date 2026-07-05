@@ -62,6 +62,20 @@ public class BufferSizeTest
     }
 
     [Test]
+    public void GetSize()
+    {
+        Assert.That(BufferSize.Min / Unsafe.SizeOf<Int24>(), Is.EqualTo(85));
+        Assert.That(BufferSize<Int24>.Min, Is.EqualTo(86));
+    }
+
+    struct Int24
+    {
+        public byte B0;
+        public byte B1;
+        public byte B2;
+    }
+
+    [Test]
     public void Log2Test()
     {
         Assert.That(BufferSize<byte>.Log2, Is.EqualTo(0));//2^0

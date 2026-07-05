@@ -289,14 +289,16 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         if (current.IsNull)
         {
             var growthStrategy = _growthStrategy ?? BufferGrowthStrategy.OneOfEachSize;
-            var firstBufferSize = growthStrategy.FirstBufferSize;
+
+            var bufferSize = _nextBufferSize;
+            if (bufferSize == 0)
+                _nextBufferSize = bufferSize = growthStrategy.GetBufferSize<T>();
+
+            var firstBufferSize = growthStrategy.GetFirstBufferSize(bufferSize);
             if (firstBufferSize > sizeHint)
             {
                 sizeHint = firstBufferSize;
             }
-
-            if (_nextBufferSize == 0)
-                _nextBufferSize = growthStrategy.NextBufferSize;
 
             Debug.Assert(_segments == 0);
 
@@ -323,7 +325,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         else 
         {
             if (nextBufferSize == 0)
-                _nextBufferSize = (_growthStrategy ?? BufferGrowthStrategy.OneOfEachSize).NextBufferSize;
+                _nextBufferSize = (_growthStrategy ?? BufferGrowthStrategy.OneOfEachSize).GetBufferSize<T>();
 
             return _current = new BufferSegment<T>(Rent(sizeHint));
         }
