@@ -317,11 +317,9 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         else if (bufferSize == 0)
         {
             bufferSize = growthStrategy.GetBufferSize<T>();
-
-            _nextBufferSize = growthStrategy.Grow(bufferSize);
-
-            if (bufferSize > sizeHint)
+            if (bufferSize >= sizeHint)
             {
+                _nextBufferSize = growthStrategy.Grow(bufferSize);
                 sizeHint = bufferSize;
             }
         }
