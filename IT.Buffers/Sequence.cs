@@ -170,6 +170,8 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         _first = _last = null;
         _arrayPool = null;
+        _growthStrategy = null;
+        _nextBufferSize = 0;
     }
 
     private Segment GetSegment(int sizeHint)
