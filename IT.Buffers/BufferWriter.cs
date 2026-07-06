@@ -274,6 +274,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _buffers.Clear();
         _written = 0;
         _current = default;
+        _growthStrategy = null;
         _nextBufferSize = 0;
         _segments = 0;
         _arrayPool = null;
