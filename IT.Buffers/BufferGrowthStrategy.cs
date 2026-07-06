@@ -89,7 +89,7 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
 
         public int GetBufferSize<T>() => BufferSize<T>.KB_8;
 
-        public int GetFirstBufferSize(int size) => size >> 1;
+        public int GetFirstBufferSize(int size) => size;
 
         public int Grow(int size)
         {

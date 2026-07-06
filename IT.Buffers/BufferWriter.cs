@@ -286,49 +286,47 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         
         var current = _current;
         if (current.FreeLength >= sizeHint) return current;
-        if (current.IsNull)
-        {
-            var growthStrategy = _growthStrategy ?? BufferGrowthStrategy.DoubleFirst;
-
-            var bufferSize = _nextBufferSize;
-            if (bufferSize == 0)
-                _nextBufferSize = bufferSize = growthStrategy.GetBufferSize<T>();
-
-            var firstBufferSize = growthStrategy.GetFirstBufferSize(bufferSize);
-            if (firstBufferSize > sizeHint)
-            {
-                sizeHint = firstBufferSize;
-            }
-
-            Debug.Assert(_segments == 0);
-
-            _segments++;
-            return _current = new BufferSegment<T>(Rent(sizeHint));
-        }
 
         if (current.Written > 0)
         {
+            Debug.Assert(_segments > 0);
+
             _buffers.Add(current);
+            _segments++;
+        }
+        else if (current.IsNull)
+        {
+            Debug.Assert(_segments == 0);
+
             _segments++;
         }
         else
         {
+            Debug.Assert(_segments > 0);
+
             current.Reset(_arrayPool);
         }
 
-        var nextBufferSize = _nextBufferSize;
-        if (nextBufferSize >= sizeHint)
+        var growthStrategy = _growthStrategy ?? BufferGrowthStrategy.DoubleFirst;
+        var bufferSize = _nextBufferSize;
+        if (bufferSize >= sizeHint)
         {
-            _nextBufferSize = (_growthStrategy ?? BufferGrowthStrategy.DoubleFirst).Grow(nextBufferSize);
-            return _current = new BufferSegment<T>(Rent(nextBufferSize));
+            _nextBufferSize = growthStrategy.Grow(bufferSize);
+            sizeHint = bufferSize;
         }
-        else 
+        else if (bufferSize == 0)
         {
-            if (nextBufferSize == 0)
-                _nextBufferSize = (_growthStrategy ?? BufferGrowthStrategy.DoubleFirst).GetBufferSize<T>();
+            bufferSize = growthStrategy.GetBufferSize<T>();
 
-            return _current = new BufferSegment<T>(Rent(sizeHint));
+            _nextBufferSize = growthStrategy.Grow(bufferSize);
+
+            if (bufferSize > sizeHint)
+            {
+                sizeHint = bufferSize;
+            }
         }
+
+        return _current = new BufferSegment<T>(Rent(sizeHint));
     }
 
     private T[] Rent(int size)
