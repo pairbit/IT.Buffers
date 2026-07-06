@@ -309,19 +309,13 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 
         var growthStrategy = _growthStrategy ?? BufferGrowthStrategy.DoubleFirst;
         var bufferSize = _nextBufferSize;
+        if (bufferSize == 0)
+            _nextBufferSize = bufferSize = growthStrategy.GetBufferSize<T>();
+
         if (bufferSize >= sizeHint)
         {
             _nextBufferSize = growthStrategy.Grow(bufferSize);
             sizeHint = bufferSize;
-        }
-        else if (bufferSize == 0)
-        {
-            bufferSize = growthStrategy.GetBufferSize<T>();
-            if (bufferSize >= sizeHint)
-            {
-                _nextBufferSize = growthStrategy.Grow(bufferSize);
-                sizeHint = bufferSize;
-            }
         }
 
         return _current = new BufferSegment<T>(Rent(sizeHint));
