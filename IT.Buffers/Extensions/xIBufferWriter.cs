@@ -37,4 +37,15 @@ public static class xIBufferWriter
             span = span[destlen..];
         } while (true);
     }
+
+    public static void Write<T>(this IBufferWriter<T> writer, in ReadOnlySequence<T> sequence)
+    {
+        if (writer == null) throw new ArgumentNullException(nameof(writer));
+
+        var position = sequence.Start;
+        while (sequence.TryGet(ref position, out var memory))
+        {
+            writer.Write(memory.Span);
+        }
+    }
 }
