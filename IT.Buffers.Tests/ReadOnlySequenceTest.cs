@@ -74,22 +74,22 @@ public class ReadOnlySequenceTest
                 Assert.That(seqShort.SequenceCompareTo(rented), Is.EqualTo(-1));
             }
 
-            var splitDouble = buffer.AsMemory().Split(10);
+            var splitDouble = buffer.AsMemory().ToSequence(10);
             Assert.That(rented.SequenceEqual(splitDouble));
             Assert.That(rented.SequenceCompareTo(splitDouble), Is.Zero);
             Assert.That(BufferPool.TryReturn(splitDouble), Is.EqualTo(0));
 
-            splitDouble = buffer.AsMemory().SplitAndRent(10);
+            splitDouble = buffer.AsMemory().ToSequenceRented(10);
             Assert.That(rented.SequenceEqual(splitDouble));
 
             if (i > 1)
                 Assert.That(BufferPool.TryReturn(splitDouble) > 0, Is.True);
 
-            var splitFixed = buffer.AsMemory().Split(buffer.Length / 5, BufferGrowthStrategy.Off);
+            var splitFixed = buffer.AsMemory().ToSequence(buffer.Length / 5, BufferGrowthStrategy.Off);
             Assert.That(rented.SequenceEqual(splitFixed));
             Assert.That(BufferPool.TryReturn(splitFixed), Is.EqualTo(0));
 
-            splitFixed = buffer.AsMemory().SplitAndRent(buffer.Length / 5, BufferGrowthStrategy.Off);
+            splitFixed = buffer.AsMemory().ToSequenceRented(buffer.Length / 5, BufferGrowthStrategy.Off);
             Assert.That(rented.SequenceEqual(splitFixed));
 
             if (i > 1) 
@@ -104,7 +104,7 @@ public class ReadOnlySequenceTest
     {
         var span = "--Sep--body--Sep--"u8;
         Assert.That(span.Length, Is.EqualTo(18));
-        var seq = span.ToArray().AsMemory().Split(2);
+        var seq = span.ToArray().AsMemory().ToSequence(2);
         Assert.That(seq.SequenceEqual(span), Is.True);
 
         var start = seq.Start;

@@ -15,7 +15,7 @@ public class ReadOnlySequence_StartsWithTest
 
         for (int i = 1; i <= length; i++)
         {
-            var seq = memory.SplitBySegments(i);
+            var seq = memory.ToSequenceBySegments(i);
             Assert.That(seq.StartsWith("-"u8), Is.True);
             Assert.That(seq.StartsWith("--"u8), Is.True);
             Assert.That(seq.StartsWith("--b"u8), Is.True);
@@ -50,8 +50,8 @@ public class ReadOnlySequence_StartsWithTest
             Assert.That(seq.StartsWith("---"u8), Is.False);
             Assert.That(seq.StartsWith("++--"u8), Is.False);
 
-            Assert.That(seq.StartsWith(memory2.SplitBySegments(i)), Is.False);
-            Assert.That(span.StartsWith(memory2.SplitBySegments(i)), Is.False);
+            Assert.That(seq.StartsWith(memory2.ToSequenceBySegments(i)), Is.False);
+            Assert.That(span.StartsWith(memory2.ToSequenceBySegments(i)), Is.False);
         }
     }
 
@@ -64,7 +64,7 @@ public class ReadOnlySequence_StartsWithTest
 
         for (int i = 1; i <= length; i++)
         {
-            var seq = memory.SplitBySegments(i);
+            var seq = memory.ToSequenceBySegments(i);
             var start = seq.GetPosition(6);
 
             Assert.That(seq.StartsWith("-"u8, start), Is.True);

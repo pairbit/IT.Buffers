@@ -15,7 +15,7 @@ public class ReadOnlySequence_PositionOfTest
 
         for (int i = 1; i <= length; i++)
         {
-            var seq = memory.SplitBySegments(i);
+            var seq = memory.ToSequenceBySegments(i);
             Assert.That(seq.SequenceEqual(span), Is.True);
 
             Assert.That(seq.PositionOf("[]"u8).IsNegative(), Is.True);
@@ -44,7 +44,7 @@ public class ReadOnlySequence_PositionOfTest
 
         for (int i = 1; i <= length; i++)
         {
-            var seq = memory.SplitBySegments(i);
+            var seq = memory.ToSequenceBySegments(i);
             Assert.That(seq.SequenceEqual(span), Is.True);
 
             var current = seq.Start;
