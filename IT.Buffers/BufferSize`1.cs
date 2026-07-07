@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
@@ -71,6 +72,8 @@ public static class BufferSize<T>
 
     public static int Get(int size)
     {
+        Debug.Assert(size > 0);
+
         return 1 + ((size - 1) / Unsafe.SizeOf<T>());
     }
 }

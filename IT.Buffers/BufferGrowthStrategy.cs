@@ -1,5 +1,6 @@
 ﻿using IT.Buffers.Interfaces;
 using System;
+using System.Diagnostics;
 
 namespace IT.Buffers;
 
@@ -22,10 +23,10 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
         if (bufferGrowthFactor <= 0)
             throw new ArgumentOutOfRangeException(nameof(bufferGrowthFactor));
 
-        if (maxBufferSize < 0 || maxBufferSize > BufferSize.Max)
+        if (maxBufferSize <= 0 || maxBufferSize > BufferSize.Max)
             throw new ArgumentOutOfRangeException(nameof(maxBufferSize));
 
-        if (bufferSize < 0 || bufferSize > maxBufferSize)
+        if (bufferSize <= 0 || bufferSize > maxBufferSize)
             throw new ArgumentOutOfRangeException(nameof(bufferSize));
 
         _bufferGrowthFactor = bufferGrowthFactor;
@@ -56,11 +57,16 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
         int bufferSize = BufferSize.KB_4,
         int maxBufferSize = BufferSize.Max)
     {
-        //if (bufferGrowthFactor == 1)
-        //    return Single.Instance;
+        if (bufferGrowthFactor == 1)
+        {
+            if (bufferSize <= 0 || bufferSize > maxBufferSize)
+                throw new ArgumentOutOfRangeException(nameof(bufferSize));
 
-        //if (bufferGrowthFactor == 2)
-        //    return Double.Instance;
+            return new SingleWithSize(bufferSize);
+        }
+
+        if (bufferGrowthFactor == 2)
+            return new DoubleWithSize(bufferSize, maxBufferSize);
 
         return new BufferGrowthStrategy(bufferGrowthFactor, bufferSize, maxBufferSize);
     }
@@ -76,6 +82,22 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
         public int Grow(int size) => size;
     }
 
+    class SingleWithSize : IBufferGrowthStrategy
+    {
+        private readonly int _bufferSize;
+
+        public SingleWithSize(int bufferSize)
+        {
+            Debug.Assert(bufferSize > 0 && bufferSize <= BufferSize.Max);
+
+            _bufferSize = bufferSize;
+        }
+
+        public int GetBufferSize<T>() => BufferSize<T>.Get(_bufferSize);
+
+        public int Grow(int size) => size;
+    }
+
     class Double : IBufferGrowthStrategy
     {
         public static readonly Double Instance = new();
@@ -84,9 +106,28 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
 
         public int GetBufferSize<T>() => BufferSize<T>.KB_4;
 
-        public int Grow(int size)
+        public int Grow(int size) => BufferSize.GetDoubleCapacity(size);
+    }
+
+    class DoubleWithSize : IBufferGrowthStrategy
+    {
+        private readonly int _bufferSize;
+        private readonly int _maxBufferSize;
+
+        public DoubleWithSize(int bufferSize, int maxBufferSize)
         {
-            return BufferSize.GetDoubleCapacity(size);
+            if (maxBufferSize <= 0 || maxBufferSize > BufferSize.Max)
+                throw new ArgumentOutOfRangeException(nameof(maxBufferSize));
+
+            if (bufferSize <= 0 || bufferSize > maxBufferSize)
+                throw new ArgumentOutOfRangeException(nameof(bufferSize));
+
+            _bufferSize = bufferSize;
+            _maxBufferSize = maxBufferSize;
         }
+
+        public int GetBufferSize<T>() => BufferSize<T>.Get(_bufferSize);
+
+        public int Grow(int size) => BufferSize.GetDoubleCapacity(size, _maxBufferSize);
     }
 }
