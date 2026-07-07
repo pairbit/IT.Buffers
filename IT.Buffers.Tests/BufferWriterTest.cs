@@ -124,7 +124,7 @@ public class BufferWriterTest
             writer.Write(bytes);
 
             Assert.That(writer.Written, Is.EqualTo(bytes.Length));
-            Assert.That(writer.Segments, Is.EqualTo(8));
+            Assert.That(writer.Segments, Is.EqualTo(9));
             Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
         }
         finally
@@ -146,7 +146,7 @@ public class BufferWriterTest
             await writer.WriteAsync(stream);
 
             Assert.That(writer.Written, Is.EqualTo(bytes.Length));
-            Assert.That(writer.Segments, Is.EqualTo(8));
+            Assert.That(writer.Segments, Is.EqualTo(9));
             Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
         }
         finally
