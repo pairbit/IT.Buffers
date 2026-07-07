@@ -46,7 +46,56 @@ internal class SequenceTest
     }
 
     [Test]
-    public async Task WriteStream_OneOfEachSize_Test()
+    public void Write_Test()
+    {
+        var sequence = new Sequence<byte>();
+        try
+        {
+            var bytes = new byte[BufferSize.MB];
+            Random.Shared.NextBytes(bytes);
+
+            sequence.Write(bytes);
+
+            var ros = sequence.AsReadOnly;
+            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
+            Assert.That(ros.End, Is.EqualTo(sequence.End));
+
+            Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
+            Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
+        }
+        finally
+        {
+            sequence.Reset();
+        }
+    }
+
+    [Test]
+    public async Task WriteAsync_Test()
+    {
+        var sequence = new Sequence<byte>();
+        try
+        {
+            var bytes = new byte[BufferSize.MB];
+            Random.Shared.NextBytes(bytes);
+            var stream = new MemoryStream(bytes);
+
+            await sequence.WriteAsync(stream);
+
+            var ros = sequence.AsReadOnly;
+            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
+            Assert.That(ros.End, Is.EqualTo(sequence.End));
+
+            Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
+            Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
+        }
+        finally
+        {
+            sequence.Reset();
+        }
+    }
+
+    [Test]
+    public async Task WriteAsync_OneOfEachSize_Test()
     {
         var sequence = new Sequence<byte>();
         try
@@ -101,7 +150,7 @@ internal class SequenceTest
     }
 
     [Test]
-    public async Task WriteStream_TwoOfEachSize_Test()
+    public async Task WriteAsync_TwoOfEachSize_Test()
     {
         var sequence = new Sequence<byte>();
         try
@@ -111,7 +160,6 @@ internal class SequenceTest
             var stream = new MemoryStream(bytes);
 
             sequence.GrowthStrategy = BufferGrowthStrategy.TwoOfEachSize;
-            sequence.NextBufferSize = BufferSize.KB_64;
 
             await sequence.WriteAsync(stream);
 
@@ -120,7 +168,7 @@ internal class SequenceTest
             Assert.That(ros.End, Is.EqualTo(sequence.End));
 
             Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
-            Assert.That(sequence.NextBufferSize, Is.LessThanOrEqualTo(BufferSize.KB_512));
+            Assert.That(sequence.NextBufferSize, Is.EqualTo(454997));
         }
         finally
         {
@@ -129,7 +177,7 @@ internal class SequenceTest
     }
 
     [Test]
-    public async Task WriteStream_FourOfEachSize_Test()
+    public async Task WriteAsync_FourOfEachSize_Test()
     {
         var sequence = new Sequence<byte>();
         try
@@ -139,7 +187,6 @@ internal class SequenceTest
             var stream = new MemoryStream(bytes);
 
             sequence.GrowthStrategy = BufferGrowthStrategy.FourOfEachSize;
-            sequence.NextBufferSize = BufferSize.KB;
 
             await sequence.WriteAsync(stream);
 
@@ -148,7 +195,7 @@ internal class SequenceTest
             Assert.That(ros.End, Is.EqualTo(sequence.End));
 
             Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
-            Assert.That(sequence.NextBufferSize, Is.LessThanOrEqualTo(BufferSize.KB_256));
+            Assert.That(sequence.NextBufferSize, Is.EqualTo(158003));
         }
         finally
         {
@@ -157,7 +204,7 @@ internal class SequenceTest
     }
 
     [Test]
-    public async Task WriteStream_Test()
+    public async Task WriteAsync_Off_Test()
     {
         var sequence = new Sequence<byte>();
         try

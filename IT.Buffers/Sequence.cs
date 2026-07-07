@@ -181,8 +181,17 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
 
         if (_last == null || _last.FreeLength < sizeHint)
         {
-            var array = sizeHint > _nextBufferSize ? Rent(sizeHint) : RentAndGrow();
+            var growthStrategy = _growthStrategy ?? BufferGrowthStrategy.OneOfEachSize;
+            var bufferSize = _nextBufferSize;
+            if (bufferSize == 0)
+                _nextBufferSize = bufferSize = growthStrategy.GetBufferSize<T>();
 
+            if (bufferSize >= sizeHint)
+            {
+                _nextBufferSize = growthStrategy.Grow(bufferSize);
+                sizeHint = bufferSize;
+            }
+            var array = Rent(sizeHint);
             var segment = GetOrNewSegment();
             segment.Assign(array);
             Append(segment);
@@ -194,15 +203,6 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     private T[] Rent(int sizeHint)
     {
         return (_arrayPool ?? ArrayPool<T>.Shared).Rent(sizeHint);
-    }
-
-    private T[] RentAndGrow()
-    {
-        var array = Rent(_nextBufferSize);
-
-        _nextBufferSize = (_growthStrategy ?? BufferGrowthStrategy.OneOfEachSize).Grow(_nextBufferSize);
-
-        return array;
     }
 
     private Segment GetOrNewSegment()
