@@ -52,9 +52,7 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
         return new BufferGrowthStrategy(bufferGrowthFactor, BufferSize.KB_4, BufferSize.Max);
     }
 
-    public static IBufferGrowthStrategy Create(
-        float bufferGrowthFactor,
-        int bufferSize = BufferSize.KB_4,
+    public static IBufferGrowthStrategy Create(float bufferGrowthFactor, int bufferSize,
         int maxBufferSize = BufferSize.Max)
     {
         if (bufferGrowthFactor == 1)
