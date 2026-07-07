@@ -18,7 +18,7 @@ internal class SequenceTest
         var pos = sequence.End;
         var ros = sequence.AsReadOnly;
         
-        using var ross = new ReadOnlySequenceStream(ros, Dispose);
+        using var ross = new ReadOnlySequenceStream(ros, ReturnSequenceToPool, sequence);
 
         await sequence.WriteAsync(ross);
 
@@ -26,12 +26,16 @@ internal class SequenceTest
         var sliced = ros2.Slice(pos);
 
         Assert.That(sliced.SequenceEqual(ros), Is.True);
-
-        void Dispose(in ReadOnlySequence<byte> seq)
-        {
-            Sequence<byte>.Pool.TryReturn(sequence);
-        }
     }
+
+    private static void ReturnSequenceToPool(object? arg)
+    {
+        var seq = (Sequence<byte>?)arg;
+        if (seq == null) throw new ArgumentNullException(nameof(arg));
+
+        Sequence<byte>.Pool.TryReturn(seq);
+    }
+
 
     [Test]
     public void LeakTest()
