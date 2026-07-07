@@ -62,6 +62,9 @@ internal class SequenceTest
 
             Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
             Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
+
+            var ros2 = bytes.AsMemory().ToSequence();
+            Assert.That(ros.SequenceEqual(ros2), Is.True);
         }
         finally
         {
