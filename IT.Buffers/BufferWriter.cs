@@ -14,8 +14,9 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
     public static BufferPool<BufferWriter<T>> Pool =>
         BufferPool<BufferWriter<T>>.Shared;
-
+    
     internal ArrayPool<T>? _arrayPool;
+    private IBufferGrowthStrategy? _growthStrategy;
     internal readonly List<BufferSegment<T>> _buffers;
 
     internal BufferSegment<T> _current;
@@ -45,6 +46,12 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
+    public IBufferGrowthStrategy? GrowthStrategy
+    {
+        get => _growthStrategy;
+        set => _growthStrategy = value;
+    }
+
     public int NextBufferSize
     {
         get { return _nextBufferSize; }
@@ -58,15 +65,11 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     public BufferWriter()
     {
         _buffers = new List<BufferSegment<T>>();
-        _current = default;
-        _nextBufferSize = 0;
-        _written = 0;
-        _segments = 0;
     }
 
-    public void EnsureCapacitySegments(int capacity)
+    public int EnsureCapacitySegments(int capacity)
     {
-        _buffers.EnsureCapacity(capacity);
+        return _buffers.EnsureCapacity(capacity);
     }
 
     //public void ResetWritten()
@@ -76,28 +79,10 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
     //}
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public Memory<T> GetMemory(int sizeHint = 0)
-    {
-        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
-        if (sizeHint == 0) sizeHint = 1;
-
-        var freeMemory = _current.FreeMemory;
-        if (freeMemory.Length >= sizeHint) return freeMemory;
-
-        return GetNextBuffer(sizeHint).FreeMemory;
-    }
+    public Memory<T> GetMemory(int sizeHint = 0) => GetBuffer(sizeHint).FreeMemory;
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public Span<T> GetSpan(int sizeHint = 0)
-    {
-        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
-        if (sizeHint == 0) sizeHint = 1;
-
-        var freeSpan = _current.FreeSpan;
-        if (freeSpan.Length >= sizeHint) return freeSpan;
-
-        return GetNextBuffer(sizeHint).FreeSpan;
-    }
+    public Span<T> GetSpan(int sizeHint = 0) => GetBuffer(sizeHint).FreeSpan;
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -107,7 +92,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         if (count > 0)
         {
             _current.Advance(count);
-            _written += count;
+            _written = checked(_written + count);
         }
     }
 
@@ -289,46 +274,52 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _buffers.Clear();
         _written = 0;
         _current = default;
+        _growthStrategy = null;
         _nextBufferSize = 0;
         _segments = 0;
         _arrayPool = null;
     }
 
-    private BufferSegment<T> GetNextBuffer(int sizeHint)
+    private BufferSegment<T> GetBuffer(int sizeHint)
     {
-        BufferSegment<T> next;
-        var nextBufferSize = _nextBufferSize;
-        if (nextBufferSize >= sizeHint)
-        {
-            next = new BufferSegment<T>(Rent(nextBufferSize));
-            _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
-        }
-        else
-        {
-            next = new BufferSegment<T>(Rent(sizeHint));
-            if (nextBufferSize == 0) _nextBufferSize = BufferSize.GetDoubleCapacity(next.Capacity);
-        }
+        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+        if (sizeHint == 0) sizeHint = 1;
+        
+        var current = _current;
+        if (current.FreeLength >= sizeHint) return current;
 
-        if (_current.IsNull)
+        if (current.Written > 0)
         {
+            Debug.Assert(_segments > 0);
+
+            _buffers.Add(current);
+            _segments++;
+        }
+        else if (current.IsNull)
+        {
+            Debug.Assert(_segments == 0);
+
             _segments++;
         }
         else
         {
-            if (_current.Written > 0)
-            {
-                _buffers.Add(_current);
-                _segments++;
-            }
-            else
-            {
-                _current.Reset(_arrayPool);
-            }
+            Debug.Assert(_segments > 0);
+
+            current.Reset(_arrayPool);
         }
 
-        _current = next;
+        var growthStrategy = _growthStrategy ?? BufferGrowthStrategy.OneOfEachSize;
+        var bufferSize = _nextBufferSize;
+        if (bufferSize == 0)
+            _nextBufferSize = bufferSize = growthStrategy.GetBufferSize<T>();
 
-        return next;
+        if (bufferSize >= sizeHint)
+        {
+            _nextBufferSize = growthStrategy.Grow(bufferSize);
+            sizeHint = bufferSize;
+        }
+
+        return _current = new BufferSegment<T>(Rent(sizeHint));
     }
 
     private T[] Rent(int size)

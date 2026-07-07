@@ -1,14 +1,15 @@
-﻿using System;
+﻿using IT.Buffers.Interfaces;
+using System;
 using System.Buffers;
 
 namespace IT.Buffers.Extensions;
 
 public static class xReadOnlyMemory
 {
-    public static ReadOnlySequence<T> SplitBySegments<T>(this Memory<T> memory, int maxSegments)
-        => SplitBySegments((ReadOnlyMemory<T>)memory, maxSegments);
+    public static ReadOnlySequence<T> ToSequenceBySegments<T>(this Memory<T> memory, int maxSegments)
+        => ToSequenceBySegments((ReadOnlyMemory<T>)memory, maxSegments);
 
-    public static ReadOnlySequence<T> SplitBySegments<T>(this ReadOnlyMemory<T> memory, int maxSegments)
+    public static ReadOnlySequence<T> ToSequenceBySegments<T>(this ReadOnlyMemory<T> memory, int maxSegments)
     {
         if (maxSegments <= 0) throw new ArgumentOutOfRangeException(nameof(maxSegments));
 
@@ -39,22 +40,27 @@ public static class xReadOnlyMemory
         return new ReadOnlySequence<T>(start, 0, end, end.Memory.Length);
     }
 
+    public static ReadOnlySequence<T> ToSequence<T>(this Memory<T> memory,
+        int bufferSize = 0, IBufferGrowthStrategy? growthStrategy = null)
+        => ToSequence((ReadOnlyMemory<T>)memory, bufferSize, growthStrategy);
 
-    public static ReadOnlySequence<T> Split<T>(this Memory<T> memory,
-        int bufferSize, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
-        => Split((ReadOnlyMemory<T>)memory, bufferSize, growthPolicy);
-
-    public static ReadOnlySequence<T> SplitAndRent<T>(this Memory<T> memory,
-        int bufferSize, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double,
+    public static ReadOnlySequence<T> ToSequenceRented<T>(this Memory<T> memory,
+        int bufferSize = 0, IBufferGrowthStrategy? growthStrategy = null,
         bool isRented = false)
-        => SplitAndRent((ReadOnlyMemory<T>)memory, bufferSize, growthPolicy, isRented);
+        => ToSequenceRented((ReadOnlyMemory<T>)memory, bufferSize, growthStrategy, isRented);
 
-    public static ReadOnlySequence<T> Split<T>(this ReadOnlyMemory<T> memory,
-        int bufferSize, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double)
+    public static ReadOnlySequence<T> ToSequence<T>(this ReadOnlyMemory<T> memory,
+        int bufferSize = 0, IBufferGrowthStrategy? growthStrategy = null)
     {
         if (memory.IsEmpty) return ReadOnlySequence<T>.Empty;
 
-        if (bufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
+        if (bufferSize < 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
+
+        if (growthStrategy == null)
+            growthStrategy = BufferGrowthStrategy.OneOfEachSize;
+
+        if (bufferSize == 0)
+            bufferSize = growthStrategy.GetBufferSize<T>();
 
         if (bufferSize >= memory.Length) return new ReadOnlySequence<T>(memory);
 
@@ -68,8 +74,7 @@ public static class xReadOnlyMemory
 
         do
         {
-            if (growthPolicy == BufferGrowthPolicy.Double)
-                bufferSize = BufferSize.GetDoubleCapacity(bufferSize);
+            bufferSize = growthStrategy.Grow(bufferSize);
 
             if (memory.Length < bufferSize) bufferSize = memory.Length;
 
@@ -81,13 +86,19 @@ public static class xReadOnlyMemory
         return new ReadOnlySequence<T>(start, 0, end, end.Memory.Length);
     }
 
-    public static ReadOnlySequence<T> SplitAndRent<T>(this ReadOnlyMemory<T> memory,
-        int bufferSize, BufferGrowthPolicy growthPolicy = BufferGrowthPolicy.Double,
+    public static ReadOnlySequence<T> ToSequenceRented<T>(this ReadOnlyMemory<T> memory,
+        int bufferSize = 0, IBufferGrowthStrategy? growthStrategy = null,
         bool isRented = false)
     {
         if (memory.IsEmpty) return ReadOnlySequence<T>.Empty;
 
-        if (bufferSize <= 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
+        if (bufferSize < 0) throw new ArgumentOutOfRangeException(nameof(bufferSize));
+
+        if (growthStrategy == null)
+            growthStrategy = BufferGrowthStrategy.OneOfEachSize;
+
+        if (bufferSize == 0)
+            bufferSize = growthStrategy.GetBufferSize<T>();
 
         if (bufferSize >= memory.Length)
         {
@@ -111,8 +122,7 @@ public static class xReadOnlyMemory
 
         do
         {
-            if (growthPolicy == BufferGrowthPolicy.Double)
-                bufferSize = BufferSize.GetDoubleCapacity(bufferSize);
+            bufferSize = growthStrategy.Grow(bufferSize);
 
             if (memory.Length < bufferSize) bufferSize = memory.Length;
 

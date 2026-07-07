@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
@@ -38,35 +39,41 @@ public static class BufferSize<T>
 
     static BufferSize()
     {
-        var size = Unsafe.SizeOf<T>();
-        Min = BufferSize.Min / size;
-        KB_Half = BufferSize.KB_Half / size;
-        KB = BufferSize.KB / size;
-        KB_2 = BufferSize.KB_2 / size;
-        KB_4 = BufferSize.KB_4 / size;
-        KB_8 = BufferSize.KB_8 / size;
-        KB_16 = BufferSize.KB_16 / size;
-        KB_32 = BufferSize.KB_32 / size;
-        KB_64 = BufferSize.KB_64 / size;
-        KB_80 = BufferSize.KB_80 / size;
-        KB_83 = BufferSize.KB_83 / size;
-        LOH = BufferSize.LOH / size;
-        KB_128 = BufferSize.KB_128 / size;
-        KB_256 = BufferSize.KB_256 / size;
-        KB_512 = MB_Half = BufferSize.KB_512 / size;
-        MB = BufferSize.MB / size;
-        MB_2 = BufferSize.MB_2 / size;
-        MB_4 = BufferSize.MB_4 / size;
-        MB_8 = BufferSize.MB_8 / size;
-        MB_16 = BufferSize.MB_16 / size;
-        MB_32 = BufferSize.MB_32 / size;
-        MB_64 = BufferSize.MB_64 / size;
-        MB_128 = BufferSize.MB_128 / size;
-        MB_256 = BufferSize.MB_256 / size;
-        MB_512 = GB_Half = BufferSize.MB_512 / size;
-        Max_Half = BufferSize.Max_Half / size;
-        GB = BufferSize.GB / size;
-        Max = BufferSize.Max / size;
-        Log2 = BufferSize.Log2(size);
+        Min = Get(BufferSize.Min);
+        KB_Half = Get(BufferSize.KB_Half);
+        KB = Get(BufferSize.KB);
+        KB_2 = Get(BufferSize.KB_2);
+        KB_4 = Get(BufferSize.KB_4);
+        KB_8 = Get(BufferSize.KB_8);
+        KB_16 = Get(BufferSize.KB_16);
+        KB_32 = Get(BufferSize.KB_32);
+        KB_64 = Get(BufferSize.KB_64);
+        KB_80 = Get(BufferSize.KB_80);
+        KB_83 = Get(BufferSize.KB_83);
+        LOH = Get(BufferSize.LOH);
+        KB_128 = Get(BufferSize.KB_128);
+        KB_256 = Get(BufferSize.KB_256);
+        KB_512 = MB_Half = Get(BufferSize.KB_512);
+        MB = Get(BufferSize.MB);
+        MB_2 = Get(BufferSize.MB_2);
+        MB_4 = Get(BufferSize.MB_4);
+        MB_8 = Get(BufferSize.MB_8);
+        MB_16 = Get(BufferSize.MB_16);
+        MB_32 = Get(BufferSize.MB_32);
+        MB_64 = Get(BufferSize.MB_64);
+        MB_128 = Get(BufferSize.MB_128);
+        MB_256 = Get(BufferSize.MB_256);
+        MB_512 = GB_Half = Get(BufferSize.MB_512);
+        Max_Half = Get(BufferSize.Max_Half);
+        GB = Get(BufferSize.GB);
+        Max = Get(BufferSize.Max);
+        Log2 = BufferSize.Log2(Unsafe.SizeOf<T>());
+    }
+
+    public static int Get(int size)
+    {
+        Debug.Assert(size > 0);
+
+        return 1 + ((size - 1) / Unsafe.SizeOf<T>());
     }
 }

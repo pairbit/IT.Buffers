@@ -45,25 +45,51 @@ public class ReadOnlySequenceTest
             var buffer = rented.ToArray();
             var single = new ReadOnlySequence<byte>(buffer);
 
+            Assert.That(rented.SequenceEqual(buffer));
             Assert.That(rented.SequenceEqual(single));
             Assert.That(single.SequenceEqual(rented));
             Assert.That(rented.SequenceEqual(rented));
 
-            var splitDouble = buffer.AsMemory().Split(10);
+            Assert.That(rented.SequenceCompareTo(buffer), Is.Zero);
+            Assert.That(buffer.SequenceCompareTo(rented), Is.Zero);
+            Assert.That(rented.SequenceCompareTo(single), Is.Zero);
+            Assert.That(single.SequenceCompareTo(rented), Is.Zero);
+            Assert.That(rented.SequenceCompareTo(rented), Is.Zero);
+
+            if (buffer.Length > 0)
+            {
+                var bufferShort = buffer.AsMemory(0, buffer.Length - 1);
+                Assert.That(buffer.SequenceCompareTo(bufferShort.Span), Is.EqualTo(1));
+                Assert.That(bufferShort.Span.SequenceCompareTo(buffer), Is.EqualTo(-1));
+
+                var singleShort = new ReadOnlySequence<byte>(bufferShort);
+                var seqShort = rented.Slice(0, rented.Length - 1);
+
+                Assert.That(rented.SequenceCompareTo(bufferShort.Span), Is.EqualTo(1));
+                Assert.That(rented.SequenceCompareTo(singleShort), Is.EqualTo(1));
+                Assert.That(rented.SequenceCompareTo(seqShort), Is.EqualTo(1));
+
+                Assert.That(bufferShort.Span.SequenceCompareTo(rented), Is.EqualTo(-1));
+                Assert.That(singleShort.SequenceCompareTo(rented), Is.EqualTo(-1));
+                Assert.That(seqShort.SequenceCompareTo(rented), Is.EqualTo(-1));
+            }
+
+            var splitDouble = buffer.AsMemory().ToSequence(10);
             Assert.That(rented.SequenceEqual(splitDouble));
+            Assert.That(rented.SequenceCompareTo(splitDouble), Is.Zero);
             Assert.That(BufferPool.TryReturn(splitDouble), Is.EqualTo(0));
 
-            splitDouble = buffer.AsMemory().SplitAndRent(10);
+            splitDouble = buffer.AsMemory().ToSequenceRented(10);
             Assert.That(rented.SequenceEqual(splitDouble));
 
             if (i > 1)
                 Assert.That(BufferPool.TryReturn(splitDouble) > 0, Is.True);
 
-            var splitFixed = buffer.AsMemory().Split(buffer.Length / 5, BufferGrowthPolicy.Fixed);
+            var splitFixed = buffer.AsMemory().ToSequence(buffer.Length / 5, BufferGrowthStrategy.Off);
             Assert.That(rented.SequenceEqual(splitFixed));
             Assert.That(BufferPool.TryReturn(splitFixed), Is.EqualTo(0));
 
-            splitFixed = buffer.AsMemory().SplitAndRent(buffer.Length / 5, BufferGrowthPolicy.Fixed);
+            splitFixed = buffer.AsMemory().ToSequenceRented(buffer.Length / 5, BufferGrowthStrategy.Off);
             Assert.That(rented.SequenceEqual(splitFixed));
 
             if (i > 1) 
@@ -78,7 +104,7 @@ public class ReadOnlySequenceTest
     {
         var span = "--Sep--body--Sep--"u8;
         Assert.That(span.Length, Is.EqualTo(18));
-        var seq = span.ToArray().AsMemory().Split(2);
+        var seq = span.ToArray().AsMemory().ToSequence(2);
         Assert.That(seq.SequenceEqual(span), Is.True);
 
         var start = seq.Start;

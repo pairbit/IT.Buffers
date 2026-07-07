@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
+internal class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
     internal readonly ArrayPool<T>? _arrayPool;
     internal readonly List<BufferSegment<T>> _buffers;
@@ -67,9 +67,9 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         _segments = 1;
     }
 
-    public void EnsureCapacitySegments(int capacity)
+    public int EnsureCapacitySegments(int capacity)
     {
-        _buffers.EnsureCapacity(capacity);
+        return _buffers.EnsureCapacity(capacity);
     }
 
     //public void ResetWritten()
@@ -141,7 +141,7 @@ public class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             {
                 _current.Advance(count);
             }
-            _written += count;
+            _written = checked(_written + count);
         }
     }
 

@@ -30,9 +30,9 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
         _list = new(capacity);
     }
 
-    public void EnsureCapacity(int capacity)
+    public int EnsureCapacity(int capacity)
     {
-        _list.EnsureCapacity(capacity);
+        return _list.EnsureCapacity(capacity);
     }
 
     public ReadOnlySequenceBuilder<T> Add(ReadOnlyMemory<T> memory, bool isRented = false)

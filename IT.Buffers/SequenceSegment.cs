@@ -10,6 +10,10 @@ public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable, IBuff
     public static BufferPool<SequenceSegment<T>> Pool
         => BufferPool<SequenceSegment<T>>.Shared;
 
+    //TODO: можно определить арендована память по признаку RunningIndex < 0
+    //избавившись от поля
+    //Класс SequenceSegment при этом будет без аренды, создать класс наследник
+    //RentalSequenceSegment
     private RentalStatus _rentalStatus;
 
     bool IBufferRentable.IsRented => IsRentedSegment;

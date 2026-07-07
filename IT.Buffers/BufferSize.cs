@@ -50,12 +50,42 @@ public static class BufferSize
 
     public static int GetDoubleCapacity(int size)
     {
-        var newSize = unchecked(size * 2);
+        var newSize = unchecked(size << 1);
         if ((uint)newSize > Max)
         {
             newSize = Max;
         }
         return newSize;
+    }
+
+    public static int GetDoubleCapacity(int size, int max)
+    {
+        var newSize = unchecked(size << 1);
+        if ((uint)newSize > max)
+        {
+            newSize = max;
+        }
+        return newSize;
+    }
+
+    public static int GetSizeLastChunk<T>(in ReadOnlySequence<T> seq)
+    {
+        if (seq.IsSingleSegment)
+            return seq.First.Length;
+
+        if (seq.End.GetObject() is ReadOnlySequenceSegment<byte> segment)
+            return segment.Memory.Length;
+
+        // do it the hard way; note we'll only observe the reserved size, rather
+        // than the actual buffer size, but that's the best we can do
+        var lastChunk = 0;
+        foreach (var chunk in seq)
+        {
+            if (!chunk.IsEmpty) lastChunk = chunk.Length;
+        }
+
+        // paranoia
+        return lastChunk is 0 ? seq.First.Length : lastChunk;
     }
 
     internal static void CheckAndResizeBuffer<T>(ref T[] buffer, int written, int sizeHint)

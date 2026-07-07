@@ -6,6 +6,16 @@ namespace IT.Buffers.Tests;
 public class BufferSizeTest
 {
     [Test]
+    public void GetDoubleCapacityTest()
+    {
+        Assert.That(BufferSize.GetDoubleCapacity(-16), Is.EqualTo(BufferSize.Max));
+
+        Assert.That(BufferSize.GetDoubleCapacity(16), Is.EqualTo(32));
+        Assert.That(BufferSize.GetDoubleCapacity(BufferSize.MB), Is.EqualTo(BufferSize.MB_2));
+        Assert.That(BufferSize.GetDoubleCapacity(BufferSize.GB), Is.EqualTo(BufferSize.Max));
+    }
+
+    [Test]
     public void Test()
     {
         Assert.That(BufferSize<char>.KB_256, Is.EqualTo(BufferSize.KB_128));
@@ -49,6 +59,23 @@ public class BufferSizeTest
         Assert.That(BufferSize<byte>.Max_Half, Is.EqualTo(BufferSize.Max_Half));
         Assert.That(BufferSize<byte>.GB, Is.EqualTo(BufferSize.GB));
         Assert.That(BufferSize<byte>.Max, Is.EqualTo(BufferSize.Max));
+    }
+
+    [Test]
+    public void GetSize()
+    {
+        Assert.That(BufferSize.Min / Unsafe.SizeOf<Int24>(), Is.EqualTo(85));
+        Assert.That(BufferSize<Int24>.Min, Is.EqualTo(86));
+
+        var int23 = new Int24 { B0 = 1, B1 = 2, B2 = 3 };
+        Assert.That(int23.B0, Is.EqualTo(1));
+    }
+
+    struct Int24
+    {
+        public byte B0;
+        public byte B1;
+        public byte B2;
     }
 
     [Test]
