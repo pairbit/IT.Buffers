@@ -66,6 +66,9 @@ public class BufferSizeTest
     {
         Assert.That(BufferSize.Min / Unsafe.SizeOf<Int24>(), Is.EqualTo(85));
         Assert.That(BufferSize<Int24>.Min, Is.EqualTo(86));
+
+        var int23 = new Int24 { B0 = 1, B1 = 2, B2 = 3 };
+        Assert.That(int23.B0, Is.EqualTo(1));
     }
 
     struct Int24

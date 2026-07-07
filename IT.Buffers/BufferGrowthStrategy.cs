@@ -6,7 +6,6 @@ namespace IT.Buffers;
 public class BufferGrowthStrategy : IBufferGrowthStrategy
 {
     public static readonly IBufferGrowthStrategy Off = Create(1);
-    public static readonly IBufferGrowthStrategy DoubleFirst = _DoubleFirst.Instance;
     public static readonly IBufferGrowthStrategy OneOfEachSize = Create(2f);
     public static readonly IBufferGrowthStrategy TwoOfEachSize = Create(1.4f);
     public static readonly IBufferGrowthStrategy ThreeOfEachSize = Create(1.26f);
@@ -17,8 +16,6 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
     private readonly int _maxBufferSize;
 
     public int GetBufferSize<T>() => BufferSize<T>.Get(_bufferSize);
-
-    public int GetFirstBufferSize(int size) => size;
 
     protected BufferGrowthStrategy(float bufferGrowthFactor, int bufferSize, int maxBufferSize)
     {
@@ -76,8 +73,6 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
 
         public int GetBufferSize<T>() => BufferSize<T>.KB_4;
 
-        public int GetFirstBufferSize(int size) => size;
-
         public int Grow(int size) => size;
     }
 
@@ -88,24 +83,6 @@ public class BufferGrowthStrategy : IBufferGrowthStrategy
         private Double() { }
 
         public int GetBufferSize<T>() => BufferSize<T>.KB_8;
-
-        public int GetFirstBufferSize(int size) => size;
-
-        public int Grow(int size)
-        {
-            return BufferSize.GetDoubleCapacity(size);
-        }
-    }
-
-    class _DoubleFirst : IBufferGrowthStrategy
-    {
-        public static readonly _DoubleFirst Instance = new();
-
-        private _DoubleFirst() { }
-
-        public int GetBufferSize<T>() => BufferSize<T>.KB_4;
-
-        public int GetFirstBufferSize(int size) => BufferSize.GetDoubleCapacity(size);
 
         public int Grow(int size)
         {

@@ -124,8 +124,8 @@ public class BufferWriterTest
             writer.Write(bytes);
 
             Assert.That(writer.Written, Is.EqualTo(bytes.Length));
-            Assert.That(writer.Segments, Is.EqualTo(9));
-            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB));
+            Assert.That(writer.Segments, Is.EqualTo(8));
+            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
         }
         finally
         {
@@ -146,8 +146,8 @@ public class BufferWriterTest
             await writer.WriteAsync(stream);
 
             Assert.That(writer.Written, Is.EqualTo(bytes.Length));
-            Assert.That(writer.Segments, Is.EqualTo(9));
-            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB));
+            Assert.That(writer.Segments, Is.EqualTo(8));
+            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
         }
         finally
         {
@@ -170,7 +170,7 @@ public class BufferWriterTest
 
             Assert.That(writer.Written, Is.EqualTo(bytes.Length));
             Assert.That(writer.Segments, Is.EqualTo(5));
-            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB));
+            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
         }
         finally
         {
@@ -194,28 +194,6 @@ public class BufferWriterTest
 
             Assert.That(writer.Written, Is.EqualTo(bytes.Length));
             Assert.That(writer.Segments, Is.EqualTo(5));
-            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB));
-        }
-        finally
-        {
-            writer.Reset();
-        }
-    }
-
-    [Test]
-    public void Write_OneOfEachSize_Test()
-    {
-        var writer = new BufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
-
-            writer.GrowthStrategy = BufferGrowthStrategy.OneOfEachSize;
-            writer.Write(bytes);
-
-            Assert.That(writer.Written, Is.EqualTo(bytes.Length));
-            Assert.That(writer.Segments, Is.EqualTo(8));
             Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
         }
         finally
@@ -225,7 +203,7 @@ public class BufferWriterTest
     }
 
     [Test]
-    public void Write_OneOfEachSize_NextBufferSize_Test()
+    public void Write_DoubleFirst_Test()
     {
         var writer = new BufferWriter<byte>();
         try
@@ -234,12 +212,12 @@ public class BufferWriterTest
             Random.Shared.NextBytes(bytes);
 
             writer.NextBufferSize = BufferSize.KB_64;
-            writer.GrowthStrategy = BufferGrowthStrategy.OneOfEachSize;
+            writer.GetSpan(BufferSize.KB_128);
             writer.Write(bytes);
 
             Assert.That(writer.Written, Is.EqualTo(bytes.Length));
             Assert.That(writer.Segments, Is.EqualTo(5));
-            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
+            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB));
         }
         finally
         {

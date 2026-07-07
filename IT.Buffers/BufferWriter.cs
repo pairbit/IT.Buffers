@@ -308,7 +308,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             current.Reset(_arrayPool);
         }
 
-        var growthStrategy = _growthStrategy ?? BufferGrowthStrategy.DoubleFirst;
+        var growthStrategy = _growthStrategy ?? BufferGrowthStrategy.OneOfEachSize;
         var bufferSize = _nextBufferSize;
         if (bufferSize == 0)
             _nextBufferSize = bufferSize = growthStrategy.GetBufferSize<T>();
