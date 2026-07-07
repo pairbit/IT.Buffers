@@ -6,6 +6,35 @@ namespace IT.Buffers.Tests;
 internal class SequenceTest
 {
     [Test]
+    public async Task Pool_Test()
+    {
+        var sequence = Sequence<byte>.Pool.Rent();
+        try
+        {
+            var bytes = new byte[BufferSize.MB];
+            Random.Shared.NextBytes(bytes);
+
+            sequence.GetSpan(BufferSize.KB_8);
+            sequence.Write(bytes);
+
+            var pos = sequence.End;
+            var ros = sequence.AsReadOnly;
+            var ross = new ReadOnlySequenceStream(ros);
+
+            await sequence.WriteAsync(ross);
+
+            var ros2 = sequence.AsReadOnly;
+            var sliced = ros2.Slice(pos);
+
+            Assert.That(sliced.SequenceEqual(ros), Is.True);
+        }
+        finally
+        {
+            Assert.That(Sequence<byte>.Pool.TryReturn(sequence), Is.True);
+        }
+    }
+
+    [Test]
     public void LeakTest()
     {
         var sequence = new Sequence<object>();
