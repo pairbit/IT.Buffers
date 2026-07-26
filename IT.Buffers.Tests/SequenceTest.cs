@@ -36,7 +36,6 @@ internal class SequenceTest
         Sequence<byte>.Pool.TryReturn(seq);
     }
 
-
     [Test]
     public void LeakTest()
     {
