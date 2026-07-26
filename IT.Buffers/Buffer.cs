@@ -29,10 +29,9 @@ public enum RentedBufferType : byte
     MemoryOwner = 4
 }
 
-//Buffer?
-public readonly struct RentedBuffer<T>
+public readonly struct Buffer<T>
 {
-    public static RentedBuffer<T> Empty { get; } = new([]);
+    public static Buffer<T> Empty { get; } = new([]);
 
     private readonly object? _buffer;
     private readonly int _offset;
@@ -114,21 +113,21 @@ public readonly struct RentedBuffer<T>
         }
     }
 
-    private RentedBuffer(object buffer, int offset, int count)
+    private Buffer(object buffer, int offset, int count)
     {
         _buffer = buffer;
         _offset = offset;
         _count = count;
     }
 
-    public RentedBuffer(T[] array)
+    public Buffer(T[] array)
     {
         _buffer = array ?? throw new ArgumentNullException(nameof(array));
         _offset = 0;
         _count = array.Length;
     }
 
-    public RentedBuffer(T[] array, RentedBufferType type)
+    public Buffer(T[] array, RentedBufferType type)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
 
@@ -162,7 +161,7 @@ public readonly struct RentedBuffer<T>
         }
     }
 
-    public RentedBuffer(T[] array, int offset, int count, RentedBufferType type)
+    public Buffer(T[] array, int offset, int count, RentedBufferType type)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
 
@@ -202,14 +201,14 @@ public readonly struct RentedBuffer<T>
         }
     }
 
-    public RentedBuffer(IMemoryOwner<T> memoryOwner)
+    public Buffer(IMemoryOwner<T> memoryOwner)
     {
         _buffer = memoryOwner ?? throw new ArgumentNullException(nameof(memoryOwner));
         _offset = 0;
         _count = memoryOwner.Memory.Length;
     }
 
-    public RentedBuffer(IMemoryOwner<T> memoryOwner, int offset, int count)
+    public Buffer(IMemoryOwner<T> memoryOwner, int offset, int count)
     {
         if (memoryOwner == null) throw new ArgumentNullException(nameof(memoryOwner));
         var length = memoryOwner.Memory.Length;
@@ -229,12 +228,12 @@ public readonly struct RentedBuffer<T>
         => _buffer is null ? 0 : HashCode.Combine(_offset, _count, _buffer.GetHashCode());
 
     public override bool Equals([NotNullWhen(true)] object? obj)
-        => obj is RentedBuffer<T> other && Equals(other);
+        => obj is Buffer<T> other && Equals(other);
 
-    public bool Equals(RentedBuffer<T> other)
+    public bool Equals(Buffer<T> other)
         => other._buffer == _buffer && other._offset == _offset && other._count == _count;
 
-    public RentedBuffer<T> Slice(int index)
+    public Buffer<T> Slice(int index)
     {
         var count = Count;
         if ((uint)index > (uint)count)
@@ -250,7 +249,7 @@ public readonly struct RentedBuffer<T>
         throw InvalidState();
     }
 
-    public RentedBuffer<T> Slice(int index, int count)
+    public Buffer<T> Slice(int index, int count)
     {
         var oldCount = Count;
         if ((uint)index > (uint)oldCount)
@@ -295,13 +294,13 @@ public readonly struct RentedBuffer<T>
     private static InvalidOperationException InvalidState()
         => new("_array == null");
 
-    public static bool operator ==(RentedBuffer<T> left, RentedBuffer<T> right) => left.Equals(right);
+    public static bool operator ==(Buffer<T> left, Buffer<T> right) => left.Equals(right);
 
-    public static bool operator !=(RentedBuffer<T> left, RentedBuffer<T> right) => !left.Equals(right);
+    public static bool operator !=(Buffer<T> left, Buffer<T> right) => !left.Equals(right);
 
-    public static implicit operator RentedBuffer<T>(T[] array) => array != null ? new(array) : default;
+    public static implicit operator Buffer<T>(T[] array) => array != null ? new(array) : default;
 
-    public static implicit operator Memory<T>(RentedBuffer<T> value) => value.Memory;
+    public static implicit operator Memory<T>(Buffer<T> value) => value.Memory;
 
-    public static implicit operator Span<T>(RentedBuffer<T> value) => value.Span;
+    public static implicit operator Span<T>(Buffer<T> value) => value.Span;
 }

@@ -15,14 +15,14 @@ public static class BufferPool
     public static MemoryPool<T> CreateMemoryPool<T>(ArrayPool<T> pool, int maxBufferSize = BufferSize.Max) =>
         new ConfigurableMemoryPool<T>(pool, BufferSize<T>.KB_4, maxBufferSize, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 
-    public static RentedBuffer<T> RentArray<T>(int minimumLength)
+    public static Buffer<T> Rent<T>(int minimumLength)
     {
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
         return new(array, 0, minimumLength, minimumLength == 0 || minimumLength > BufferSize.GB
             ? RentedBufferType.None : RentedBufferType.Shared);
     }
 
-    public static RentedBuffer<T> RentArray<T>(int minimumLength, int maximumLength)
+    public static Buffer<T> Rent<T>(int minimumLength, int maximumLength)
     {
         if (minimumLength == 0) return new([]);
         if (minimumLength > maximumLength)
@@ -40,16 +40,16 @@ public static class BufferPool
     public static void Return<T>(T[] array)
         => ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 
-    public static bool TryReturn<T>(RentedBuffer<T> rentedBuffer)
+    public static bool TryReturn<T>(Buffer<T> buffer)
     {
-        var type = rentedBuffer.Type;
+        var type = buffer.Type;
         if (type == RentedBufferType.MemoryOwner)
         {
-            rentedBuffer.MemoryOwner.Dispose();
+            buffer.MemoryOwner.Dispose();
             return true;
         }
 
-        var array = rentedBuffer.Array;
+        var array = buffer.Array;
         if (array != null && array.Length > 0)
         {
             if (type == RentedBufferType.Shared)

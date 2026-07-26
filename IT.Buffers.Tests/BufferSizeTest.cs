@@ -92,7 +92,7 @@ public class BufferSizeTest
     public void SizeOfTest()
     {
         Assert.That(Unsafe.SizeOf<ArraySegment<byte>>(), Is.EqualTo(16));
-        Assert.That(Unsafe.SizeOf<RentedBuffer<byte>>(), Is.EqualTo(16));
+        Assert.That(Unsafe.SizeOf<Buffer<byte>>(), Is.EqualTo(16));
 
         Assert.That(Unsafe.SizeOf<ReadOnlySequence<byte>>(), Is.EqualTo(24));
         Assert.That(Unsafe.SizeOf<SequenceSegments<byte>>(), Is.EqualTo(16));
