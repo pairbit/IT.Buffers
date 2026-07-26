@@ -81,6 +81,9 @@ public readonly struct Buffer<T>
             if (buffer is T[] array)
                 return new(array, Offset, count);
 
+            if (buffer is MemoryManager<T> memoryManager)
+                return memoryManager.Memory.Slice(Offset, count);
+
             if (buffer is IMemoryOwner<T> memoryOwner)
                 return memoryOwner.Memory.Slice(Offset, count);
 
@@ -98,6 +101,9 @@ public readonly struct Buffer<T>
             var buffer = _buffer;
             if (buffer is T[] array)
                 return new(array, Offset, count);
+
+            if (buffer is MemoryManager<T> memoryManager)
+                return memoryManager.GetSpan().Slice(Offset, count);
 
             if (buffer is IMemoryOwner<T> memoryOwner)
                 return memoryOwner.Memory.Span.Slice(Offset, count);
@@ -302,6 +308,9 @@ public readonly struct Buffer<T>
         if (buffer is T[] array)
             return new(array, Offset + index, count - index, RentedArrayType);
 
+        if (buffer is MemoryManager<T> memoryManager)
+            return new(memoryManager, Offset + index, count - index);
+
         if (buffer is IMemoryOwner<T> memoryOwner)
             return new(memoryOwner, Offset + index, count - index);
 
@@ -320,6 +329,9 @@ public readonly struct Buffer<T>
         var buffer = _buffer;
         if (buffer is T[] array)
             return new(array, Offset + index, count, RentedArrayType);
+
+        if (buffer is MemoryManager<T> memoryManager)
+            return new(memoryManager, Offset + index, count);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
             return new(memoryOwner, Offset + index, count);
@@ -342,10 +354,11 @@ public readonly struct Buffer<T>
             return copy;
         }
 
+        if (buffer is MemoryManager<T> memoryManager)
+            return memoryManager.GetSpan().Slice(Offset, count).ToArray();
+
         if (buffer is IMemoryOwner<T> memoryOwner)
-        {
             return memoryOwner.Memory.Slice(Offset, count).ToArray();
-        }
 
         throw InvalidState();
     }
