@@ -15,14 +15,14 @@ public static class BufferPool
     public static MemoryPool<T> CreateMemoryPool<T>(ArrayPool<T> pool, int maxBufferSize = BufferSize.Max) =>
         new ConfigurableMemoryPool<T>(pool, BufferSize<T>.KB_4, maxBufferSize, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 
-    public static RentedArray<T> RentArray<T>(int minimumLength)
+    public static RentedBuffer<T> RentArray<T>(int minimumLength)
     {
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
         return new(array, 0, minimumLength, minimumLength == 0 || minimumLength > BufferSize.GB
-            ? RentedArrayType.None : RentedArrayType.Shared);
+            ? RentedBufferType.None : RentedBufferType.Shared);
     }
 
-    public static RentedArray<T> RentArray<T>(int minimumLength, int maximumLength)
+    public static RentedBuffer<T> RentArray<T>(int minimumLength, int maximumLength)
     {
         if (minimumLength == 0) return new([]);
         if (minimumLength > maximumLength)
@@ -31,7 +31,7 @@ public static class BufferPool
         }
 
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
-        return new(array, 0, minimumLength, RentedArrayType.Shared);
+        return new(array, 0, minimumLength, RentedBufferType.Shared);
     }
 
     public static TBuffer Rent<TBuffer>() where TBuffer : class, IDisposable, new()
@@ -40,18 +40,24 @@ public static class BufferPool
     public static void Return<T>(T[] array)
         => ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 
-    public static bool TryReturn<T>(RentedArray<T> rentedArray)
+    public static bool TryReturn<T>(RentedBuffer<T> rentedBuffer)
     {
-        var array = rentedArray.Array;
+        var type = rentedBuffer.Type;
+        if (type == RentedBufferType.MemoryOwner)
+        {
+            rentedBuffer.MemoryOwner.Dispose();
+            return true;
+        }
+
+        var array = rentedBuffer.Array;
         if (array != null && array.Length > 0)
         {
-            var type = rentedArray.Type;
-            if (type == RentedArrayType.Shared)
+            if (type == RentedBufferType.Shared)
             {
                 Return(array);
                 return true;
             }
-            if (type != RentedArrayType.None)
+            if (type != RentedBufferType.None)
                 throw new InvalidOperationException($"the array is rented from {type} pool");
         }
         return false;

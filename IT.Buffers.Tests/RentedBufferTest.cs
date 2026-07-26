@@ -1,29 +1,29 @@
 ﻿namespace IT.Buffers.Tests;
 
-internal class RentedArrayTest
+internal class RentedBufferTest
 {
     [Test]
     public void Test()
     {
-        var array = RentedArray<byte>.Empty;
+        var buffer = RentedBuffer<byte>.Empty;
 
-        Assert.That(array.Equals(default), Is.False);
-        Assert.That(array.Equals(RentedArray<byte>.Empty), Is.True);
+        Assert.That(buffer.Equals(default), Is.False);
+        Assert.That(buffer.Equals(RentedBuffer<byte>.Empty), Is.True);
 
-        Equals(array);
+        Equals(buffer);
 
-        var shared = new RentedArray<byte>([], RentedArrayType.Shared);
-        Equals(shared, type: RentedArrayType.Shared);
+        var shared = new RentedBuffer<byte>([], RentedBufferType.Shared);
+        Equals(shared, type: RentedBufferType.Shared);
 
-        var global = new RentedArray<byte>([], RentedArrayType.Global);
-        Equals(global, type: RentedArrayType.Global);
+        var global = new RentedBuffer<byte>([], RentedBufferType.Global);
+        Equals(global, type: RentedBufferType.Global);
 
-        var external = new RentedArray<byte>([], RentedArrayType.External);
-        Equals(external, type: RentedArrayType.External);
+        var external = new RentedBuffer<byte>([], RentedBufferType.External);
+        Equals(external, type: RentedBufferType.External);
 
-        Assert.That(array.Equals(shared), Is.False);
-        Assert.That(array.Equals(global), Is.False);
-        Assert.That(array.Equals(external), Is.False);
+        Assert.That(buffer.Equals(shared), Is.False);
+        Assert.That(buffer.Equals(global), Is.False);
+        Assert.That(buffer.Equals(external), Is.False);
 
         Assert.That(shared.Equals(global), Is.False);
         Assert.That(shared.Equals(external), Is.False);
@@ -39,15 +39,15 @@ internal class RentedArrayTest
         Assert.That(BufferPool.TryReturn(rented), Is.False);
 
         rented = BufferPool.RentArray<byte>(1);
-        Equals(rented, length: 16, count: 1, type: RentedArrayType.Shared);
+        Equals(rented, length: 16, count: 1, type: RentedBufferType.Shared);
         Assert.That(BufferPool.TryReturn(rented), Is.True);
 
         rented = BufferPool.RentArray<byte>(BufferSize.MB_32);
-        Equals(rented, length: BufferSize.MB_32, type: RentedArrayType.Shared);
+        Equals(rented, length: BufferSize.MB_32, type: RentedBufferType.Shared);
         Assert.That(BufferPool.TryReturn(rented), Is.True);
 
         rented = BufferPool.RentArray<byte>(BufferSize.GB - 1);
-        Equals(rented, length: BufferSize.GB, count: BufferSize.GB - 1, type: RentedArrayType.Shared);
+        Equals(rented, length: BufferSize.GB, count: BufferSize.GB - 1, type: RentedBufferType.Shared);
         Assert.That(BufferPool.TryReturn(rented), Is.True);
 
         rented = BufferPool.RentArray<byte>(BufferSize.GB + 1);
@@ -63,9 +63,9 @@ internal class RentedArrayTest
         Assert.That(BufferPool.TryReturn(rented), Is.False);
     }
 
-    private static void Equals(RentedArray<byte> array,
+    private static void Equals(RentedBuffer<byte> array,
         int length = 0, int offset = 0, int count = 0,
-        RentedArrayType type = RentedArrayType.None)
+        RentedBufferType type = RentedBufferType.None)
     {
         Assert.That(array.Array != null && array.Array.Length == length, Is.True);
 
