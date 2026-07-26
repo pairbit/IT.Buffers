@@ -33,8 +33,8 @@ public readonly struct Buffer<T>
     public static Buffer<T> Empty { get; } = new([]);
 
     private readonly object? _buffer;
-    private readonly int _offset;
-    private readonly int _count;
+    private readonly int _start;
+    private readonly int _length;
 
     internal BufferType Type
     {
@@ -56,9 +56,9 @@ public readonly struct Buffer<T>
         {
             if (_buffer is T[])
             {
-                if (_offset < 0) return _count < 0 ? RentedArrayType.External : RentedArrayType.Global;
+                if (_start < 0) return _length < 0 ? RentedArrayType.External : RentedArrayType.Global;
 
-                if (_count < 0) return RentedArrayType.Shared;
+                if (_length < 0) return RentedArrayType.Shared;
             }
             return RentedArrayType.None;
         }
@@ -74,18 +74,18 @@ public readonly struct Buffer<T>
     {
         get
         {
-            var count = Count;
-            if (count == 0) return default;
+            var length = Length;
+            if (length == 0) return default;
 
             var buffer = _buffer;
             if (buffer is T[] array)
-                return new(array, Offset, count);
+                return new(array, Start, length);
 
             if (buffer is MemoryManager<T> memoryManager)
-                return memoryManager.Memory.Slice(Offset, count);
+                return memoryManager.Memory.Slice(Start, length);
 
             if (buffer is IMemoryOwner<T> memoryOwner)
-                return memoryOwner.Memory.Slice(Offset, count);
+                return memoryOwner.Memory.Slice(Start, length);
 
             throw InvalidState();
         }
@@ -95,57 +95,57 @@ public readonly struct Buffer<T>
     {
         get
         {
-            var count = Count;
-            if (count == 0) return default;
+            var length = Length;
+            if (length == 0) return default;
 
             var buffer = _buffer;
             if (buffer is T[] array)
-                return new(array, Offset, count);
+                return new(array, Start, length);
 
             if (buffer is MemoryManager<T> memoryManager)
-                return memoryManager.GetSpan().Slice(Offset, count);
+                return memoryManager.GetSpan().Slice(Start, length);
 
             if (buffer is IMemoryOwner<T> memoryOwner)
-                return memoryOwner.Memory.Span.Slice(Offset, count);
+                return memoryOwner.Memory.Span.Slice(Start, length);
 
             throw InvalidState();
         }
     }
 
-    public int Offset => _offset < 0 ? ~_offset : _offset;
+    public int Start => _start < 0 ? ~_start : _start;
 
-    public int Count => _count < 0 ? ~_count : _count;
+    public int Length => _length < 0 ? ~_length : _length;
 
     public T this[int index]
     {
         get
         {
-            if ((uint)index >= (uint)Count)
+            if ((uint)index >= (uint)Length)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            return Span[Offset + index];
+            return Span[Start + index];
         }
         set
         {
-            if ((uint)index >= (uint)Count)
+            if ((uint)index >= (uint)Length)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            Span[Offset + index] = value;
+            Span[Start + index] = value;
         }
     }
 
-    private Buffer(object buffer, int offset, int count)
+    private Buffer(object buffer, int start, int length)
     {
         _buffer = buffer;
-        _offset = offset;
-        _count = count;
+        _start = start;
+        _length = length;
     }
 
     public Buffer(T[] array)
     {
         _buffer = array ?? throw new ArgumentNullException(nameof(array));
-        _offset = 0;
-        _count = array.Length;
+        _start = 0;
+        _length = array.Length;
     }
 
     public Buffer(T[] array, RentedArrayType type)
@@ -155,26 +155,26 @@ public readonly struct Buffer<T>
         if (type == RentedArrayType.Shared)
         {
             _buffer = array;
-            _offset = 0;
-            _count = ~array.Length;
+            _start = 0;
+            _length = ~array.Length;
         }
         else if (type == RentedArrayType.Global)
         {
             _buffer = array;
-            _offset = ~0;
-            _count = array.Length;
+            _start = ~0;
+            _length = array.Length;
         }
         else if (type == RentedArrayType.External)
         {
             _buffer = array;
-            _offset = ~0;
-            _count = ~array.Length;
+            _start = ~0;
+            _length = ~array.Length;
         }
         else if (type == RentedArrayType.None)
         {
             _buffer = array;
-            _offset = 0;
-            _count = array.Length;
+            _start = 0;
+            _length = array.Length;
         }
         else
         {
@@ -182,39 +182,39 @@ public readonly struct Buffer<T>
         }
     }
 
-    public Buffer(T[] array, int offset, int count, RentedArrayType type)
+    public Buffer(T[] array, int start, int length, RentedArrayType type)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
 
-        if ((uint)offset > (uint)array.Length)
-            throw new ArgumentOutOfRangeException(nameof(offset));
+        if ((uint)start > (uint)array.Length)
+            throw new ArgumentOutOfRangeException(nameof(start));
 
-        if ((uint)count > (uint)(array.Length - offset))
-            throw new ArgumentOutOfRangeException(nameof(count));
+        if ((uint)length > (uint)(array.Length - start))
+            throw new ArgumentOutOfRangeException(nameof(length));
 
         _buffer = array;
-        _offset = offset;
-        _count = count;
+        _start = start;
+        _length = length;
 
         if (type == RentedArrayType.Shared)
         {
-            _offset = offset;
-            _count = ~count;
+            _start = start;
+            _length = ~length;
         }
         else if (type == RentedArrayType.Global)
         {
-            _offset = ~offset;
-            _count = count;
+            _start = ~start;
+            _length = length;
         }
         else if (type == RentedArrayType.External)
         {
-            _offset = ~offset;
-            _count = ~count;
+            _start = ~start;
+            _length = ~length;
         }
         else if (type == RentedArrayType.None)
         {
-            _offset = offset;
-            _count = count;
+            _start = start;
+            _length = length;
         }
         else
         {
@@ -225,24 +225,24 @@ public readonly struct Buffer<T>
     public Buffer(MemoryManager<T> memoryManager)
     {
         _buffer = memoryManager ?? throw new ArgumentNullException(nameof(memoryManager));
-        _offset = 0;
-        _count = memoryManager.Memory.Length;
+        _start = 0;
+        _length = memoryManager.Memory.Length;
     }
 
-    public Buffer(MemoryManager<T> memoryManager, int offset, int count)
+    public Buffer(MemoryManager<T> memoryManager, int start, int length)
     {
         if (memoryManager == null) throw new ArgumentNullException(nameof(memoryManager));
-        var length = memoryManager.Memory.Length;
+        var memoryManagerLength = memoryManager.Memory.Length;
 
-        if ((uint)offset > (uint)length)
-            throw new ArgumentOutOfRangeException(nameof(offset));
+        if ((uint)start > (uint)memoryManagerLength)
+            throw new ArgumentOutOfRangeException(nameof(start));
 
-        if ((uint)count > (uint)(length - offset))
-            throw new ArgumentOutOfRangeException(nameof(count));
+        if ((uint)length > (uint)(memoryManagerLength - start))
+            throw new ArgumentOutOfRangeException(nameof(length));
 
         _buffer = memoryManager;
-        _offset = offset;
-        _count = count;
+        _start = start;
+        _length = length;
     }
 
     public Buffer(Memory<T> memory)
@@ -254,14 +254,14 @@ public readonly struct Buffer<T>
         else if (MemoryMarshal.TryGetArray((ReadOnlyMemory<T>)memory, out var segment))
         {
             _buffer = segment.Array;
-            _offset = segment.Offset;
-            _count = segment.Count;
+            _start = segment.Offset;
+            _length = segment.Count;
         }
         else if (MemoryMarshal.TryGetMemoryManager<T, MemoryManager<T>>(memory, out var manager, out var start, out var length))
         {
             _buffer = manager;
-            _offset = start;
-            _count = length;
+            _start = start;
+            _length = length;
         }
         throw new ArgumentException("Unrecognized memory type", nameof(memory));
     }
@@ -269,96 +269,96 @@ public readonly struct Buffer<T>
     public Buffer(IMemoryOwner<T> memoryOwner)
     {
         _buffer = memoryOwner ?? throw new ArgumentNullException(nameof(memoryOwner));
-        _offset = 0;
-        _count = memoryOwner.Memory.Length;
+        _start = 0;
+        _length = memoryOwner.Memory.Length;
     }
 
-    public Buffer(IMemoryOwner<T> memoryOwner, int offset, int count)
+    public Buffer(IMemoryOwner<T> memoryOwner, int start, int length)
     {
         if (memoryOwner == null) throw new ArgumentNullException(nameof(memoryOwner));
-        var length = memoryOwner.Memory.Length;
+        var memoryOwnerLength = memoryOwner.Memory.Length;
 
-        if ((uint)offset > (uint)length)
-            throw new ArgumentOutOfRangeException(nameof(offset));
+        if ((uint)start > (uint)memoryOwnerLength)
+            throw new ArgumentOutOfRangeException(nameof(start));
 
-        if ((uint)count > (uint)(length - offset))
-            throw new ArgumentOutOfRangeException(nameof(count));
+        if ((uint)length > (uint)(memoryOwnerLength - start))
+            throw new ArgumentOutOfRangeException(nameof(length));
 
         _buffer = memoryOwner;
-        _offset = offset;
-        _count = count;
+        _start = start;
+        _length = length;
     }
 
     public override int GetHashCode()
-        => _buffer is null ? 0 : HashCode.Combine(_offset, _count, _buffer.GetHashCode());
+        => _buffer is null ? 0 : HashCode.Combine(_start, _length, _buffer.GetHashCode());
 
     public override bool Equals([NotNullWhen(true)] object? obj)
         => obj is Buffer<T> other && Equals(other);
 
     public bool Equals(Buffer<T> other)
-        => other._buffer == _buffer && other._offset == _offset && other._count == _count;
+        => other._buffer == _buffer && other._start == _start && other._length == _length;
 
-    public Buffer<T> Slice(int index)
+    public Buffer<T> Slice(int start)
     {
-        var count = Count;
-        if ((uint)index > (uint)count)
-            throw new ArgumentOutOfRangeException(nameof(index));
+        var length = Length;
+        if ((uint)start > (uint)length)
+            throw new ArgumentOutOfRangeException(nameof(start));
 
         var buffer = _buffer;
         if (buffer is T[] array)
-            return new(array, Offset + index, count - index, RentedArrayType);
+            return new(array, Start + start, length - start, RentedArrayType);
 
         if (buffer is MemoryManager<T> memoryManager)
-            return new(memoryManager, Offset + index, count - index);
+            return new(memoryManager, Start + start, length - start);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
-            return new(memoryOwner, Offset + index, count - index);
+            return new(memoryOwner, Start + start, length - start);
 
         throw InvalidState();
     }
 
-    public Buffer<T> Slice(int index, int count)
+    public Buffer<T> Slice(int start, int length)
     {
-        var oldCount = Count;
-        if ((uint)index > (uint)oldCount)
-            throw new ArgumentOutOfRangeException(nameof(index));
+        var oldLength = Length;
+        if ((uint)start > (uint)oldLength)
+            throw new ArgumentOutOfRangeException(nameof(start));
 
-        if ((uint)count > (uint)(oldCount - index))
-            throw new ArgumentOutOfRangeException(nameof(count));
+        if ((uint)length > (uint)(oldLength - start))
+            throw new ArgumentOutOfRangeException(nameof(length));
 
         var buffer = _buffer;
         if (buffer is T[] array)
-            return new(array, Offset + index, count, RentedArrayType);
+            return new(array, Start + start, length, RentedArrayType);
 
         if (buffer is MemoryManager<T> memoryManager)
-            return new(memoryManager, Offset + index, count);
+            return new(memoryManager, Start + start, length);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
-            return new(memoryOwner, Offset + index, count);
+            return new(memoryOwner, Start + start, length);
 
         throw InvalidState();
     }
 
     public T[] ToArray()
     {
-        var count = Count;
-        if (count == 0) return [];
+        var length = Length;
+        if (length == 0) return [];
 
         var buffer = _buffer;
         if (buffer is T[] array)
         {
-            var copy = new T[count];
+            var copy = new T[length];
 
-            System.Array.Copy(array, Offset, copy, 0, count);
+            System.Array.Copy(array, Start, copy, 0, length);
 
             return copy;
         }
 
         if (buffer is MemoryManager<T> memoryManager)
-            return memoryManager.GetSpan().Slice(Offset, count).ToArray();
+            return memoryManager.GetSpan().Slice(Start, length).ToArray();
 
         if (buffer is IMemoryOwner<T> memoryOwner)
-            return memoryOwner.Memory.Slice(Offset, count).ToArray();
+            return memoryOwner.Memory.Slice(Start, length).ToArray();
 
         throw InvalidState();
     }

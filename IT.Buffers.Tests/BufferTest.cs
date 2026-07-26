@@ -73,8 +73,8 @@ internal class BufferTest
         {
             count = length;
         }
-        Assert.That(array.Offset, Is.EqualTo(offset));
-        Assert.That(array.Count, Is.EqualTo(count));
+        Assert.That(array.Start, Is.EqualTo(offset));
+        Assert.That(array.Length, Is.EqualTo(count));
         Assert.That(array.RentedArrayType, Is.EqualTo(type));
     }
 }
