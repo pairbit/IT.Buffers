@@ -13,6 +13,23 @@ internal readonly struct ReadOnlyBuffer<T>
     private readonly int _length;
     private readonly object? _buffer;
 
+    internal BufferType Type
+    {
+        get
+        {
+            var buffer = _buffer;
+            if (buffer is null) return BufferType.Null;
+            if (buffer is string) return BufferType.String;
+            //if (buffer is ShortBlob) return BufferType.ShortBlob;
+            if (buffer is T[]) return BufferType.Array;
+            if (buffer is MemoryManager<T>) return BufferType.MemoryManager;
+            if (buffer is ReadOnlySequenceSegment<T>) return BufferType.Sequence;
+            if (buffer is IMemoryOwner<T>) return BufferType.MemoryOwner;
+
+            return BufferType.Unknown;
+        }
+    }
+
     private ReadOnlyBuffer(object? buffer, int index, int length)
     {
         _buffer = buffer;
@@ -42,6 +59,11 @@ internal readonly struct ReadOnlyBuffer<T>
         throw new ArgumentException("Unrecognized memory type", nameof(memory));
     }
 
+    public static ReadOnlyBuffer<T> FromMemoryOwner(IMemoryOwner<T> memoryOwner)
+    {
+        return new(memoryOwner, 0, memoryOwner.Memory.Length);
+    }
+
     public static ReadOnlyBuffer<T> FromSequence(ReadOnlySequence<T> sequence)
     {
         if (sequence.IsSingleSegment) return FromMemory(sequence.First);
@@ -59,5 +81,17 @@ internal readonly struct ReadOnlyBuffer<T>
             return ReadOnlyBuffer<char>.Null;
 
         return new ReadOnlyBuffer<char>(str, 0, str.Length);
+    }
+
+    internal enum BufferType
+    {
+        Null,
+        MemoryOwner,
+        MemoryManager,
+        Array,
+        String,
+        Sequence,
+        ShortBlob,
+        Unknown,
     }
 }
