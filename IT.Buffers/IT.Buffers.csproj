@@ -7,7 +7,7 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Company />
-    <Description>Sequence, BufferWriters, ArrayPools</Description>
+    <Description>Buffer, Sequence, BufferWriters, ArrayPools</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/pairbit/IT.Buffers</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
