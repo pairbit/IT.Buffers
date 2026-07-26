@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace IT.Buffers;
 
@@ -35,6 +36,20 @@ public readonly struct Buffer<T>
     private readonly int _offset;
     private readonly int _count;
 
+    internal BufferType Type
+    {
+        get
+        {
+            var buffer = _buffer;
+            if (buffer is null) return BufferType.Null;
+            if (buffer is T[]) return BufferType.Array;
+            if (buffer is MemoryManager<T>) return BufferType.MemoryManager;
+            if (buffer is IMemoryOwner<T>) return BufferType.MemoryOwner;
+
+            return BufferType.Unknown;
+        }
+    }
+
     public RentedArrayType RentedArrayType
     {
         get
@@ -50,6 +65,8 @@ public readonly struct Buffer<T>
     }
 
     public T[]? Array => _buffer as T[];
+
+    public MemoryManager<T>? MemoryManager => _buffer as MemoryManager<T>;
 
     public IMemoryOwner<T>? MemoryOwner => _buffer as IMemoryOwner<T>;
 
@@ -70,7 +87,7 @@ public readonly struct Buffer<T>
             throw InvalidState();
         }
     }
-    
+
     public Span<T> Span
     {
         get
@@ -199,6 +216,50 @@ public readonly struct Buffer<T>
         }
     }
 
+    public Buffer(MemoryManager<T> memoryManager)
+    {
+        _buffer = memoryManager ?? throw new ArgumentNullException(nameof(memoryManager));
+        _offset = 0;
+        _count = memoryManager.Memory.Length;
+    }
+
+    public Buffer(MemoryManager<T> memoryManager, int offset, int count)
+    {
+        if (memoryManager == null) throw new ArgumentNullException(nameof(memoryManager));
+        var length = memoryManager.Memory.Length;
+
+        if ((uint)offset > (uint)length)
+            throw new ArgumentOutOfRangeException(nameof(offset));
+
+        if ((uint)count > (uint)(length - offset))
+            throw new ArgumentOutOfRangeException(nameof(count));
+
+        _buffer = memoryManager;
+        _offset = offset;
+        _count = count;
+    }
+
+    public Buffer(Memory<T> memory)
+    {
+        if (memory.IsEmpty)
+        {
+            this = Empty;
+        }
+        else if (MemoryMarshal.TryGetArray((ReadOnlyMemory<T>)memory, out var segment))
+        {
+            _buffer = segment.Array;
+            _offset = segment.Offset;
+            _count = segment.Count;
+        }
+        else if (MemoryMarshal.TryGetMemoryManager<T, MemoryManager<T>>(memory, out var manager, out var start, out var length))
+        {
+            _buffer = manager;
+            _offset = start;
+            _count = length;
+        }
+        throw new ArgumentException("Unrecognized memory type", nameof(memory));
+    }
+
     public Buffer(IMemoryOwner<T> memoryOwner)
     {
         _buffer = memoryOwner ?? throw new ArgumentNullException(nameof(memoryOwner));
@@ -243,7 +304,7 @@ public readonly struct Buffer<T>
 
         if (buffer is IMemoryOwner<T> memoryOwner)
             return new(memoryOwner, Offset + index, count - index);
-        
+
         throw InvalidState();
     }
 
@@ -301,4 +362,13 @@ public readonly struct Buffer<T>
     public static implicit operator Memory<T>(Buffer<T> value) => value.Memory;
 
     public static implicit operator Span<T>(Buffer<T> value) => value.Span;
+
+    internal enum BufferType
+    {
+        Null,
+        Array,
+        MemoryManager,
+        MemoryOwner,
+        Unknown
+    }
 }
