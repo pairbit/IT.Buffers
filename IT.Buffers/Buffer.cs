@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace IT.Buffers;
 
-public enum RentedBufferType : byte
+public enum RentedArrayType : byte
 {
     /// <summary>
     /// Not rented
@@ -24,9 +24,7 @@ public enum RentedBufferType : byte
     /// <summary>
     /// Rented from an external pool
     /// </summary>
-    External = 3,
-
-    MemoryOwner = 4
+    External = 3
 }
 
 public readonly struct Buffer<T>
@@ -37,23 +35,23 @@ public readonly struct Buffer<T>
     private readonly int _offset;
     private readonly int _count;
 
-    public RentedBufferType Type
+    public RentedArrayType RentedArrayType
     {
         get
         {
-            if (_buffer is IMemoryOwner<T>) return RentedBufferType.MemoryOwner;
+            if (_buffer is T[])
+            {
+                if (_offset < 0) return _count < 0 ? RentedArrayType.External : RentedArrayType.Global;
 
-            if (_offset < 0) return _count < 0 ? RentedBufferType.External : RentedBufferType.Global;
-
-            if (_count < 0) return RentedBufferType.Shared;
-
-            return RentedBufferType.None;
+                if (_count < 0) return RentedArrayType.Shared;
+            }
+            return RentedArrayType.None;
         }
     }
 
     public T[]? Array => _buffer as T[];
 
-    public IMemoryOwner<T> MemoryOwner => (IMemoryOwner<T>)_buffer!;
+    public IMemoryOwner<T>? MemoryOwner => _buffer as IMemoryOwner<T>;
 
     public Memory<T> Memory
     {
@@ -127,29 +125,29 @@ public readonly struct Buffer<T>
         _count = array.Length;
     }
 
-    public Buffer(T[] array, RentedBufferType type)
+    public Buffer(T[] array, RentedArrayType type)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
 
-        if (type == RentedBufferType.Shared)
+        if (type == RentedArrayType.Shared)
         {
             _buffer = array;
             _offset = 0;
             _count = ~array.Length;
         }
-        else if (type == RentedBufferType.Global)
+        else if (type == RentedArrayType.Global)
         {
             _buffer = array;
             _offset = ~0;
             _count = array.Length;
         }
-        else if (type == RentedBufferType.External)
+        else if (type == RentedArrayType.External)
         {
             _buffer = array;
             _offset = ~0;
             _count = ~array.Length;
         }
-        else if (type == RentedBufferType.None)
+        else if (type == RentedArrayType.None)
         {
             _buffer = array;
             _offset = 0;
@@ -161,7 +159,7 @@ public readonly struct Buffer<T>
         }
     }
 
-    public Buffer(T[] array, int offset, int count, RentedBufferType type)
+    public Buffer(T[] array, int offset, int count, RentedArrayType type)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
 
@@ -175,22 +173,22 @@ public readonly struct Buffer<T>
         _offset = offset;
         _count = count;
 
-        if (type == RentedBufferType.Shared)
+        if (type == RentedArrayType.Shared)
         {
             _offset = offset;
             _count = ~count;
         }
-        else if (type == RentedBufferType.Global)
+        else if (type == RentedArrayType.Global)
         {
             _offset = ~offset;
             _count = count;
         }
-        else if (type == RentedBufferType.External)
+        else if (type == RentedArrayType.External)
         {
             _offset = ~offset;
             _count = ~count;
         }
-        else if (type == RentedBufferType.None)
+        else if (type == RentedArrayType.None)
         {
             _offset = offset;
             _count = count;
@@ -241,7 +239,7 @@ public readonly struct Buffer<T>
 
         var buffer = _buffer;
         if (buffer is T[] array)
-            return new(array, Offset + index, count - index, Type);
+            return new(array, Offset + index, count - index, RentedArrayType);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
             return new(memoryOwner, Offset + index, count - index);
@@ -260,7 +258,7 @@ public readonly struct Buffer<T>
 
         var buffer = _buffer;
         if (buffer is T[] array)
-            return new(array, Offset + index, count, Type);
+            return new(array, Offset + index, count, RentedArrayType);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
             return new(memoryOwner, Offset + index, count);

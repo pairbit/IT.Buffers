@@ -12,14 +12,14 @@ internal class BufferTest
 
         Equals(buffer);
 
-        var shared = new Buffer<byte>([], RentedBufferType.Shared);
-        Equals(shared, type: RentedBufferType.Shared);
+        var shared = new Buffer<byte>([], RentedArrayType.Shared);
+        Equals(shared, type: RentedArrayType.Shared);
 
-        var global = new Buffer<byte>([], RentedBufferType.Global);
-        Equals(global, type: RentedBufferType.Global);
+        var global = new Buffer<byte>([], RentedArrayType.Global);
+        Equals(global, type: RentedArrayType.Global);
 
-        var external = new Buffer<byte>([], RentedBufferType.External);
-        Equals(external, type: RentedBufferType.External);
+        var external = new Buffer<byte>([], RentedArrayType.External);
+        Equals(external, type: RentedArrayType.External);
 
         Assert.That(buffer.Equals(shared), Is.False);
         Assert.That(buffer.Equals(global), Is.False);
@@ -39,15 +39,15 @@ internal class BufferTest
         Assert.That(BufferPool.TryReturn(buffer), Is.False);
 
         buffer = BufferPool.Rent<byte>(1);
-        Equals(buffer, length: 16, count: 1, type: RentedBufferType.Shared);
+        Equals(buffer, length: 16, count: 1, type: RentedArrayType.Shared);
         Assert.That(BufferPool.TryReturn(buffer), Is.True);
 
         buffer = BufferPool.Rent<byte>(BufferSize.MB_32);
-        Equals(buffer, length: BufferSize.MB_32, type: RentedBufferType.Shared);
+        Equals(buffer, length: BufferSize.MB_32, type: RentedArrayType.Shared);
         Assert.That(BufferPool.TryReturn(buffer), Is.True);
 
         buffer = BufferPool.Rent<byte>(BufferSize.GB - 1);
-        Equals(buffer, length: BufferSize.GB, count: BufferSize.GB - 1, type: RentedBufferType.Shared);
+        Equals(buffer, length: BufferSize.GB, count: BufferSize.GB - 1, type: RentedArrayType.Shared);
         Assert.That(BufferPool.TryReturn(buffer), Is.True);
 
         buffer = BufferPool.Rent<byte>(BufferSize.GB + 1);
@@ -65,7 +65,7 @@ internal class BufferTest
 
     private static void Equals(Buffer<byte> array,
         int length = 0, int offset = 0, int count = 0,
-        RentedBufferType type = RentedBufferType.None)
+        RentedArrayType type = RentedArrayType.None)
     {
         Assert.That(array.Array != null && array.Array.Length == length, Is.True);
 
@@ -75,6 +75,6 @@ internal class BufferTest
         }
         Assert.That(array.Offset, Is.EqualTo(offset));
         Assert.That(array.Count, Is.EqualTo(count));
-        Assert.That(array.Type, Is.EqualTo(type));
+        Assert.That(array.RentedArrayType, Is.EqualTo(type));
     }
 }

@@ -19,7 +19,7 @@ public static class BufferPool
     {
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
         return new(array, 0, minimumLength, minimumLength == 0 || minimumLength > BufferSize.GB
-            ? RentedBufferType.None : RentedBufferType.Shared);
+            ? RentedArrayType.None : RentedArrayType.Shared);
     }
 
     public static Buffer<T> Rent<T>(int minimumLength, int maximumLength)
@@ -31,7 +31,7 @@ public static class BufferPool
         }
 
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
-        return new(array, 0, minimumLength, RentedBufferType.Shared);
+        return new(array, 0, minimumLength, RentedArrayType.Shared);
     }
 
     public static TBuffer Rent<TBuffer>() where TBuffer : class, IDisposable, new()
@@ -42,23 +42,24 @@ public static class BufferPool
 
     public static bool TryReturn<T>(Buffer<T> buffer)
     {
-        var type = buffer.Type;
-        if (type == RentedBufferType.MemoryOwner)
+        var memoryOwner = buffer.MemoryOwner;
+        if (memoryOwner != null)
         {
-            buffer.MemoryOwner.Dispose();
+            memoryOwner.Dispose();
             return true;
         }
 
         var array = buffer.Array;
         if (array != null && array.Length > 0)
         {
-            if (type == RentedBufferType.Shared)
+            var rentedArrayType = buffer.RentedArrayType;
+            if (rentedArrayType == RentedArrayType.Shared)
             {
                 Return(array);
                 return true;
             }
-            if (type != RentedBufferType.None)
-                throw new InvalidOperationException($"the array is rented from {type} pool");
+            if (rentedArrayType != RentedArrayType.None)
+                throw new InvalidOperationException($"the array is rented from {rentedArrayType} pool");
         }
         return false;
     }
