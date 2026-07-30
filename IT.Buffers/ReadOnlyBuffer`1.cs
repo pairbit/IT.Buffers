@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace IT.Buffers;
@@ -20,6 +21,7 @@ internal readonly struct ReadOnlyBuffer<T>
             var buffer = _buffer;
             if (buffer is null) return BufferType.Null;
             if (buffer is string) return BufferType.String;
+            if (buffer is Stream) return BufferType.Stream;
             //if (buffer is ShortBlob) return BufferType.ShortBlob;
             if (buffer is T[]) return BufferType.Array;
             if (buffer is MemoryManager<T>) return BufferType.MemoryManager;
@@ -75,13 +77,21 @@ internal readonly struct ReadOnlyBuffer<T>
         return new((ReadOnlySequenceSegment<byte>)segment, pos.GetInteger(), checked((int)sequence.Length));
     }
 
-    public static ReadOnlyBuffer<char> FromString(string str)
-    {
-        if (str is null)
-            return ReadOnlyBuffer<char>.Null;
+    //public static ReadOnlyBuffer<char> FromString(string str)
+    //{
+    //    if (str is null)
+    //        return ReadOnlyBuffer<char>.Null;
 
-        return new ReadOnlyBuffer<char>(str, 0, str.Length);
-    }
+    //    return new ReadOnlyBuffer<char>(str, 0, str.Length);
+    //}
+
+    //public static implicit operator ReadOnlyBuffer<byte>(Stream stream)
+    //{
+    //    if (stream is null)
+    //        return ReadOnlyBuffer<byte>.Null;
+
+    //    return new ReadOnlyBuffer<byte>(stream, 0, -1);
+    //}
 
     internal enum BufferType
     {
@@ -90,6 +100,7 @@ internal readonly struct ReadOnlyBuffer<T>
         MemoryManager,
         Array,
         String,
+        Stream,
         Sequence,
         ShortBlob,
         Unknown,
