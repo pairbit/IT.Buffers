@@ -41,6 +41,14 @@ internal class BufferTest
 
         external = new Buffer<byte>([1], 1, 0, RentedArrayType.External);
         EqualTo(external, arrayLength: 1, offset: 1, count: 0, type: RentedArrayType.External);
+
+        buffer = new Buffer<byte>(new byte[10], 5, 2);
+        buffer[0] = 1;
+        Assert.That(buffer[0], Is.EqualTo(1));
+        buffer[1] = 2;
+        Assert.That(buffer[1], Is.EqualTo(2));
+
+        Assert.That(buffer.Span.SequenceEqual([(byte)1, (byte)2]), Is.True);
     }
 
     [Test]

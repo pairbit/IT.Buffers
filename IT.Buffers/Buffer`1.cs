@@ -7,7 +7,7 @@ namespace IT.Buffers;
 
 public readonly struct Buffer<T>
 {
-    public static Buffer<T> Empty { get; } = new(System.Array.Empty<T>(), default, default);
+    public static Buffer<T> Empty { get; } = new((object)System.Array.Empty<T>(), default, default);
 
     private readonly object? _buffer;
     private readonly int _start;
@@ -207,6 +207,29 @@ public readonly struct Buffer<T>
             }
 
             _buffer = array;
+        }
+    }
+
+    public Buffer(T[] array, int start, int length)
+    {
+        if (array == null) throw new ArgumentNullException(nameof(array));
+        var arrayLength = array.Length;
+
+        if ((uint)start > (uint)arrayLength)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        if ((uint)length > (uint)(arrayLength - start))
+            throw new ArgumentOutOfRangeException(nameof(length));
+
+        if (arrayLength == 0)
+        {
+            this = Empty;
+        }
+        else
+        {
+            _buffer = array;
+            _start = start;
+            _length = length;
         }
     }
 
