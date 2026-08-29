@@ -152,9 +152,19 @@ public readonly struct Buffer<T>
 
     public Buffer(T[] array)
     {
-        _buffer = array ?? throw new ArgumentNullException(nameof(array));
-        _start = 0;
-        _length = array.Length;
+        if (array == null) throw new ArgumentNullException(nameof(array));
+
+        var length = array.Length;
+        if (length == 0)
+        {
+            this = Empty;
+        }
+        else
+        {
+            _buffer = array;
+            _start = 0;
+            _length = length;
+        }
     }
 
     public Buffer(T[] array, RentedArrayType arrayType)
@@ -438,7 +448,7 @@ public readonly struct Buffer<T>
 
     public static bool operator !=(Buffer<T> left, Buffer<T> right) => !left.Equals(right);
 
-    public static implicit operator Buffer<T>(T[] array) => array != null ? new(array) : default;
+    public static implicit operator Buffer<T>(T[]? array) => array != null ? new(array) : default;
 
     public static implicit operator Memory<T>(Buffer<T> value) => value.Memory;
 
