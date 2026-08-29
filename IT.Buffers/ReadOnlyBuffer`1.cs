@@ -1,4 +1,5 @@
-﻿using System;
+﻿/*
+using System;
 using System.Buffers;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -105,4 +106,4 @@ internal readonly struct ReadOnlyBuffer<T>
         ShortBlob,
         Unknown,
     }
-}
+}*/
