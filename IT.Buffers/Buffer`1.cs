@@ -305,7 +305,11 @@ public readonly struct Buffer<T>
             _start = start;
             _length = length;
         }
-        throw new ArgumentException("Unrecognized memory type", nameof(memory));
+        else
+        {
+            Throw();
+            static void Throw() => throw new ArgumentException("Unrecognized memory type", nameof(memory));
+        }
     }
 
     public Buffer(IMemoryOwner<T> memoryOwner)
