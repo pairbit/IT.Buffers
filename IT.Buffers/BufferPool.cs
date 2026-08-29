@@ -52,14 +52,14 @@ public static class BufferPool
         var array = buffer.Array;
         if (array != null && array.Length > 0)
         {
-            var rentedArrayType = buffer.RentedArrayType;
-            if (rentedArrayType == RentedArrayType.Shared)
+            var arrayType = buffer.ArrayType;
+            if (arrayType == RentedArrayType.Shared)
             {
                 Return(array);
                 return true;
             }
-            if (rentedArrayType != RentedArrayType.None)
-                throw new InvalidOperationException($"the array is rented from {rentedArrayType} pool");
+            if (arrayType != RentedArrayType.None)
+                throw new InvalidOperationException($"the array is rented from {arrayType} pool");
         }
         return false;
     }

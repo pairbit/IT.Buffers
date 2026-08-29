@@ -27,7 +27,7 @@ public readonly struct Buffer<T>
         }
     }
 
-    public RentedArrayType RentedArrayType
+    public RentedArrayType ArrayType
     {
         get
         {
@@ -54,7 +54,8 @@ public readonly struct Buffer<T>
         get
         {
             var length = Length;
-            if (length == 0) return default;
+            if (length == 0)
+                return default;
 
             var buffer = _buffer;
             if (buffer is T[] array)
@@ -75,7 +76,8 @@ public readonly struct Buffer<T>
         get
         {
             var length = Length;
-            if (length == 0) return default;
+            if (length == 0)
+                return default;
 
             var buffer = _buffer;
             if (buffer is T[] array)
@@ -283,7 +285,7 @@ public readonly struct Buffer<T>
 
         var buffer = _buffer;
         if (buffer is T[] array)
-            return new(array, Start + start, length - start, RentedArrayType);
+            return new(array, Start + start, length - start, ArrayType);
 
         if (buffer is MemoryManager<T> memoryManager)
             return new((object)memoryManager, Start + start, length - start);
@@ -305,7 +307,7 @@ public readonly struct Buffer<T>
 
         var buffer = _buffer;
         if (buffer is T[] array)
-            return new(array, Start + start, length, RentedArrayType);
+            return new(array, Start + start, length, ArrayType);
 
         if (buffer is MemoryManager<T> memoryManager)
             return new((object)memoryManager, Start + start, length);
