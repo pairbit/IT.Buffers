@@ -203,39 +203,50 @@ public readonly struct Buffer<T>
     public Buffer(T[] array, int start, int length, RentedArrayType arrayType)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
+        var arrayLength = array.Length;
 
-        if ((uint)start > (uint)array.Length)
+        if ((uint)start > (uint)arrayLength)
             throw new ArgumentOutOfRangeException(nameof(start));
 
-        if ((uint)length > (uint)(array.Length - start))
+        if ((uint)length > (uint)(arrayLength - start))
             throw new ArgumentOutOfRangeException(nameof(length));
 
-        if (arrayType == RentedArrayType.None)
+        if (arrayLength == 0)
         {
-            _start = start;
-            _length = length;
-        }
-        else if (arrayType == RentedArrayType.Shared)
-        {
-            _start = start;
-            _length = ~length;
-        }
-        else if (arrayType == RentedArrayType.Global)
-        {
-            _start = ~start;
-            _length = length;
-        }
-        else if (arrayType == RentedArrayType.External)
-        {
-            _start = ~start;
-            _length = ~length;
+            if (arrayType != RentedArrayType.None)
+                throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
+
+            this = Empty;
         }
         else
         {
-            throw new ArgumentOutOfRangeException(nameof(arrayType));
-        }
+            if (arrayType == RentedArrayType.None)
+            {
+                _start = start;
+                _length = length;
+            }
+            else if (arrayType == RentedArrayType.Shared)
+            {
+                _start = start;
+                _length = ~length;
+            }
+            else if (arrayType == RentedArrayType.Global)
+            {
+                _start = ~start;
+                _length = length;
+            }
+            else if (arrayType == RentedArrayType.External)
+            {
+                _start = ~start;
+                _length = ~length;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrayType));
+            }
 
-        _buffer = array;
+            _buffer = array;
+        }
     }
 
     public Buffer(ArraySegment<T> segment)
