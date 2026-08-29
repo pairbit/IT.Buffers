@@ -387,10 +387,10 @@ public readonly struct Buffer<T>
             return new(array, Start + start, length - start, ArrayType);
 
         if (buffer is MemoryManager<T> memoryManager)
-            return new((object)memoryManager, Start + start, length - start);
+            return new(memoryManager, Start + start, length - start);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
-            return new((object)memoryOwner, Start + start, length - start);
+            return new(memoryOwner, Start + start, length - start);
 
         throw InvalidState();
     }
@@ -409,10 +409,10 @@ public readonly struct Buffer<T>
             return new(array, Start + start, length, ArrayType);
 
         if (buffer is MemoryManager<T> memoryManager)
-            return new((object)memoryManager, Start + start, length);
+            return new(memoryManager, Start + start, length);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
-            return new((object)memoryOwner, Start + start, length);
+            return new(memoryOwner, Start + start, length);
 
         throw InvalidState();
     }
