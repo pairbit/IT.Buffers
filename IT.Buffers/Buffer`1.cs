@@ -116,14 +116,14 @@ public readonly struct Buffer<T>
             Span[Start + index] = value;
         }
     }
-    
+
     private Buffer(object buffer, int start, int length)
     {
         _buffer = buffer;
         _start = start;
         _length = length;
     }
-    
+
     public Buffer(T[] array)
     {
         _buffer = array ?? throw new ArgumentNullException(nameof(array));
@@ -353,5 +353,5 @@ public readonly struct Buffer<T>
 
     public static implicit operator Memory<T>(Buffer<T> value) => value.Memory;
 
-    public static implicit operator Span<T>(Buffer<T> value) => value.Span; 
+    public static implicit operator Span<T>(Buffer<T> value) => value.Span;
 }
