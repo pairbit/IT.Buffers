@@ -106,14 +106,40 @@ public readonly struct Buffer<T>
             if ((uint)index >= (uint)Length)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            return Span[Start + index];
+            var buffer = _buffer;
+            if (buffer is T[] array)
+                return array[Start + index];
+
+            if (buffer is MemoryManager<T> memoryManager)
+                return memoryManager.GetSpan()[Start + index];
+
+            if (buffer is IMemoryOwner<T> memoryOwner)
+                return memoryOwner.Memory.Span[Start + index];
+
+            throw InvalidState();
         }
         set
         {
             if ((uint)index >= (uint)Length)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            Span[Start + index] = value;
+            var buffer = _buffer;
+            if (buffer is T[] array)
+            {
+                array[Start + index] = value;
+            }
+            else if (buffer is MemoryManager<T> memoryManager)
+            {
+                memoryManager.GetSpan()[Start + index] = value;
+            }
+            else if (buffer is IMemoryOwner<T> memoryOwner)
+            {
+                memoryOwner.Memory.Span[Start + index] = value;
+            }
+            else
+            {
+                throw InvalidState();
+            }
         }
     }
 
