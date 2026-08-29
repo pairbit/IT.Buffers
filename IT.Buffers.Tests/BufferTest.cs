@@ -12,6 +12,9 @@ internal class BufferTest
 
         Equals(buffer);
 
+        var none = new Buffer<byte>([1]);
+        Equals(none, arrayLength: 1);
+
         var shared = new Buffer<byte>([1], RentedArrayType.Shared);
         Equals(shared, arrayLength: 1, type: RentedArrayType.Shared);
 
@@ -76,5 +79,6 @@ internal class BufferTest
         Assert.That(array.Start, Is.EqualTo(offset));
         Assert.That(array.Length, Is.EqualTo(count));
         Assert.That(array.ArrayType, Is.EqualTo(type));
+        Assert.That(array.IsEmpty, Is.EqualTo(count == 0));
     }
 }
