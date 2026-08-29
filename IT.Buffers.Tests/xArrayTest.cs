@@ -7,6 +7,9 @@ internal class xArrayTest
     [Test]
     public void SelectBucketIndexTest()
     {
+        var i = ~0;
+        Assert.That(i, Is.EqualTo(-1));
+
         Assert.That(xArray.SelectBucketIndex(1), Is.EqualTo(0));
         Assert.That(xArray.SelectBucketIndex(15), Is.EqualTo(0));
         Assert.That(xArray.SelectBucketIndex(16), Is.EqualTo(0));

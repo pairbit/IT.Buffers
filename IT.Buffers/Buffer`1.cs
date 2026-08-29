@@ -5,29 +5,6 @@ using System.Runtime.InteropServices;
 
 namespace IT.Buffers;
 
-public enum RentedArrayType : byte
-{
-    /// <summary>
-    /// Not rented
-    /// </summary>
-    None = 0,
-
-    /// <summary>
-    /// Rented from an ArrayPool.Shared
-    /// </summary>
-    Shared = 1,
-
-    /// <summary>
-    /// 
-    /// </summary>
-    Global = 2,
-
-    /// <summary>
-    /// Rented from an external pool
-    /// </summary>
-    External = 3
-}
-
 public readonly struct Buffer<T>
 {
     public static Buffer<T> Empty { get; } = new([]);
@@ -36,7 +13,7 @@ public readonly struct Buffer<T>
     private readonly int _start;
     private readonly int _length;
 
-    internal BufferType Type
+    public BufferType Type
     {
         get
         {
@@ -63,6 +40,8 @@ public readonly struct Buffer<T>
             return RentedArrayType.None;
         }
     }
+
+    public bool IsNull => _buffer == null;
 
     public T[]? Array => _buffer as T[];
 
@@ -116,6 +95,8 @@ public readonly struct Buffer<T>
 
     public int Length => _length < 0 ? ~_length : _length;
 
+    public bool IsEmpty => _length == 0 || _length == -1;
+
     public T this[int index]
     {
         get
@@ -133,14 +114,14 @@ public readonly struct Buffer<T>
             Span[Start + index] = value;
         }
     }
-
+    
     private Buffer(object buffer, int start, int length)
     {
         _buffer = buffer;
         _start = start;
         _length = length;
     }
-
+    
     public Buffer(T[] array)
     {
         _buffer = array ?? throw new ArgumentNullException(nameof(array));
@@ -148,41 +129,39 @@ public readonly struct Buffer<T>
         _length = array.Length;
     }
 
-    public Buffer(T[] array, RentedArrayType type)
+    public Buffer(T[] array, RentedArrayType arrayType)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
 
-        if (type == RentedArrayType.Shared)
+        if (arrayType == RentedArrayType.None)
         {
-            _buffer = array;
+            _start = 0;
+            _length = array.Length;
+        }
+        if (arrayType == RentedArrayType.Shared)
+        {
             _start = 0;
             _length = ~array.Length;
         }
-        else if (type == RentedArrayType.Global)
+        else if (arrayType == RentedArrayType.Global)
         {
-            _buffer = array;
             _start = ~0;
             _length = array.Length;
         }
-        else if (type == RentedArrayType.External)
+        else if (arrayType == RentedArrayType.External)
         {
-            _buffer = array;
             _start = ~0;
             _length = ~array.Length;
-        }
-        else if (type == RentedArrayType.None)
-        {
-            _buffer = array;
-            _start = 0;
-            _length = array.Length;
         }
         else
         {
-            throw new ArgumentOutOfRangeException(nameof(type));
+            throw new ArgumentOutOfRangeException(nameof(arrayType));
         }
+
+        _buffer = array;
     }
 
-    public Buffer(T[] array, int start, int length, RentedArrayType type)
+    public Buffer(T[] array, int start, int length, RentedArrayType arrayType)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
 
@@ -192,34 +171,32 @@ public readonly struct Buffer<T>
         if ((uint)length > (uint)(array.Length - start))
             throw new ArgumentOutOfRangeException(nameof(length));
 
-        _buffer = array;
-        _start = start;
-        _length = length;
-
-        if (type == RentedArrayType.Shared)
+        if (arrayType == RentedArrayType.None)
+        {
+            _start = start;
+            _length = length;
+        }
+        else if (arrayType == RentedArrayType.Shared)
         {
             _start = start;
             _length = ~length;
         }
-        else if (type == RentedArrayType.Global)
+        else if (arrayType == RentedArrayType.Global)
         {
             _start = ~start;
             _length = length;
         }
-        else if (type == RentedArrayType.External)
+        else if (arrayType == RentedArrayType.External)
         {
             _start = ~start;
             _length = ~length;
-        }
-        else if (type == RentedArrayType.None)
-        {
-            _start = start;
-            _length = length;
         }
         else
         {
-            throw new ArgumentOutOfRangeException(nameof(type));
+            throw new ArgumentOutOfRangeException(nameof(arrayType));
         }
+
+        _buffer = array;
     }
 
     public Buffer(MemoryManager<T> memoryManager)
@@ -309,10 +286,10 @@ public readonly struct Buffer<T>
             return new(array, Start + start, length - start, RentedArrayType);
 
         if (buffer is MemoryManager<T> memoryManager)
-            return new(memoryManager, Start + start, length - start);
+            return new((object)memoryManager, Start + start, length - start);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
-            return new(memoryOwner, Start + start, length - start);
+            return new((object)memoryOwner, Start + start, length - start);
 
         throw InvalidState();
     }
@@ -331,10 +308,10 @@ public readonly struct Buffer<T>
             return new(array, Start + start, length, RentedArrayType);
 
         if (buffer is MemoryManager<T> memoryManager)
-            return new(memoryManager, Start + start, length);
+            return new((object)memoryManager, Start + start, length);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
-            return new(memoryOwner, Start + start, length);
+            return new((object)memoryOwner, Start + start, length);
 
         throw InvalidState();
     }
@@ -364,7 +341,7 @@ public readonly struct Buffer<T>
     }
 
     private static InvalidOperationException InvalidState()
-        => new("_array == null");
+        => new("buffer is invalid");
 
     public static bool operator ==(Buffer<T> left, Buffer<T> right) => left.Equals(right);
 
@@ -374,14 +351,5 @@ public readonly struct Buffer<T>
 
     public static implicit operator Memory<T>(Buffer<T> value) => value.Memory;
 
-    public static implicit operator Span<T>(Buffer<T> value) => value.Span;
-
-    internal enum BufferType
-    {
-        Null,
-        Array,
-        MemoryManager,
-        MemoryOwner,
-        Unknown
-    }
+    public static implicit operator Span<T>(Buffer<T> value) => value.Span; 
 }
