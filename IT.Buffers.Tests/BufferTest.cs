@@ -10,19 +10,19 @@ internal class BufferTest
         Assert.That(buffer.Equals(default), Is.False);
         Assert.That(buffer.Equals(Buffer<byte>.Empty), Is.True);
 
-        Equals(buffer);
+        OptionsEqualTo(buffer);
 
         var none = new Buffer<byte>([1]);
-        Equals(none, arrayLength: 1);
+        EqualTo(none, 1);
 
         var shared = new Buffer<byte>([1], RentedArrayType.Shared);
-        Equals(shared, arrayLength: 1, type: RentedArrayType.Shared);
+        EqualTo(shared, 1, type: RentedArrayType.Shared);
 
         var global = new Buffer<byte>([1], RentedArrayType.Global);
-        Equals(global, arrayLength: 1, type: RentedArrayType.Global);
+        EqualTo(global, 1, type: RentedArrayType.Global);
 
         var external = new Buffer<byte>([1], RentedArrayType.External);
-        Equals(external, arrayLength: 1, type: RentedArrayType.External);
+        EqualTo(external, 1, type: RentedArrayType.External);
 
         Assert.That(buffer.Equals(shared), Is.False);
         Assert.That(buffer.Equals(global), Is.False);
@@ -32,6 +32,9 @@ internal class BufferTest
         Assert.That(shared.Equals(external), Is.False);
 
         Assert.That(global.Equals(external), Is.False);
+
+        shared = new Buffer<byte>([1], 1, 0, RentedArrayType.Shared);
+        OptionsEqualTo(shared, arrayLength: 1, offset: 1, count: 0, type: RentedArrayType.Shared);
     }
 
     [Test]
@@ -42,43 +45,48 @@ internal class BufferTest
         Assert.That(BufferPool.TryReturn(buffer), Is.False);
 
         buffer = BufferPool.Rent<byte>(1);
-        Equals(buffer, arrayLength: 16, count: 1, type: RentedArrayType.Shared);
+        OptionsEqualTo(buffer, arrayLength: 16, count: 1, type: RentedArrayType.Shared);
         Assert.That(BufferPool.TryReturn(buffer), Is.True);
 
         buffer = BufferPool.Rent<byte>(BufferSize.MB_32);
-        Equals(buffer, arrayLength: BufferSize.MB_32, type: RentedArrayType.Shared);
+        EqualTo(buffer, BufferSize.MB_32, type: RentedArrayType.Shared);
         Assert.That(BufferPool.TryReturn(buffer), Is.True);
 
         buffer = BufferPool.Rent<byte>(BufferSize.GB - 1);
-        Equals(buffer, arrayLength: BufferSize.GB, count: BufferSize.GB - 1, type: RentedArrayType.Shared);
+        OptionsEqualTo(buffer, arrayLength: BufferSize.GB, count: BufferSize.GB - 1, type: RentedArrayType.Shared);
         Assert.That(BufferPool.TryReturn(buffer), Is.True);
 
         buffer = BufferPool.Rent<byte>(BufferSize.GB + 1);
-        Equals(buffer, arrayLength: BufferSize.GB + 1);
+        EqualTo(buffer, BufferSize.GB + 1);
         Assert.That(BufferPool.TryReturn(buffer), Is.False);
 
         buffer = BufferPool.Rent<byte>(0, BufferSize.MB_16);
-        Equals(buffer);
+        OptionsEqualTo(buffer);
         Assert.That(BufferPool.TryReturn(buffer), Is.False);
 
         buffer = BufferPool.Rent<byte>(BufferSize.MB_32, BufferSize.MB_16);
-        Equals(buffer, arrayLength: BufferSize.MB_32);
+        EqualTo(buffer, BufferSize.MB_32);
         Assert.That(BufferPool.TryReturn(buffer), Is.False);
     }
 
-    private static void Equals(Buffer<byte> array,
+    private static void OptionsEqualTo(Buffer<byte> array,
         int arrayLength = 0, int offset = 0, int count = 0,
         RentedArrayType type = RentedArrayType.None)
     {
         Assert.That(array.Array != null && array.Array.Length == arrayLength, Is.True);
-
-        if (count == 0)
-        {
-            count = arrayLength;
-        }
         Assert.That(array.Start, Is.EqualTo(offset));
         Assert.That(array.Length, Is.EqualTo(count));
         Assert.That(array.ArrayType, Is.EqualTo(type));
         Assert.That(array.IsEmpty, Is.EqualTo(count == 0));
+    }
+
+    private static void EqualTo(Buffer<byte> array, int length, int offset = 0,
+        RentedArrayType type = RentedArrayType.None)
+    {
+        Assert.That(array.Array != null && array.Array.Length == length, Is.True);
+        Assert.That(array.Start, Is.EqualTo(offset));
+        Assert.That(array.Length, Is.EqualTo(length));
+        Assert.That(array.ArrayType, Is.EqualTo(type));
+        Assert.That(array.IsEmpty, Is.EqualTo(length == 0));
     }
 }
