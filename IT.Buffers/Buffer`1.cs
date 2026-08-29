@@ -7,7 +7,7 @@ namespace IT.Buffers;
 
 public readonly struct Buffer<T>
 {
-    public static Buffer<T> Empty { get; } = new([]);
+    public static Buffer<T> Empty { get; } = new(System.Array.Empty<T>(), default, default);
 
     private readonly object? _buffer;
     private readonly int _start;
