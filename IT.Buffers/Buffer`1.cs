@@ -161,32 +161,43 @@ public readonly struct Buffer<T>
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
 
-        if (arrayType == RentedArrayType.None)
+        var length = array.Length;
+        if (length == 0)
         {
-            _start = 0;
-            _length = array.Length;
-        }
-        if (arrayType == RentedArrayType.Shared)
-        {
-            _start = 0;
-            _length = ~array.Length;
-        }
-        else if (arrayType == RentedArrayType.Global)
-        {
-            _start = ~0;
-            _length = array.Length;
-        }
-        else if (arrayType == RentedArrayType.External)
-        {
-            _start = ~0;
-            _length = ~array.Length;
+            if (arrayType != RentedArrayType.None)
+                throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
+
+            this = Empty;
         }
         else
         {
-            throw new ArgumentOutOfRangeException(nameof(arrayType));
-        }
+            if (arrayType == RentedArrayType.None)
+            {
+                _start = 0;
+                _length = length;
+            }
+            if (arrayType == RentedArrayType.Shared)
+            {
+                _start = 0;
+                _length = ~length;
+            }
+            else if (arrayType == RentedArrayType.Global)
+            {
+                _start = ~0;
+                _length = length;
+            }
+            else if (arrayType == RentedArrayType.External)
+            {
+                _start = ~0;
+                _length = ~length;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrayType));
+            }
 
-        _buffer = array;
+            _buffer = array;
+        }
     }
 
     public Buffer(T[] array, int start, int length, RentedArrayType arrayType)
