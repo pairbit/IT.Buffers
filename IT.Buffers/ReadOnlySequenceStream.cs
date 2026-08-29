@@ -10,21 +10,25 @@ public sealed class ReadOnlySequenceStream : Stream
 {
     private static readonly Task<int> TaskOfZero = Task.FromResult(0);
 
-    private readonly Disposing? _dispose;
+    private readonly Action<object?>? _dispose;
+    private readonly object? _disposeArg;
     private ReadOnlySequence<byte> _sequence;
     private SequencePosition _position;
     private long _absolutePosition;
     private bool _isDisposed;
 
-    public delegate void Disposing(in ReadOnlySequence<byte> sequence);
-
-    public ReadOnlySequenceStream(ReadOnlySequence<byte> sequence, Disposing? dispose = null)
+    public ReadOnlySequenceStream(ReadOnlySequence<byte> sequence,
+        Action<object?>? dispose = null, object? disposeArg = null)
     {
+        if (disposeArg != null && dispose == null)
+            throw new ArgumentNullException(nameof(dispose));
+
         _sequence = sequence;
         _position = sequence.Start;
         _absolutePosition = 0;
         _isDisposed = false;
         _dispose = dispose;
+        _disposeArg = disposeArg;
     }
 
     public override bool CanRead => !_isDisposed;
@@ -279,7 +283,7 @@ public sealed class ReadOnlySequenceStream : Stream
         if (!_isDisposed)
         {
             _isDisposed = true;
-            _dispose?.Invoke(_sequence);
+            _dispose?.Invoke(_disposeArg);
             _sequence = default;
             base.Dispose(disposing);
         }

@@ -15,14 +15,14 @@ public static class BufferPool
     public static MemoryPool<T> CreateMemoryPool<T>(ArrayPool<T> pool, int maxBufferSize = BufferSize.Max) =>
         new ConfigurableMemoryPool<T>(pool, BufferSize<T>.KB_4, maxBufferSize, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 
-    public static RentedArray<T> RentArray<T>(int minimumLength)
+    public static Buffer<T> Rent<T>(int minimumLength)
     {
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
         return new(array, 0, minimumLength, minimumLength == 0 || minimumLength > BufferSize.GB
             ? RentedArrayType.None : RentedArrayType.Shared);
     }
 
-    public static RentedArray<T> RentArray<T>(int minimumLength, int maximumLength)
+    public static Buffer<T> Rent<T>(int minimumLength, int maximumLength)
     {
         if (minimumLength == 0) return new([]);
         if (minimumLength > maximumLength)
@@ -40,19 +40,26 @@ public static class BufferPool
     public static void Return<T>(T[] array)
         => ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 
-    public static bool TryReturn<T>(RentedArray<T> rentedArray)
+    public static bool TryReturn<T>(Buffer<T> buffer)
     {
-        var array = rentedArray.Array;
+        var memoryOwner = buffer.MemoryOwner;
+        if (memoryOwner != null)
+        {
+            memoryOwner.Dispose();
+            return true;
+        }
+
+        var array = buffer.Array;
         if (array != null && array.Length > 0)
         {
-            var type = rentedArray.Type;
-            if (type == RentedArrayType.Shared)
+            var arrayType = buffer.ArrayType;
+            if (arrayType == RentedArrayType.Shared)
             {
                 Return(array);
                 return true;
             }
-            if (type != RentedArrayType.None)
-                throw new InvalidOperationException($"the array is rented from {type} pool");
+            if (arrayType != RentedArrayType.None)
+                throw new InvalidOperationException($"the array is rented from {arrayType} pool");
         }
         return false;
     }
