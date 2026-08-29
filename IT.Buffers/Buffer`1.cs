@@ -227,6 +227,43 @@ public readonly struct Buffer<T>
         _buffer = array;
     }
 
+    public Buffer(ArraySegment<T> segment)
+    {
+        _buffer = segment.Array;
+        _start = segment.Offset;
+        _length = segment.Count;
+    }
+
+    public Buffer(ArraySegment<T> segment, RentedArrayType arrayType)
+    {
+        if (arrayType == RentedArrayType.None)
+        {
+            _start = segment.Offset;
+            _length = segment.Count;
+        }
+        else if (arrayType == RentedArrayType.Shared)
+        {
+            _start = segment.Offset;
+            _length = ~segment.Count;
+        }
+        else if (arrayType == RentedArrayType.Global)
+        {
+            _start = ~segment.Offset;
+            _length = segment.Count;
+        }
+        else if (arrayType == RentedArrayType.External)
+        {
+            _start = ~segment.Offset;
+            _length = ~segment.Count;
+        }
+        else
+        {
+            throw new ArgumentOutOfRangeException(nameof(arrayType));
+        }
+
+        _buffer = segment.Array;
+    }
+
     public Buffer(MemoryManager<T> memoryManager)
     {
         _buffer = memoryManager ?? throw new ArgumentNullException(nameof(memoryManager));
@@ -295,7 +332,7 @@ public readonly struct Buffer<T>
     }
 
     public override int GetHashCode()
-        => _buffer is null ? 0 : HashCode.Combine(_start, _length, _buffer.GetHashCode());
+        => _buffer is null ? 0 : HashCode.Combine(_buffer.GetHashCode(), _start, _length);
 
     public override bool Equals([NotNullWhen(true)] object? obj)
         => obj is Buffer<T> other && Equals(other);
