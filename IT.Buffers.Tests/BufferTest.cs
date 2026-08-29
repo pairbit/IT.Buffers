@@ -35,6 +35,12 @@ internal class BufferTest
 
         shared = new Buffer<byte>([1], 1, 0, RentedArrayType.Shared);
         OptionsEqualTo(shared, arrayLength: 1, offset: 1, count: 0, type: RentedArrayType.Shared);
+
+        global = new Buffer<byte>([1], 1, 0, RentedArrayType.Global);
+        OptionsEqualTo(global, arrayLength: 1, offset: 1, count: 0, type: RentedArrayType.Global);
+
+        external = new Buffer<byte>([1], 1, 0, RentedArrayType.External);
+        OptionsEqualTo(external, arrayLength: 1, offset: 1, count: 0, type: RentedArrayType.External);
     }
 
     [Test]
