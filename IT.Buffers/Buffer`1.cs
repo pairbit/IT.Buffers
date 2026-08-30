@@ -280,8 +280,12 @@ public readonly struct Buffer<T>
         if (array == null)
         {
             if (arrayType != RentedArrayType.None)
-                throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
-
+            {
+                if (arrayType == RentedArrayType.Shared || arrayType == RentedArrayType.Global || arrayType == RentedArrayType.External)
+                    throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
+                else
+                    throw new ArgumentOutOfRangeException(nameof(arrayType));
+            }
             this = default;
         }
         else

@@ -1,14 +1,14 @@
 ﻿namespace IT.Buffers;
 
-public enum BufferType : byte
+public enum BufferType : sbyte
 {
+    //ShortBlob = -5
+    //Stream = -4
+    //String = -3
+    //Sequence = -2
+    Unknown = -1,
     Null = 0,
-    Array,
-    MemoryManager,
-    MemoryOwner,
-    //Sequence,
-    //String,
-    //ShortBlob,
-    //Stream
-    Unknown
+    Array = 1,
+    MemoryManager = 2,
+    MemoryOwner = 3,
 }

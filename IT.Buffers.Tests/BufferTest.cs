@@ -5,6 +5,8 @@ internal class BufferTest
     [Test]
     public void Test()
     {
+        Assert.That(default(BufferType), Is.EqualTo(BufferType.Null));
+
         var buffer = Buffer<byte>.Empty;
 
         Assert.That(buffer.Equals(default), Is.False);
