@@ -486,5 +486,9 @@ public readonly struct Buffer<T>
 
     public static implicit operator Memory<T>(Buffer<T> buffer) => buffer.Memory;
 
+    public static implicit operator ReadOnlyMemory<T>(Buffer<T> buffer) => buffer.Memory;
+
     public static implicit operator Span<T>(Buffer<T> buffer) => buffer.Span;
+
+    public static implicit operator ReadOnlySpan<T>(Buffer<T> buffer) => buffer.Span;
 }
