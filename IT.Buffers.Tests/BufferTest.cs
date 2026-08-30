@@ -30,13 +30,14 @@ internal class BufferTest
 
         Assert.That(ex.ParamName, Is.EqualTo("arrayType"));
         Assert.That(ex.Message, Is.EqualTo("Empty array cannot be rented. (Parameter 'arrayType')"));
-    }
 
-    [Test]
-    public void StringTest()
-    {
         var str = "str";
+        var strMemory = MemoryMarshal.AsMemory(str.AsMemory());
 
+        ex = Assert.Throws<ArgumentException>(() => new Buffer<char>(strMemory));
+
+        Assert.That(ex.ParamName, Is.EqualTo("memory"));
+        Assert.That(ex.Message, Is.EqualTo("Unrecognized memory type. (Parameter 'memory')"));
     }
 
     [Test]
@@ -70,13 +71,18 @@ internal class BufferTest
         var memory1 = new Memory<byte>(empty1);
         var memory2 = new Memory<byte>(empty2);
 
+        buffer1 = new Buffer<byte>(memory1);
+        buffer2 = new Buffer<byte>(memory2);
+
+        Assert.That(buffer1.Equals(buffer2), Is.False);
+
         Assert.That(MemoryMarshal.TryGetArray((ReadOnlyMemory<byte>)memory1, out var segment1), Is.True);
         Assert.That(MemoryMarshal.TryGetArray((ReadOnlyMemory<byte>)memory2, out var segment2), Is.True);
 
         Assert.That(segment1.Equals(segment2), Is.False);
 
-        buffer1 = new Buffer<byte>(memory1);
-        buffer2 = new Buffer<byte>(memory2);
+        buffer1 = new Buffer<byte>(segment1);
+        buffer2 = new Buffer<byte>(segment2);
 
         Assert.That(buffer1.Equals(buffer2), Is.False);
     }

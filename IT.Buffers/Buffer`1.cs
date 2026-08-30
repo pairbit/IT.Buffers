@@ -370,7 +370,7 @@ public readonly struct Buffer<T>
         else
         {
             Throw();
-            static void Throw() => throw new ArgumentException("Unrecognized memory type", nameof(memory));
+            static void Throw() => throw new ArgumentException("Unrecognized memory type.", nameof(memory));
         }
     }
 
