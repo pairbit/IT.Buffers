@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Buffers;
+using System.Runtime.InteropServices;
 
 namespace IT.Buffers.Tests;
 
@@ -168,6 +169,14 @@ internal class BufferTest
         buffer = BufferPool.Rent<byte>(BufferSize.MB_32, BufferSize.MB_16);
         EqualTo(buffer, BufferSize.MB_32);
         Assert.That(BufferPool.TryReturn(buffer), Is.False);
+
+        buffer = new Buffer<byte>(MemoryPool<byte>.Shared.Rent(1));
+        EqualTo(buffer, -1, offset: 0, count: 16);
+        Assert.That(BufferPool.TryReturn(buffer), Is.True);
+
+        buffer = new Buffer<byte>(MemoryPool<byte>.Shared.Rent(16), 10, 4);
+        EqualTo(buffer, -1, offset: 10, count: 4);
+        Assert.That(BufferPool.TryReturn(buffer), Is.True);
     }
 
     private static void EqualTo(Buffer<byte> array,
@@ -179,10 +188,19 @@ internal class BufferTest
             count = arrayLength;
         }
 
-        Assert.That(array.Array != null && array.Array.Length == arrayLength, Is.True);
+        if (arrayLength < 0)
+        {
+            Assert.That(array.Array, Is.Null);
+        }
+        else
+        {
+            Assert.That(array.Array != null && array.Array.Length == arrayLength, Is.True);
+        }
+        
         Assert.That(array.Start, Is.EqualTo(offset));
         Assert.That(array.Length, Is.EqualTo(count));
         Assert.That(array.ArrayType, Is.EqualTo(type));
         Assert.That(array.IsEmpty, Is.EqualTo(count == 0));
+        Assert.That(array.IsRented, Is.EqualTo(type != RentedArrayType.None || array.MemoryOwner != null));
     }
 }
