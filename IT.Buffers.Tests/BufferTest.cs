@@ -1,7 +1,76 @@
-﻿namespace IT.Buffers.Tests;
+﻿using System.Runtime.InteropServices;
+
+namespace IT.Buffers.Tests;
 
 internal class BufferTest
 {
+    [Test]
+    public void InvalidTest()
+    {
+        ArgumentException ex = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new Buffer<byte>([], (RentedArrayType)12));
+
+        Assert.That(ex.ParamName, Is.EqualTo("arrayType"));
+        Assert.That(ex.Message, Is.EqualTo("Specified argument was out of the range of valid values. (Parameter 'arrayType')"));
+
+        ex = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new Buffer<byte>(default(ArraySegment<byte>), (RentedArrayType)12));
+
+        Assert.That(ex.ParamName, Is.EqualTo("arrayType"));
+        Assert.That(ex.Message, Is.EqualTo("Specified argument was out of the range of valid values. (Parameter 'arrayType')"));
+
+        ex = Assert.Throws<ArgumentException>(() =>
+            new Buffer<byte>([], RentedArrayType.Shared));
+
+        Assert.That(ex.ParamName, Is.EqualTo("arrayType"));
+        Assert.That(ex.Message, Is.EqualTo("Empty array cannot be rented. (Parameter 'arrayType')"));
+
+        ex = Assert.Throws<ArgumentException>(() =>
+            new Buffer<byte>(default(ArraySegment<byte>), RentedArrayType.Shared));
+
+        Assert.That(ex.ParamName, Is.EqualTo("arrayType"));
+        Assert.That(ex.Message, Is.EqualTo("Empty array cannot be rented. (Parameter 'arrayType')"));
+    }
+
+    [Test]
+    public void EmptyTest()
+    {
+        byte[] empty1 = [];
+        byte[] empty2 = [];
+        Assert.That(ReferenceEquals(empty1, empty2), Is.True);
+        Assert.That(ReferenceEquals(empty1, Buffer<byte>.Empty.Array), Is.True);
+        Assert.That(ReferenceEquals(Array.Empty<byte>(), Buffer<byte>.Empty.Array), Is.True);
+
+#pragma warning disable IDE0300 // Simplify collection initialization
+#pragma warning disable CA1825 // Avoid zero-length array allocations
+        empty1 = new byte[0];
+        empty2 = new byte[0];
+#pragma warning restore CA1825 // Avoid zero-length array allocations
+#pragma warning restore IDE0300 // Simplify collection initialization
+
+        Assert.That(ReferenceEquals(empty1, empty2), Is.False);
+        Assert.That(ReferenceEquals(empty1, Buffer<byte>.Empty.Array), Is.False);
+        Assert.That(ReferenceEquals(empty1, Array.Empty<byte>()), Is.False);
+        Assert.That(ReferenceEquals(empty1, (byte[])[]), Is.False);
+
+        var buffer1 = new Buffer<byte>(empty1);
+        var buffer2 = new Buffer<byte>(empty2);
+        Assert.That(buffer1.Equals(buffer2), Is.False);
+
+        var memory1 = new Memory<byte>(empty1);
+        var memory2 = new Memory<byte>(empty2);
+
+        Assert.That(MemoryMarshal.TryGetArray((ReadOnlyMemory<byte>)memory1, out var segment1), Is.True);
+        Assert.That(MemoryMarshal.TryGetArray((ReadOnlyMemory<byte>)memory2, out var segment2), Is.True);
+
+        Assert.That(segment1.Equals(segment2), Is.False);
+
+        buffer1 = new Buffer<byte>(memory1);
+        buffer2 = new Buffer<byte>(memory2);
+
+        Assert.That(buffer1.Equals(buffer2), Is.False);
+    }
+
     [Test]
     public void Test()
     {

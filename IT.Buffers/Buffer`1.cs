@@ -353,11 +353,7 @@ public readonly struct Buffer<T>
 
     public Buffer(Memory<T> memory)
     {
-        if (memory.IsEmpty)
-        {
-            this = Empty;
-        }
-        else if (MemoryMarshal.TryGetArray((ReadOnlyMemory<T>)memory, out var segment))
+        if (MemoryMarshal.TryGetArray((ReadOnlyMemory<T>)memory, out var segment))
         {
             _buffer = segment.Array;
             _start = segment.Offset;
