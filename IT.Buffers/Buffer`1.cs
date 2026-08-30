@@ -283,8 +283,8 @@ public readonly struct Buffer<T>
             {
                 if (arrayType == RentedArrayType.Shared || arrayType == RentedArrayType.Global || arrayType == RentedArrayType.External)
                     throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
-                else
-                    throw new ArgumentOutOfRangeException(nameof(arrayType));
+
+                throw new ArgumentOutOfRangeException(nameof(arrayType));
             }
             this = default;
         }
