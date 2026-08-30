@@ -99,6 +99,8 @@ public readonly struct Buffer<T>
 
     public bool IsEmpty => _length == 0 || _length == -1;
 
+    public bool IsRented => ArrayType != RentedArrayType.None || _buffer is IMemoryOwner<T>;
+
     public T this[int index]
     {
         get
@@ -162,10 +164,8 @@ public readonly struct Buffer<T>
     public Buffer(T[] array, RentedArrayType arrayType)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
-        var length = array.Length;
-        if (length == 0 && arrayType != RentedArrayType.None)
-            throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
 
+        var length = array.Length;
         if (arrayType == RentedArrayType.None)
         {
             _start = 0;
@@ -173,16 +173,25 @@ public readonly struct Buffer<T>
         }
         if (arrayType == RentedArrayType.Shared)
         {
+            if (length == 0)
+                throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
+
             _start = 0;
             _length = ~length;
         }
         else if (arrayType == RentedArrayType.Global)
         {
+            if (length == 0)
+                throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
+
             _start = ~0;
             _length = length;
         }
         else if (arrayType == RentedArrayType.External)
         {
+            if (length == 0)
+                throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
+
             _start = ~0;
             _length = ~length;
         }
@@ -197,8 +206,8 @@ public readonly struct Buffer<T>
     public Buffer(T[] array, int start, int length)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
-        var arrayLength = array.Length;
 
+        var arrayLength = array.Length;
         if ((uint)start > (uint)arrayLength)
             throw new ArgumentOutOfRangeException(nameof(start));
 
@@ -213,10 +222,8 @@ public readonly struct Buffer<T>
     public Buffer(T[] array, int start, int length, RentedArrayType arrayType)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
-        var arrayLength = array.Length;
-        if (arrayLength == 0 && arrayType != RentedArrayType.None)
-            throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
 
+        var arrayLength = array.Length;
         if ((uint)start > (uint)arrayLength)
             throw new ArgumentOutOfRangeException(nameof(start));
 
@@ -230,16 +237,25 @@ public readonly struct Buffer<T>
         }
         else if (arrayType == RentedArrayType.Shared)
         {
+            if (arrayLength == 0)
+                throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
+
             _start = start;
             _length = ~length;
         }
         else if (arrayType == RentedArrayType.Global)
         {
+            if (arrayLength == 0)
+                throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
+
             _start = ~start;
             _length = length;
         }
         else if (arrayType == RentedArrayType.External)
         {
+            if (arrayLength == 0)
+                throw new ArgumentException("Empty array cannot be rented.", nameof(arrayType));
+
             _start = ~start;
             _length = ~length;
         }
@@ -464,7 +480,9 @@ public readonly struct Buffer<T>
 
     public static implicit operator Buffer<T>(T[]? array) => array != null ? new(array) : default;
 
-    public static implicit operator Memory<T>(Buffer<T> value) => value.Memory;
+    public static implicit operator Buffer<T>(Memory<T> memory) => new(memory);
 
-    public static implicit operator Span<T>(Buffer<T> value) => value.Span;
+    public static implicit operator Memory<T>(Buffer<T> buffer) => buffer.Memory;
+
+    public static implicit operator Span<T>(Buffer<T> buffer) => buffer.Span;
 }
