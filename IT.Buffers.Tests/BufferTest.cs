@@ -33,13 +33,23 @@ internal class BufferTest
     }
 
     [Test]
+    public void StringTest()
+    {
+        var str = "str";
+
+    }
+
+    [Test]
     public void EmptyTest()
     {
+        Assert.That(ReferenceEquals(Array.Empty<byte>(), ArraySegment<byte>.Empty.Array), Is.False);
+        Assert.That(ReferenceEquals(Array.Empty<byte>(), Buffer<byte>.Empty.Array), Is.False);
+        Assert.That(ReferenceEquals(ArraySegment<byte>.Empty.Array, Buffer<byte>.Empty.Array), Is.False);
+
         byte[] empty1 = [];
         byte[] empty2 = [];
         Assert.That(ReferenceEquals(empty1, empty2), Is.True);
-        Assert.That(ReferenceEquals(empty1, Buffer<byte>.Empty.Array), Is.True);
-        Assert.That(ReferenceEquals(Array.Empty<byte>(), Buffer<byte>.Empty.Array), Is.True);
+        Assert.That(ReferenceEquals(empty1, Array.Empty<byte>()), Is.True);
 
 #pragma warning disable IDE0300 // Simplify collection initialization
 #pragma warning disable CA1825 // Avoid zero-length array allocations

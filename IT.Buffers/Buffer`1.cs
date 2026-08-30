@@ -7,7 +7,9 @@ namespace IT.Buffers;
 
 public readonly struct Buffer<T>
 {
-    public static Buffer<T> Empty { get; } = new((object)System.Array.Empty<T>(), default, default);
+#pragma warning disable CA1825 // Avoid zero-length array allocations
+    public static Buffer<T> Empty { get; } = new((object)new T[0], default, default);
+#pragma warning restore CA1825 // Avoid zero-length array allocations
 
     private readonly object? _buffer;
     private readonly int _start;
