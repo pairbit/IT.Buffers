@@ -471,6 +471,8 @@ public readonly struct Buffer<T>
         throw InvalidState();
     }
 
+    public Buffer<T> CopyIfRented() => IsRented ? ToArray() : this;
+
     private static InvalidOperationException InvalidState()
         => new("buffer is invalid");
 
