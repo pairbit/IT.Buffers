@@ -8,7 +8,7 @@ internal class SequenceTest
     [Test]
     public async Task Pool_Test()
     {
-        var sequence = Sequence<byte>.Pool.Rent();
+        var sequence = SequenceBufferWriter<byte>.Pool.Rent();
         var bytes = new byte[BufferSize.MB];
         Random.Shared.NextBytes(bytes);
 
@@ -30,16 +30,16 @@ internal class SequenceTest
 
     private static void ReturnSequenceToPool(object? arg)
     {
-        var seq = (Sequence<byte>?)arg;
+        var seq = (SequenceBufferWriter<byte>?)arg;
         if (seq == null) throw new ArgumentNullException(nameof(arg));
 
-        Sequence<byte>.Pool.TryReturn(seq);
+        SequenceBufferWriter<byte>.Pool.TryReturn(seq);
     }
 
     [Test]
     public void LeakTest()
     {
-        var sequence = new Sequence<object>();
+        var sequence = new SequenceBufferWriter<object>();
         var span = sequence.GetSpan(BufferSize.KB);
         for (int i = 0; i < span.Length; i++)
         {
@@ -55,7 +55,7 @@ internal class SequenceTest
     [Test]
     public void Test_GetSpanGetSpan()
     {
-        var sequence = new Sequence<byte>();
+        var sequence = new SequenceBufferWriter<byte>();
 
         var span = sequence.GetSpan();
         var span2 = sequence.GetSpan();
@@ -65,7 +65,7 @@ internal class SequenceTest
     [Test]
     public void Advance_Test()
     {
-        var sequence = new Sequence<byte>();
+        var sequence = new SequenceBufferWriter<byte>();
 
         Assert.Throws<ArgumentOutOfRangeException>(() => sequence.Advance(1));
 
@@ -79,7 +79,7 @@ internal class SequenceTest
     [Test]
     public void Write_Test()
     {
-        var sequence = new Sequence<byte>();
+        var sequence = new SequenceBufferWriter<byte>();
         try
         {
             var bytes = new byte[BufferSize.MB];
@@ -106,7 +106,7 @@ internal class SequenceTest
     [Test]
     public async Task WriteAsync_Test()
     {
-        var sequence = new Sequence<byte>();
+        var sequence = new SequenceBufferWriter<byte>();
         try
         {
             var bytes = new byte[BufferSize.MB];
@@ -131,7 +131,7 @@ internal class SequenceTest
     [Test]
     public async Task WriteAsync_OneOfEachSize_Test()
     {
-        var sequence = new Sequence<byte>();
+        var sequence = new SequenceBufferWriter<byte>();
         try
         {
             var bytes = new byte[BufferSize.MB];
@@ -186,7 +186,7 @@ internal class SequenceTest
     [Test]
     public async Task WriteAsync_TwoOfEachSize_Test()
     {
-        var sequence = new Sequence<byte>();
+        var sequence = new SequenceBufferWriter<byte>();
         try
         {
             var bytes = new byte[BufferSize.MB];
@@ -213,7 +213,7 @@ internal class SequenceTest
     [Test]
     public async Task WriteAsync_FourOfEachSize_Test()
     {
-        var sequence = new Sequence<byte>();
+        var sequence = new SequenceBufferWriter<byte>();
         try
         {
             var bytes = new byte[BufferSize.MB];
@@ -240,7 +240,7 @@ internal class SequenceTest
     [Test]
     public async Task WriteAsync_Off_Test()
     {
-        var sequence = new Sequence<byte>();
+        var sequence = new SequenceBufferWriter<byte>();
         try
         {
             var bytes = new byte[BufferSize.MB];
