@@ -5,6 +5,7 @@ using System.Diagnostics;
 
 namespace IT.Buffers;
 
+//TODO: add SequenceSegment<T>
 public class RentableSequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable, IBufferRentable
 {
     public static BufferPool<RentableSequenceSegment<T>> Pool
