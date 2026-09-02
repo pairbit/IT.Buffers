@@ -8,7 +8,7 @@ public class ReadOnlySequenceTest
     [Test]
     public void OverflowPoolTest()
     {
-        var segment = new SequenceSegment<byte>();
+        var segment = new RentableSequenceSegment<byte>();
 
         Assert.That(segment.IsRentedSegment, Is.False);
 
@@ -17,7 +17,7 @@ public class ReadOnlySequenceTest
 
         //segment = BufferPool<SequenceSegment<byte>>.Shared.Rent();
         //segment = BufferPool.Rent<SequenceSegment<byte>>();
-        segment = SequenceSegment<byte>.Pool.Rent();
+        segment = RentableSequenceSegment<byte>.Pool.Rent();
 
         Assert.That(segment.IsRentedSegment, Is.True);
         
@@ -26,7 +26,7 @@ public class ReadOnlySequenceTest
 
         Assert.That(segment.IsRentedSegment, Is.False);
 
-        segment = SequenceSegment<byte>.Pool.Rent();
+        segment = RentableSequenceSegment<byte>.Pool.Rent();
 
         Assert.That(segment.IsRentedSegment, Is.True);
 
@@ -126,7 +126,7 @@ public class ReadOnlySequenceTest
         var rented = buffer.AsMemory(0, bufferSize);
         Random.Shared.NextBytes(rented.Span);
 
-        var start = SequenceSegment<byte>.Pool.Rent();
+        var start = RentableSequenceSegment<byte>.Pool.Rent();
         start.SetMemory(rented, isRented: true);
 
         if (segments == 1) return new ReadOnlySequence<byte>(start, 0, start, start.Memory.Length);

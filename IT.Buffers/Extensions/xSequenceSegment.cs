@@ -4,9 +4,9 @@ namespace IT.Buffers.Extensions;
 
 public static class xSequenceSegment
 {
-    public static SequenceSegment<T> Append<T>(this SequenceSegment<T> segment, ReadOnlyMemory<T> memory)
+    public static RentableSequenceSegment<T> Append<T>(this RentableSequenceSegment<T> segment, ReadOnlyMemory<T> memory)
     {
-        var next = new SequenceSegment<T>
+        var next = new RentableSequenceSegment<T>
         {
             Memory = memory,
             RunningIndex = segment.RunningIndex + segment.Memory.Length
@@ -17,10 +17,10 @@ public static class xSequenceSegment
         return next;
     }
 
-    public static SequenceSegment<T> AppendRented<T>(this SequenceSegment<T> segment, ReadOnlyMemory<T> memory,
+    public static RentableSequenceSegment<T> AppendRented<T>(this RentableSequenceSegment<T> segment, ReadOnlyMemory<T> memory,
         bool isRented = false)
     {
-        var next = BufferPool<SequenceSegment<T>>.Shared.Rent();
+        var next = BufferPool<RentableSequenceSegment<T>>.Shared.Rent();
 
         next.SetMemory(memory, isRented);
         next.RunningIndex = segment.RunningIndex + segment.Memory.Length;

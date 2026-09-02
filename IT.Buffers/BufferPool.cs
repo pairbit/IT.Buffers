@@ -89,13 +89,13 @@ public static class BufferPool
 
     public static int TryReturn<T>(in ReadOnlySequence<T> sequence)
     {
-        if (sequence.Start.GetObject() is SequenceSegment<T> segment)
+        if (sequence.Start.GetObject() is RentableSequenceSegment<T> segment)
             return TryReturnSegments(segment);
 
         return 0;
     }
 
-    public static int TryReturnSegments<T>(SequenceSegment<T> segment)
+    public static int TryReturnSegments<T>(RentableSequenceSegment<T> segment)
     {
         var count = 0;
         do

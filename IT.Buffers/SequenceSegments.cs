@@ -2,11 +2,11 @@
 
 public readonly struct SequenceSegments<T>
 {
-    public SequenceSegment<T> Start { get; }
+    public RentableSequenceSegment<T> Start { get; }
 
-    public SequenceSegment<T> End { get; }
+    public RentableSequenceSegment<T> End { get; }
 
-    public SequenceSegments(SequenceSegment<T> start, SequenceSegment<T> end)
+    public SequenceSegments(RentableSequenceSegment<T> start, RentableSequenceSegment<T> end)
     {
         Start = start;
         End = end;

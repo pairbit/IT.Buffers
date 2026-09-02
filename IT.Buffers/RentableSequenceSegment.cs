@@ -5,10 +5,10 @@ using System.Diagnostics;
 
 namespace IT.Buffers;
 
-public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable, IBufferRentable
+public class RentableSequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable, IBufferRentable
 {
-    public static BufferPool<SequenceSegment<T>> Pool
-        => BufferPool<SequenceSegment<T>>.Shared;
+    public static BufferPool<RentableSequenceSegment<T>> Pool
+        => BufferPool<RentableSequenceSegment<T>>.Shared;
 
     //TODO: можно определить арендована память по признаку RunningIndex < 0
     //избавившись от поля
@@ -30,9 +30,9 @@ public class SequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable, IBuff
     }
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-    public new SequenceSegment<T>? Next
+    public new RentableSequenceSegment<T>? Next
     {
-        get => (SequenceSegment<T>?)base.Next;
+        get => (RentableSequenceSegment<T>?)base.Next;
         set => base.Next = value;
     }
 
