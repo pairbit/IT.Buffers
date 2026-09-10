@@ -3,7 +3,7 @@ using System.Buffers;
 
 namespace IT.Buffers.Tests;
 
-internal class SequenceTest
+internal class SequenceBufferWriterTest
 {
     [Test]
     public async Task Pool_Test()
