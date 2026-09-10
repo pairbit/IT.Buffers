@@ -38,7 +38,7 @@ internal class RentedBuffers
 
     public bool AddSequence<T>(in ReadOnlySequence<T> sequence)
     {
-        if (sequence.Start.GetObject() is not SequenceSegment<T> segment)
+        if (sequence.Start.GetObject() is not RentableSequenceSegment<T> segment)
             throw new ArgumentException("does not contain SequenceSegment", nameof(sequence));
 
         if (sequence.Length == 0) throw new ArgumentException("is empty", nameof(sequence));
@@ -133,7 +133,7 @@ internal class RentedBuffers
         => BufferPool.Return((T[])array);
 
     private static void ReturnSegments<T>(object segment)
-        => BufferPool.TryReturnSegments((SequenceSegment<T>)segment);
+        => BufferPool.TryReturnSegments((RentableSequenceSegment<T>)segment);
 
     delegate void ReturnBuffer(object buffer);
 

@@ -8,11 +8,11 @@ using System.Runtime.CompilerServices;
 namespace IT.Buffers;
 
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class Sequence<T> : IBufferWriter<T>, IDisposable
+public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
 {
     private static readonly ReadOnlySequence<T> Empty = new(Segment.Empty, 0, Segment.Empty, 0);
 
-    public static BufferPool<Sequence<T>> Pool => BufferPool<Sequence<T>>.Shared;
+    public static BufferPool<SequenceBufferWriter<T>> Pool => BufferPool<SequenceBufferWriter<T>>.Shared;
 
     private readonly Stack<Segment> _stack;
     private ArrayPool<T>? _arrayPool;
@@ -21,7 +21,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     private Segment? _last;
     private int _nextBufferSize;
 
-    public Sequence()
+    public SequenceBufferWriter()
     {
         _stack = new();
     }
@@ -86,7 +86,7 @@ public class Sequence<T> : IBufferWriter<T>, IDisposable
     public long Length => AsReadOnly.Length;
 
 
-    public static implicit operator ReadOnlySequence<T>(Sequence<T>? sequence)
+    public static implicit operator ReadOnlySequence<T>(SequenceBufferWriter<T>? sequence)
         => sequence == null ? Empty : sequence.AsReadOnly;
 
     public void AdvanceTo(SequencePosition position)
