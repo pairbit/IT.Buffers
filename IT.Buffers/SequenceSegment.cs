@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace IT.Buffers;
 
-internal abstract class SequenceSegment<T> : ReadOnlySequenceSegment<T>
+public abstract class SequenceSegment<T> : ReadOnlySequenceSegment<T>
 {
     public SequenceSegment<T>? Prev { get; protected set; }
 
@@ -17,6 +17,6 @@ internal abstract class SequenceSegment<T> : ReadOnlySequenceSegment<T>
     public new Memory<T> Memory
     {
         get => MemoryMarshal.AsMemory(base.Memory);
-        protected set => MemoryMarshal.AsMemory(base.Memory);
+        protected set => base.Memory = value;
     }
 }

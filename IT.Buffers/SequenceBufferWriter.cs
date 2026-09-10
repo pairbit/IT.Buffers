@@ -151,7 +151,8 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
 
     public Span<T> GetSpan(int sizeHint = 0) => GetSegment(sizeHint).FreeSpan;
 
-    public void Append(ReadOnlyMemory<T> memory)
+    //TODO: Buffer<T>??
+    public void Append(Memory<T> memory)
     {
         if (memory.Length > 0)
         {
@@ -260,8 +261,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
         return nextSegment;
     }
 
-    //TODO: change to SequenceSegment<T>
-    private class Segment : ReadOnlySequenceSegment<T>
+    private class Segment : SequenceSegment<T>
     {
         internal static readonly Segment Empty = new();
 
@@ -282,6 +282,12 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
 
         internal Memory<T> AvailableMemory => _array ?? default;
 
+        internal new Segment? Prev
+        {
+            get => (Segment?)base.Prev;
+            set => base.Prev = value;
+        }
+
         internal new Segment? Next
         {
             get => (Segment?)base.Next;
@@ -296,7 +302,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
             Memory = array;
         }
 
-        internal void AssignForeign(ReadOnlyMemory<T> memory)
+        internal void AssignForeign(Memory<T> memory)
         {
             Memory = memory;
             End = memory.Length;
@@ -305,6 +311,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
         internal void ResetMemory(ArrayPool<T>? arrayPool)
         {
             Memory = default;
+            Prev = null;
             Next = null;
             RunningIndex = 0;
             Start = 0;
@@ -321,6 +328,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
         {
             Next = segment;
             segment.RunningIndex = RunningIndex + Start + Length;
+            segment.Prev = this;
 
             // Trim any slack on this segment.
             if (!IsForeignMemory)
