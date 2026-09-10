@@ -1,12 +1,12 @@
 ﻿namespace IT.Buffers;
 
-public readonly struct SequenceSegments<T>
+internal readonly struct SequenceSegments<T>
 {
-    public RentableSequenceSegment<T> Start { get; }
+    public SequenceSegment<T> Start { get; }
 
-    public RentableSequenceSegment<T> End { get; }
+    public SequenceSegment<T> End { get; }
 
-    public SequenceSegments(RentableSequenceSegment<T> start, RentableSequenceSegment<T> end)
+    public SequenceSegments(SequenceSegment<T> start, SequenceSegment<T> end)
     {
         Start = start;
         End = end;

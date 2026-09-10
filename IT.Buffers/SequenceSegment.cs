@@ -4,9 +4,9 @@ using System.Runtime.InteropServices;
 
 namespace IT.Buffers;
 
-public abstract class SequenceSegment<T> : ReadOnlySequenceSegment<T>
+internal abstract class SequenceSegment<T> : ReadOnlySequenceSegment<T>
 {
-    public SequenceSegment<T>? Previous { get; protected set; }
+    public SequenceSegment<T>? Prev { get; protected set; }
 
     public new SequenceSegment<T>? Next
     {
