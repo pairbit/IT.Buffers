@@ -21,7 +21,7 @@ public static class xReadOnlyMemory
 
         var segmentLength = length / segments;
 
-        var start = new SequenceSegment<T>
+        var start = new RentableSequenceSegment<T>
         {
             Memory = memory[..segmentLength]
         };
@@ -64,7 +64,7 @@ public static class xReadOnlyMemory
 
         if (bufferSize >= memory.Length) return new ReadOnlySequence<T>(memory);
 
-        var start = new SequenceSegment<T>
+        var start = new RentableSequenceSegment<T>
         {
             Memory = memory[..bufferSize]
         };
@@ -106,7 +106,7 @@ public static class xReadOnlyMemory
             //otherwise the memory will not be returned to the pool
             if (isRented)
             {
-                var single = BufferPool<SequenceSegment<T>>.Shared.Rent();
+                var single = BufferPool<RentableSequenceSegment<T>>.Shared.Rent();
                 single.SetMemory(memory, isRented: true);
                 return new ReadOnlySequence<T>(single, 0, single, memory.Length);
             }
@@ -114,7 +114,7 @@ public static class xReadOnlyMemory
             return new ReadOnlySequence<T>(memory);
         }
 
-        var start = BufferPool<SequenceSegment<T>>.Shared.Rent();
+        var start = BufferPool<RentableSequenceSegment<T>>.Shared.Rent();
         start.SetMemory(memory[..bufferSize], isRented);
 
         memory = memory[bufferSize..];

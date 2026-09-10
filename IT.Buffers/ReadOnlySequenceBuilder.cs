@@ -9,8 +9,8 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
     public static BufferPool<ReadOnlySequenceBuilder<T>> Pool
         => BufferPool<ReadOnlySequenceBuilder<T>>.Shared;
 
-    private Stack<SequenceSegment<T>>? _stack;
-    private readonly List<SequenceSegment<T>> _list;
+    private Stack<RentableSequenceSegment<T>>? _stack;
+    private readonly List<RentableSequenceSegment<T>> _list;
 
     public int Count => _list.Count;
 
@@ -39,7 +39,7 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
     {
         if (_stack == null || !_stack.TryPop(out var segment))
         {
-            segment = new SequenceSegment<T>();
+            segment = new RentableSequenceSegment<T>();
         }
 
         segment.SetMemory(memory, isRented);
@@ -137,7 +137,7 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
         var stack = _stack;
         if (stack == null)
         {
-            stack = _stack = new Stack<SequenceSegment<T>>(_list.Capacity);
+            stack = _stack = new Stack<RentableSequenceSegment<T>>(_list.Capacity);
         }
 #if NET6_0_OR_GREATER
         else

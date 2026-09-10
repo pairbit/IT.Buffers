@@ -24,6 +24,7 @@ public readonly struct Buffer<T>
             if (buffer is T[]) return BufferType.Array;
             if (buffer is MemoryManager<T>) return BufferType.MemoryManager;
             if (buffer is IMemoryOwner<T>) return BufferType.MemoryOwner;
+            //if (buffer is SequenceSegment<T>) return BufferType.Sequence;
 
             return BufferType.Unknown;
         }
