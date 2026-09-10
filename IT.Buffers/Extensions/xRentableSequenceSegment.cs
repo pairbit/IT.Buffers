@@ -2,7 +2,7 @@
 
 namespace IT.Buffers.Extensions;
 
-public static class xSequenceSegment
+public static class xRentableSequenceSegment
 {
     public static RentableSequenceSegment<T> Append<T>(this RentableSequenceSegment<T> segment, ReadOnlyMemory<T> memory)
     {
