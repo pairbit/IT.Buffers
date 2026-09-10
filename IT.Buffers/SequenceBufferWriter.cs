@@ -16,6 +16,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
 
     private readonly Stack<Segment> _stack;
     private ArrayPool<T>? _arrayPool;
+    //private MemoryPool<T>? _memoryPool;
     private IBufferGrowthStrategy? _growthStrategy;
     private Segment? _first;
     private Segment? _last;
@@ -259,11 +260,12 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
         return nextSegment;
     }
 
+    //TODO: change to SequenceSegment<T>
     private class Segment : ReadOnlySequenceSegment<T>
     {
         internal static readonly Segment Empty = new();
 
-        //TODO: remove and replace to MemoryMarshal.TryGetArray(Memory)
+        //TODO: add object? _buffer and store IOwnerMemory
         private T[]? _array;
 
         internal int Start { get; private set; }
