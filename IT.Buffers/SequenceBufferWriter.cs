@@ -282,10 +282,10 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
 
         internal Memory<T> AvailableMemory => _array ?? default;
 
-        internal new Segment? Prev
+        internal new Segment? Previous
         {
-            get => (Segment?)base.Prev;
-            set => base.Prev = value;
+            get => (Segment?)base.Previous;
+            set => base.Previous = value;
         }
 
         internal new Segment? Next
@@ -311,7 +311,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
         internal void ResetMemory(ArrayPool<T>? arrayPool)
         {
             Memory = default;
-            Prev = null;
+            Previous = null;
             Next = null;
             RunningIndex = 0;
             Start = 0;
@@ -328,7 +328,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
         {
             Next = segment;
             segment.RunningIndex = RunningIndex + Start + Length;
-            segment.Prev = this;
+            segment.Previous = this;
 
             // Trim any slack on this segment.
             if (!IsForeignMemory)
