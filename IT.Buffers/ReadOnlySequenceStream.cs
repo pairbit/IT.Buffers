@@ -25,6 +25,18 @@ public sealed class ReadOnlySequenceStream : Stream
         _isDisposed = false;
     }
 
+    /* 
+    //TODO: add
+    public ReadOnlySequenceStream(ISequenceOwner<byte> sequenceOwner)
+    {
+        _dispose = sequenceOwner ?? throw new ArgumentNullException(nameof(sequenceOwner));
+        _sequence = sequenceOwner.Sequence;
+        _position = _sequence.Start;
+        _absolutePosition = 0;
+        _isDisposed = false;
+    }
+     */
+
     public ReadOnlySequenceStream(ReadOnlySequence<byte> sequence, IDisposable dispose)
     {
         _dispose = dispose ?? throw new ArgumentNullException(nameof(dispose));

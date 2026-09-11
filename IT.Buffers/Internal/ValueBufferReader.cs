@@ -1,5 +1,4 @@
-﻿using IT.Buffers.Interfaces;
-using System;
+﻿using System;
 using System.Buffers;
 
 namespace IT.Buffers.Internal;

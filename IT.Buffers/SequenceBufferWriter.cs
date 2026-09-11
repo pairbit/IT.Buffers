@@ -1,5 +1,4 @@
-﻿using IT.Buffers.Interfaces;
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,15 +7,15 @@ using System.Runtime.CompilerServices;
 namespace IT.Buffers;
 
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>, IRentedBuffer<SequenceBufferWriter<T>>
+public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>
 {
     private static readonly ReadOnlySequence<T> Empty = new(Segment.Empty, 0, Segment.Empty, 0);
 
-    public static BufferPool<SequenceBufferWriter<T>> Pool => BufferPool<SequenceBufferWriter<T>>.Shared;
+    private static readonly SharedBufferPool _pool = new();
+
+    public static BufferPool<SequenceBufferWriter<T>> Pool => _pool;
 
     private readonly Stack<Segment> _stack;
-    private IBufferPool<SequenceBufferWriter<T>>? _pool;
-
     private ArrayPool<T>? _arrayPool;
     //private MemoryPool<T>? _memoryPool;
     private IBufferGrowthStrategy? _growthStrategy;
@@ -24,7 +23,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>, IRen
     private Segment? _last;
     private int _nextBufferSize;
 
-    public SequenceBufferWriter()
+    private SequenceBufferWriter()
     {
         _stack = new();
     }
@@ -176,11 +175,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>, IRen
         _growthStrategy = null;
         _nextBufferSize = 0;
 
-        var pool = _pool;
-        if (pool != null)
-        {
-            pool.Return(this);
-        }
+        _pool.Return(this, dispose: false);
     }
 
     private Segment GetSegment(int sizeHint)
@@ -267,6 +262,8 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>, IRen
         _stack.Push(segment);
         return nextSegment;
     }
+
+    void IDisposable.Dispose() => Reset();
 
     private class Segment : SequenceSegment<T>
     {
@@ -361,14 +358,8 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>, IRen
         }
     }
 
-    void IDisposable.Dispose() => Reset();
-
-    IBufferPool<SequenceBufferWriter<T>>? IRentedBuffer<SequenceBufferWriter<T>>.BufferPool => _pool;
-
-    void IRentedBuffer<SequenceBufferWriter<T>>.SetBufferPool(IBufferPool<SequenceBufferWriter<T>> bufferPool)
+    private class SharedBufferPool : BufferPool<SequenceBufferWriter<T>>
     {
-        if (_pool != null) throw new InvalidOperationException("The buffer pool can be set only once.");
-
-        _pool = bufferPool;
+        protected override SequenceBufferWriter<T> NewBuffer() => new();
     }
 }

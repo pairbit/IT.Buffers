@@ -1,16 +1,19 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace IT.Buffers;
 
+//TODO: add : ISequenceOwner<T>
 public sealed class ReadOnlySequenceBuilder<T> : IDisposable
 {
-    public static BufferPool<ReadOnlySequenceBuilder<T>> Pool
-        => BufferPool<ReadOnlySequenceBuilder<T>>.Shared;
+    private static readonly SharedBufferPool _pool = new();
 
-    private Stack<RentableSequenceSegment<T>>? _stack;
-    private readonly List<RentableSequenceSegment<T>> _list;
+    public static BufferPool<ReadOnlySequenceBuilder<T>> Pool => _pool;
+
+    private Stack<Segment>? _stack;
+    private readonly List<Segment> _list;
 
     public int Count => _list.Count;
 
@@ -20,14 +23,9 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
         set => _list.Capacity = value;
     }
 
-    public ReadOnlySequenceBuilder()
+    private ReadOnlySequenceBuilder()
     {
         _list = [];
-    }
-
-    public ReadOnlySequenceBuilder(int capacity)
-    {
-        _list = new(capacity);
     }
 
     public int EnsureCapacity(int capacity)
@@ -39,7 +37,7 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
     {
         if (_stack == null || !_stack.TryPop(out var segment))
         {
-            segment = new RentableSequenceSegment<T>();
+            segment = new Segment();
         }
 
         segment.SetMemory(memory, isRented);
@@ -137,7 +135,7 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
         var stack = _stack;
         if (stack == null)
         {
-            stack = _stack = new Stack<RentableSequenceSegment<T>>(_list.Capacity);
+            stack = _stack = new Stack<Segment>(_list.Capacity);
         }
 #if NET6_0_OR_GREATER
         else
@@ -151,7 +149,59 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
             stack.Push(segment);
         }
         _list.Clear();
+
+        _pool.Return(this, dispose: false);
     }
 
     void IDisposable.Dispose() => Reset();
+
+    private class Segment : ReadOnlySequenceSegment<T>
+    {
+        private bool _isRentedMemory;
+
+        public bool IsRentedMemory => _isRentedMemory;
+
+        public new ReadOnlyMemory<T> Memory
+        {
+            get => base.Memory;
+            set => base.Memory = value;
+        }
+
+        public new Segment? Next
+        {
+            get => (Segment?)base.Next;
+            set => base.Next = value;
+        }
+
+        public new long RunningIndex
+        {
+            get => base.RunningIndex;
+            set => base.RunningIndex = value;
+        }
+
+        //TODO: add IMemoryOwner
+        public void SetMemory(ReadOnlyMemory<T> memory, bool isRented = false)
+        {
+            base.Memory = memory;
+            _isRentedMemory = isRented;
+        }
+
+        public void Reset()
+        {
+            if (_isRentedMemory)
+            {
+                var returned = BufferPool.TryReturn(base.Memory);
+                Debug.Assert(returned);
+            }
+            _isRentedMemory = false;
+            base.Memory = default;
+            base.RunningIndex = 0;
+            base.Next = null;
+        }
+    }
+
+    private class SharedBufferPool : BufferPool<ReadOnlySequenceBuilder<T>>
+    {
+        protected override ReadOnlySequenceBuilder<T> NewBuffer() => new();
+    }
 }

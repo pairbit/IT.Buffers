@@ -1,44 +1,10 @@
 ﻿using IT.Buffers.Extensions;
-using IT.Buffers.Interfaces;
 using System.Buffers;
 
 namespace IT.Buffers.Tests;
 
 internal class SequenceBufferWriterTest
 {
-    [Test]
-    public async Task New_Test()
-    {
-        var bufferWriter = new SequenceBufferWriter<byte>();
-        try
-        {
-            var rentedBuffer = (IRentedBuffer<SequenceBufferWriter<byte>>)bufferWriter;
-            Assert.That(rentedBuffer.BufferPool, Is.Null);
-
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
-
-            bufferWriter.GetSpan(BufferSize.KB_8);
-            bufferWriter.Write(bytes);
-
-            var pos = bufferWriter.End;
-            var ros = bufferWriter.AsReadOnly;
-
-            using var ross = new ReadOnlySequenceStream(ros);
-
-            await bufferWriter.WriteAsync(ross);
-
-            var ros2 = bufferWriter.AsReadOnly;
-            var sliced = ros2.Slice(pos);
-
-            Assert.That(sliced.SequenceEqual(ros), Is.True);
-        }
-        finally
-        {
-            bufferWriter.Reset();
-        }
-    }
-
     [Test]
     public async Task Pool_Test()
     {
@@ -47,10 +13,6 @@ internal class SequenceBufferWriterTest
         var bufferWriter = pool.Rent();
         try
         {
-            var rentedBuffer = (IRentedBuffer<SequenceBufferWriter<byte>>)bufferWriter;
-            Assert.That(rentedBuffer.BufferPool, Is.EqualTo(pool));
-            Assert.That(rentedBuffer.BufferPool.Id, Is.Zero);
-
             var bytes = new byte[BufferSize.MB];
             Random.Shared.NextBytes(bytes);
 
@@ -81,9 +43,6 @@ internal class SequenceBufferWriterTest
         var pool = SequenceBufferWriter<byte>.Pool;
 
         var bufferWriter = pool.Rent();
-        var rentedBuffer = (IRentedBuffer<SequenceBufferWriter<byte>>)bufferWriter;
-        Assert.That(rentedBuffer.BufferPool, Is.EqualTo(pool));
-        Assert.That(rentedBuffer.BufferPool.Id, Is.Zero);
 
         var bytes = new byte[BufferSize.MB];
         Random.Shared.NextBytes(bytes);
@@ -108,10 +67,6 @@ internal class SequenceBufferWriterTest
     public async Task ROSS_DisposeArg_Test()
     {
         var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
-
-        var rentedBuffer = (IRentedBuffer<SequenceBufferWriter<byte>>)bufferWriter;
-        Assert.That(rentedBuffer.BufferPool, Is.EqualTo(SequenceBufferWriter<byte>.Pool));
-        Assert.That(rentedBuffer.BufferPool.Id, Is.Zero);
 
         var bytes = new byte[BufferSize.MB];
         Random.Shared.NextBytes(bytes);
@@ -143,13 +98,13 @@ internal class SequenceBufferWriterTest
     [Test]
     public void LeakTest()
     {
-        var sequence = new SequenceBufferWriter<object>();
-        var span = sequence.GetSpan(BufferSize.KB);
+        var bufferWriter = SequenceBufferWriter<object>.Pool.Rent();
+        var span = bufferWriter.GetSpan(BufferSize.KB);
         for (int i = 0; i < span.Length; i++)
         {
             span[i] = new object();
         }
-        sequence.Reset();
+        bufferWriter.Reset();
         for (int i = 0; i < span.Length; i++)
         {
             Assert.That(span[i], Is.Null);
@@ -159,213 +114,176 @@ internal class SequenceBufferWriterTest
     [Test]
     public void Test_GetSpanGetSpan()
     {
-        var sequence = new SequenceBufferWriter<byte>();
+        var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
 
-        var span = sequence.GetSpan();
-        var span2 = sequence.GetSpan();
-        var span3 = sequence.GetSpan(span.Length + 1);
+        var span = bufferWriter.GetSpan();
+        var span2 = bufferWriter.GetSpan();
+        var span3 = bufferWriter.GetSpan(span.Length + 1);
     }
 
     [Test]
     public void Advance_Test()
     {
-        var sequence = new SequenceBufferWriter<byte>();
+        var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => sequence.Advance(1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => bufferWriter.Advance(1));
 
-        var span = sequence.GetSpan();
-        Assert.Throws<InvalidOperationException>(() => sequence.ArrayPool = null);
-        sequence.Advance(1);
+        var span = bufferWriter.GetSpan();
+        Assert.Throws<InvalidOperationException>(() => bufferWriter.ArrayPool = null);
+        bufferWriter.Advance(1);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => sequence.Advance(int.MaxValue));
+        Assert.Throws<ArgumentOutOfRangeException>(() => bufferWriter.Advance(int.MaxValue));
     }
 
     [Test]
     public void Write_Test()
     {
-        var sequence = new SequenceBufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
+        using var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
+        
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
 
-            sequence.Write(bytes);
+        bufferWriter.Write(bytes);
 
-            var ros = sequence.AsReadOnly;
-            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
-            Assert.That(ros.End, Is.EqualTo(sequence.End));
+        var ros = bufferWriter.AsReadOnly;
+        Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
+        Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
 
-            Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
-            Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
+        Assert.That(bufferWriter.Length, Is.EqualTo(bytes.Length));
+        Assert.That(bufferWriter.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
 
-            var ros2 = bytes.AsMemory().ToSequence();
-            Assert.That(ros.SequenceEqual(ros2), Is.True);
-        }
-        finally
-        {
-            sequence.Reset();
-        }
+        var ros2 = bytes.AsMemory().ToSequence();
+        Assert.That(ros.SequenceEqual(ros2), Is.True);
     }
 
     [Test]
     public async Task WriteAsync_Test()
     {
-        var sequence = new SequenceBufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
-            var stream = new MemoryStream(bytes);
+        using var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
+        var stream = new MemoryStream(bytes);
 
-            await sequence.WriteAsync(stream);
+        await bufferWriter.WriteAsync(stream);
 
-            var ros = sequence.AsReadOnly;
-            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
-            Assert.That(ros.End, Is.EqualTo(sequence.End));
+        var ros = bufferWriter.AsReadOnly;
+        Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
+        Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
 
-            Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
-            Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
-        }
-        finally
-        {
-            sequence.Reset();
-        }
+        Assert.That(bufferWriter.Length, Is.EqualTo(bytes.Length));
+        Assert.That(bufferWriter.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
     }
 
     [Test]
     public async Task WriteAsync_OneOfEachSize_Test()
     {
-        var sequence = new SequenceBufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
-            var stream = new MemoryStream(bytes);
+        using var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
 
-            sequence.NextBufferSize = BufferSize.KB_64;
-            sequence.GetSpan(BufferSize.KB_128);
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
+        var stream = new MemoryStream(bytes);
 
-            await sequence.WriteAsync(stream);
+        bufferWriter.NextBufferSize = BufferSize.KB_64;
+        bufferWriter.GetSpan(BufferSize.KB_128);
 
-            var ros = sequence.AsReadOnly;
-            var start = sequence.End;
+        await bufferWriter.WriteAsync(stream);
 
-            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
-            Assert.That(ros.End, Is.EqualTo(sequence.End));
+        var ros = bufferWriter.AsReadOnly;
+        var start = bufferWriter.End;
 
-            Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
-            Assert.That(ros.SequenceEqual(bytes), Is.True);
-            Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.MB));
+        Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
+        Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
 
-            sequence.NextBufferSize = BufferSize.KB;
-            var lastBuffer = new byte[BufferSize.KB_80];
-            Random.Shared.NextBytes(lastBuffer);
-            sequence.Write(lastBuffer);
+        Assert.That(bufferWriter.Length, Is.EqualTo(bytes.Length));
+        Assert.That(ros.SequenceEqual(bytes), Is.True);
+        Assert.That(bufferWriter.NextBufferSize, Is.EqualTo(BufferSize.MB));
 
-            ros = sequence.AsReadOnly;
-            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
-            Assert.That(ros.End, Is.EqualTo(sequence.End));
+        bufferWriter.NextBufferSize = BufferSize.KB;
+        var lastBuffer = new byte[BufferSize.KB_80];
+        Random.Shared.NextBytes(lastBuffer);
+        bufferWriter.Write(lastBuffer);
 
-            Assert.That(sequence.Length, Is.EqualTo(bytes.Length + lastBuffer.Length));
-            Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.KB_32));
+        ros = bufferWriter.AsReadOnly;
+        Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
+        Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
 
-            var lastROS = ros.Slice(start);
-            Assert.That(lastROS.Length, Is.EqualTo(lastBuffer.Length));
-            Assert.That(lastROS.SequenceEqual(lastBuffer), Is.True);
+        Assert.That(bufferWriter.Length, Is.EqualTo(bytes.Length + lastBuffer.Length));
+        Assert.That(bufferWriter.NextBufferSize, Is.EqualTo(BufferSize.KB_32));
 
-            sequence.AdvanceTo(start);
-            ros = sequence.AsReadOnly;
-            Assert.That(ros.SequenceEqual(lastROS), Is.True);
-            Assert.That(ros.Length, Is.EqualTo(lastBuffer.Length));
-            Assert.That(ros.SequenceEqual(lastBuffer), Is.True);
+        var lastROS = ros.Slice(start);
+        Assert.That(lastROS.Length, Is.EqualTo(lastBuffer.Length));
+        Assert.That(lastROS.SequenceEqual(lastBuffer), Is.True);
 
-            Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.KB_32));
-        }
-        finally
-        {
-            sequence.Reset();
-        }
+        bufferWriter.AdvanceTo(start);
+        ros = bufferWriter.AsReadOnly;
+        Assert.That(ros.SequenceEqual(lastROS), Is.True);
+        Assert.That(ros.Length, Is.EqualTo(lastBuffer.Length));
+        Assert.That(ros.SequenceEqual(lastBuffer), Is.True);
+
+        Assert.That(bufferWriter.NextBufferSize, Is.EqualTo(BufferSize.KB_32));
     }
 
     [Test]
     public async Task WriteAsync_TwoOfEachSize_Test()
     {
-        var sequence = new SequenceBufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
-            var stream = new MemoryStream(bytes);
+        using var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
 
-            sequence.GrowthStrategy = BufferGrowthStrategy.TwoOfEachSize;
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
+        var stream = new MemoryStream(bytes);
 
-            await sequence.WriteAsync(stream);
+        bufferWriter.GrowthStrategy = BufferGrowthStrategy.TwoOfEachSize;
 
-            var ros = sequence.AsReadOnly;
-            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
-            Assert.That(ros.End, Is.EqualTo(sequence.End));
+        await bufferWriter.WriteAsync(stream);
 
-            Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
-            Assert.That(sequence.NextBufferSize, Is.EqualTo(454997));
-        }
-        finally
-        {
-            sequence.Reset();
-        }
+        var ros = bufferWriter.AsReadOnly;
+        Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
+        Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
+
+        Assert.That(bufferWriter.Length, Is.EqualTo(bytes.Length));
+        Assert.That(bufferWriter.NextBufferSize, Is.EqualTo(454997));
     }
 
     [Test]
     public async Task WriteAsync_FourOfEachSize_Test()
     {
-        var sequence = new SequenceBufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
-            var stream = new MemoryStream(bytes);
+        using var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
 
-            sequence.GrowthStrategy = BufferGrowthStrategy.FourOfEachSize;
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
+        var stream = new MemoryStream(bytes);
 
-            await sequence.WriteAsync(stream);
+        bufferWriter.GrowthStrategy = BufferGrowthStrategy.FourOfEachSize;
 
-            var ros = sequence.AsReadOnly;
-            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
-            Assert.That(ros.End, Is.EqualTo(sequence.End));
+        await bufferWriter.WriteAsync(stream);
 
-            Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
-            Assert.That(sequence.NextBufferSize, Is.EqualTo(158003));
-        }
-        finally
-        {
-            sequence.Reset();
-        }
+        var ros = bufferWriter.AsReadOnly;
+        Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
+        Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
+
+        Assert.That(bufferWriter.Length, Is.EqualTo(bytes.Length));
+        Assert.That(bufferWriter.NextBufferSize, Is.EqualTo(158003));
     }
 
     [Test]
     public async Task WriteAsync_Off_Test()
     {
-        var sequence = new SequenceBufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
-            var stream = new MemoryStream(bytes);
+        using var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
+        
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
+        var stream = new MemoryStream(bytes);
 
-            sequence.GrowthStrategy = BufferGrowthStrategy.Off;
-            sequence.NextBufferSize = BufferSize.KB;
+        bufferWriter.GrowthStrategy = BufferGrowthStrategy.Off;
+        bufferWriter.NextBufferSize = BufferSize.KB;
 
-            await sequence.WriteAsync(stream);
+        await bufferWriter.WriteAsync(stream);
 
-            var ros = sequence.AsReadOnly;
-            Assert.That(ros.Start, Is.EqualTo(sequence.Start));
-            Assert.That(ros.End, Is.EqualTo(sequence.End));
+        var ros = bufferWriter.AsReadOnly;
+        Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
+        Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
 
-            Assert.That(sequence.Length, Is.EqualTo(bytes.Length));
-            Assert.That(sequence.NextBufferSize, Is.EqualTo(BufferSize.KB));
-        }
-        finally
-        {
-            sequence.Reset();
-        }
+        Assert.That(bufferWriter.Length, Is.EqualTo(bytes.Length));
+        Assert.That(bufferWriter.NextBufferSize, Is.EqualTo(BufferSize.KB));
     }
 }

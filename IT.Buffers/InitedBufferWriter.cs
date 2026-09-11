@@ -1,5 +1,4 @@
 ﻿using IT.Buffers.Extensions;
-using IT.Buffers.Interfaces;
 using IT.Buffers.Internal;
 using System;
 using System.Buffers;

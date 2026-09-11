@@ -1,5 +1,4 @@
 ﻿using IT.Buffers.Extensions;
-using IT.Buffers.Interfaces;
 using IT.Buffers.Internal;
 using System;
 using System.Buffers;
@@ -12,8 +11,9 @@ namespace IT.Buffers;
 
 public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
-    public static BufferPool<BufferWriter<T>> Pool =>
-        BufferPool<BufferWriter<T>>.Shared;
+    private static readonly SharedBufferPool _pool = new();
+
+    public static BufferPool<BufferWriter<T>> Pool => _pool;
     
     internal ArrayPool<T>? _arrayPool;
     private IBufferGrowthStrategy? _growthStrategy;
@@ -62,7 +62,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    public BufferWriter()
+    private BufferWriter()
     {
         _buffers = new List<BufferSegment<T>>();
     }
@@ -400,5 +400,10 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             Current,
             End
         }
+    }
+
+    private class SharedBufferPool : BufferPool<BufferWriter<T>>
+    {
+        protected override BufferWriter<T> NewBuffer() => new();
     }
 }

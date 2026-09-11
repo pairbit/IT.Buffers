@@ -1,5 +1,4 @@
-﻿using System;
-using System.Buffers;
+﻿using System.Buffers;
 
 namespace IT.Buffers.Tests.Internal.Iteration;
 

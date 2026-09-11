@@ -34,9 +34,6 @@ public static class BufferPool
         return new(array, 0, minimumLength, RentedArrayType.Shared);
     }
 
-    public static TBuffer Rent<TBuffer>() where TBuffer : class, IDisposable, new()
-        => BufferPool<TBuffer>.Shared.Rent();
-
     public static void Return<T>(T[] array)
         => ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 
@@ -89,20 +86,24 @@ public static class BufferPool
 
     public static int TryReturn<T>(in ReadOnlySequence<T> sequence)
     {
-        if (sequence.Start.GetObject() is RentableSequenceSegment<T> segment)
-            return TryReturnSegments(segment);
+        if (sequence.Start.GetObject() is ReadOnlySequenceSegment<T> segment)
+            return TryDisposeSegments(segment);
 
         return 0;
     }
 
-    public static int TryReturnSegments<T>(RentableSequenceSegment<T> segment)
+    internal static int TryDisposeSegments<T>(ReadOnlySequenceSegment<T> segment)
     {
         var count = 0;
         do
         {
             var next = segment.Next;
 
-            if (TryReturn(segment)) count++;
+            if (segment is IDisposable disposable)
+            {
+                disposable.Dispose();
+                count++;
+            }
 
             segment = next!;
 
@@ -110,7 +111,4 @@ public static class BufferPool
 
         return count;
     }
-
-    public static bool TryReturn<TBuffer>(TBuffer buffer) where TBuffer : class, IDisposable, new()
-        => BufferPool<TBuffer>.Shared.TryReturn(buffer);
 }

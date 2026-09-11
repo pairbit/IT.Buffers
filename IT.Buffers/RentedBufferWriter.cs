@@ -1,5 +1,4 @@
 ﻿using IT.Buffers.Extensions;
-using IT.Buffers.Interfaces;
 using System;
 using System.Buffers;
 using System.Diagnostics;
@@ -9,13 +8,14 @@ namespace IT.Buffers;
 //Rerented
 public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
 {
-    public static BufferPool<RentedBufferWriter<T>> Pool
-        => BufferPool<RentedBufferWriter<T>>.Shared;
+    private static readonly SharedBufferPool _pool = new();
+
+    public static BufferPool<RentedBufferWriter<T>> Pool => _pool;
 
     private T[] _buffer;
     private int _written;
 
-    public RentedBufferWriter()
+    private RentedBufferWriter()
     {
         _buffer = [];
         _written = 0;
@@ -155,4 +155,9 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
     }
 
     void IDisposable.Dispose() => Reset();
+
+    private class SharedBufferPool : BufferPool<RentedBufferWriter<T>>
+    {
+        protected override RentedBufferWriter<T> NewBuffer() => new();
+    }
 }

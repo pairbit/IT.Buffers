@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace IT.Buffers.Interfaces;
+namespace IT.Buffers;
 
 internal interface IBufferReader<T>
 {

@@ -8,7 +8,7 @@ public class BufferWriterTest
     [Test]
     public void LeakTest()
     {
-        var writer = new BufferWriter<object>();
+        using var writer = BufferWriter<object>.Pool.Rent();
         var span = writer.GetSpan(BufferSize.KB);
         for (int i = 0; i < span.Length; i++)
         {
@@ -24,7 +24,7 @@ public class BufferWriterTest
     [Test]
     public void Advance_Test()
     {
-        var writer = new BufferWriter<byte>();
+        using var writer = BufferWriter<byte>.Pool.Rent();
 
         Assert.Throws<ArgumentOutOfRangeException>(() => writer.Advance(1));
 
@@ -37,7 +37,7 @@ public class BufferWriterTest
     [Test]
     public void Test_GetSpanGetSpan()
     {
-        var writer = new BufferWriter<byte>();
+        using var writer = BufferWriter<byte>.Pool.Rent();
         Assert.That(writer.Segments, Is.EqualTo(0));
 
         var span = writer.GetSpan();
@@ -53,7 +53,7 @@ public class BufferWriterTest
     [Test]
     public void Test_ToArrayAndReset()
     {
-        var writer = new BufferWriter<byte>();
+        using var writer = BufferWriter<byte>.Pool.Rent();
 
         Assert.That(writer.ToArrayAndReset(), Is.Empty);
 
@@ -68,7 +68,7 @@ public class BufferWriterTest
     [Test]
     public void Test_TryWriteToAndReset()
     {
-        var writer = new BufferWriter<byte>();
+        using var writer = BufferWriter<byte>.Pool.Rent();
 
         Assert.That(writer.TryWriteToAndReset(default), Is.True);
 
@@ -83,24 +83,31 @@ public class BufferWriterTest
     [Test]
     public void Test_WriteToAndReset()
     {
-        var writer = new BufferWriter<byte>();
-        var writer2 = new BufferWriter<byte>();
+        using var writer = BufferWriter<byte>.Pool.Rent();
+        var writer2 = BufferWriter<byte>.Pool.Rent();
 
-        writer.WriteToAndReset(ref writer2);
+        try
+        {
+            writer.WriteToAndReset(ref writer2);
 
-        var span = writer.GetSpan();
-        Assert.That(writer.Segments, Is.EqualTo(1));
+            var span = writer.GetSpan();
+            Assert.That(writer.Segments, Is.EqualTo(1));
 
-        writer.WriteToAndReset(ref writer2);
+            writer.WriteToAndReset(ref writer2);
 
-        Assert.That(writer.Segments, Is.EqualTo(0));
+            Assert.That(writer.Segments, Is.EqualTo(0));
+        }
+        finally
+        {
+            writer2.Reset();
+        }
     }
 
     [Test]
     public async Task Test_WriteToAndResetAsync()
     {
-        var writer = new BufferWriter<byte>();
-        var stream = new BufferWriterStream(new BufferWriter<byte>());
+        using var writer = BufferWriter<byte>.Pool.Rent();
+        var stream = new BufferWriterStream(BufferWriter<byte>.Pool.Rent());
 
         await writer.WriteToAndResetAsync(stream);
 
@@ -115,137 +122,95 @@ public class BufferWriterTest
     [Test]
     public void Write_Test()
     {
-        var writer = new BufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
+        using var writer = BufferWriter<byte>.Pool.Rent();
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
 
-            writer.Write(bytes);
+        writer.Write(bytes);
 
-            Assert.That(writer.Written, Is.EqualTo(bytes.Length));
-            Assert.That(writer.Segments, Is.EqualTo(9));
-            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
-        }
-        finally
-        {
-            writer.Reset();
-        }
+        Assert.That(writer.Written, Is.EqualTo(bytes.Length));
+        Assert.That(writer.Segments, Is.EqualTo(9));
+        Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
     }
 
     [Test]
     public async Task WriteAsync_Test()
     {
-        var writer = new BufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
-            var stream = new MemoryStream(bytes);
+        using var writer = BufferWriter<byte>.Pool.Rent();
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
+        var stream = new MemoryStream(bytes);
 
-            await writer.WriteAsync(stream);
+        await writer.WriteAsync(stream);
 
-            Assert.That(writer.Written, Is.EqualTo(bytes.Length));
-            Assert.That(writer.Segments, Is.EqualTo(9));
-            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
-        }
-        finally
-        {
-            writer.Reset();
-        }
+        Assert.That(writer.Written, Is.EqualTo(bytes.Length));
+        Assert.That(writer.Segments, Is.EqualTo(9));
+        Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
     }
 
     [Test]
     public void Write_NextBufferSize_Test()
     {
-        var writer = new BufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
+        using var writer = BufferWriter<byte>.Pool.Rent();
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
 
-            writer.NextBufferSize = BufferSize.KB_64;
+        writer.NextBufferSize = BufferSize.KB_64;
 
-            writer.Write(bytes);
+        writer.Write(bytes);
 
-            Assert.That(writer.Written, Is.EqualTo(bytes.Length));
-            Assert.That(writer.Segments, Is.EqualTo(5));
-            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
-        }
-        finally
-        {
-            writer.Reset();
-        }
+        Assert.That(writer.Written, Is.EqualTo(bytes.Length));
+        Assert.That(writer.Segments, Is.EqualTo(5));
+        Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
     }
 
     [Test]
     public async Task WriteAsync_NextBufferSize_Test()
     {
-        var writer = new BufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
-            var stream = new MemoryStream(bytes);
+        using var writer = BufferWriter<byte>.Pool.Rent();
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
+        var stream = new MemoryStream(bytes);
 
-            writer.NextBufferSize = BufferSize.KB_64;
+        writer.NextBufferSize = BufferSize.KB_64;
 
-            await writer.WriteAsync(stream);
+        await writer.WriteAsync(stream);
 
-            Assert.That(writer.Written, Is.EqualTo(bytes.Length));
-            Assert.That(writer.Segments, Is.EqualTo(5));
-            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
-        }
-        finally
-        {
-            writer.Reset();
-        }
+        Assert.That(writer.Written, Is.EqualTo(bytes.Length));
+        Assert.That(writer.Segments, Is.EqualTo(5));
+        Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB_2));
     }
 
     [Test]
     public void Write_DoubleFirst_Test()
     {
-        var writer = new BufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
+        using var writer = BufferWriter<byte>.Pool.Rent();
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
 
-            writer.NextBufferSize = BufferSize.KB_64;
-            writer.GetSpan(BufferSize.KB_128);
-            writer.Write(bytes);
+        writer.NextBufferSize = BufferSize.KB_64;
+        writer.GetSpan(BufferSize.KB_128);
+        writer.Write(bytes);
 
-            Assert.That(writer.Written, Is.EqualTo(bytes.Length));
-            Assert.That(writer.Segments, Is.EqualTo(5));
-            Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB));
-        }
-        finally
-        {
-            writer.Reset();
-        }
+        Assert.That(writer.Written, Is.EqualTo(bytes.Length));
+        Assert.That(writer.Segments, Is.EqualTo(5));
+        Assert.That(writer.NextBufferSize, Is.EqualTo(BufferSize.MB));
     }
 
     [Test]
     public void Write_TwoOfEachSize_Test()
     {
-        var writer = new BufferWriter<byte>();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
+        using var writer = BufferWriter<byte>.Pool.Rent();
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
 
-            writer.GrowthStrategy = BufferGrowthStrategy.TwoOfEachSize;
+        writer.GrowthStrategy = BufferGrowthStrategy.TwoOfEachSize;
 
-            writer.Write(bytes);
+        writer.Write(bytes);
 
-            Assert.That(writer.Written, Is.EqualTo(bytes.Length));
-            Assert.That(writer.Segments, Is.EqualTo(14));
-            Assert.That(writer.NextBufferSize, Is.EqualTo(454997));
-        }
-        finally
-        {
-            writer.Reset();
-        }
+        Assert.That(writer.Written, Is.EqualTo(bytes.Length));
+        Assert.That(writer.Segments, Is.EqualTo(14));
+        Assert.That(writer.NextBufferSize, Is.EqualTo(454997));
     }
 
     [Test]

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Buffers;
 
-namespace IT.Buffers.Interfaces;
+namespace IT.Buffers;
 
 public interface IAdvancedBufferWriter<T> : IBufferWriter<T>
 {
