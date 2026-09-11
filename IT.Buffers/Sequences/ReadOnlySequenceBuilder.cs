@@ -8,7 +8,7 @@ namespace IT.Buffers;
 //TODO: add : ISequenceOwner<T>
 public sealed class ReadOnlySequenceBuilder<T> : IResetable
 {
-    public static BufferPool<ReadOnlySequenceBuilder<T>> Pool => 
+    public static BufferPool<ReadOnlySequenceBuilder<T>> Pool =>
         NewBufferPool<ReadOnlySequenceBuilder<T>>.Shared;
 
     private Stack<Segment>? _stack;
@@ -158,8 +158,6 @@ public sealed class ReadOnlySequenceBuilder<T> : IResetable
     private class Segment : ReadOnlySequenceSegment<T>
     {
         private bool _isRentedMemory;
-
-        public bool IsRentedMemory => _isRentedMemory;
 
         public new ReadOnlyMemory<T> Memory
         {
