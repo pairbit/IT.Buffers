@@ -12,9 +12,7 @@ internal class ReadOnlySequenceIteratorTest : ReadOnlySpanIteratorTest<ReadOnlyS
 
     protected override ReadOnlySequenceIterator<byte> GetIterator()
     {
-        var builder = ReadOnlySequenceBuilder<byte>.Pool.Rent();
-
-        builder.EnsureCapacity(Segments.Length);
+        var builder = new ReadOnlySequenceBuilder<byte>(Segments.Length);
 
         foreach (var memory in Segments)
         {

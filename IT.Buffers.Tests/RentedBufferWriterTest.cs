@@ -15,7 +15,6 @@ public class RentedBufferWriterTest
         }
         finally
         {
-            writer.Reset();
             Assert.That(RentedBufferWriter<byte>.Pool.TryReturn(writer), Is.True);
         }
     }

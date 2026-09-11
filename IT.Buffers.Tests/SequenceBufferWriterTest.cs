@@ -63,7 +63,7 @@ internal class SequenceBufferWriterTest
     [Test]
     public void LeakTest()
     {
-        var bufferWriter = SequenceBufferWriter<object>.Pool.Rent();
+        var bufferWriter = new SequenceBufferWriter<object>();
         var span = bufferWriter.GetSpan(BufferSize.KB);
         for (int i = 0; i < span.Length; i++)
         {
@@ -79,7 +79,7 @@ internal class SequenceBufferWriterTest
     [Test]
     public void Test_GetSpanGetSpan()
     {
-        var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
+        var bufferWriter = new SequenceBufferWriter<byte>();
 
         var span = bufferWriter.GetSpan();
         var span2 = bufferWriter.GetSpan();
