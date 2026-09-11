@@ -10,5 +10,6 @@ public enum BufferType : sbyte
     Array = 1,
     MemoryManager = 2,
     MemoryOwner = 3,
-    //Sequence = 4
+    Sequence = 4,
+    SequenceOwner = 4
 }
