@@ -154,7 +154,11 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
         return WrittenMemory;
     }
 
-    void IDisposable.Dispose() => Reset();
+    void IDisposable.Dispose()
+    {
+        Reset();
+        _pool.Return(this);
+    }
 
     private class SharedBufferPool : BufferPool<RentedBufferWriter<T>>
     {

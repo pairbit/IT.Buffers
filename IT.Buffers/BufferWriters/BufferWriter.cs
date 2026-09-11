@@ -328,7 +328,11 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         return (_arrayPool ?? ArrayPool<T>.Shared).Rent(size);
     }
 
-    void IDisposable.Dispose() => Reset();
+    void IDisposable.Dispose()
+    {
+        Reset();
+        _pool.Return(this);
+    }
 
     public struct Enumerator : IEnumerator<Memory<T>>
     {

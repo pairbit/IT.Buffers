@@ -174,8 +174,6 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>
         _arrayPool = null;
         _growthStrategy = null;
         _nextBufferSize = 0;
-
-        _pool.Return(this);
     }
 
     private Segment GetSegment(int sizeHint)
@@ -263,7 +261,11 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>
         return nextSegment;
     }
 
-    void IDisposable.Dispose() => Reset();
+    void IDisposable.Dispose()
+    {
+        Reset();
+        _pool.Return(this);
+    }
 
     private class Segment : SequenceSegment<T>
     {

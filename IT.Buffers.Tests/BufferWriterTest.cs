@@ -86,28 +86,22 @@ public class BufferWriterTest
         using var writer = BufferWriter<byte>.Pool.Rent();
         var writer2 = BufferWriter<byte>.Pool.Rent();
 
-        try
-        {
-            writer.WriteToAndReset(ref writer2);
+        writer.WriteToAndReset(ref writer2);
 
-            var span = writer.GetSpan();
-            Assert.That(writer.Segments, Is.EqualTo(1));
+        var span = writer.GetSpan();
+        Assert.That(writer.Segments, Is.EqualTo(1));
 
-            writer.WriteToAndReset(ref writer2);
+        writer.WriteToAndReset(ref writer2);
 
-            Assert.That(writer.Segments, Is.EqualTo(0));
-        }
-        finally
-        {
-            writer2.Reset();
-        }
+        Assert.That(writer.Segments, Is.EqualTo(0));
     }
 
     [Test]
     public async Task Test_WriteToAndResetAsync()
     {
         using var writer = BufferWriter<byte>.Pool.Rent();
-        var stream = new BufferWriterStream(BufferWriter<byte>.Pool.Rent());
+        using var writer2 = BufferWriter<byte>.Pool.Rent();
+        var stream = new BufferWriterStream(writer2);
 
         await writer.WriteToAndResetAsync(stream);
 
@@ -216,7 +210,7 @@ public class BufferWriterTest
     [Test]
     public void Test_Pool()
     {
-        var writer = BufferWriter<byte>.Pool.Rent();
+        using var writer = BufferWriter<byte>.Pool.Rent();
         Assert.That(writer.Segments, Is.EqualTo(0));
         Assert.Throws<ArgumentOutOfRangeException>(() => writer.GetWrittenMemory(0));
         try

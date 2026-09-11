@@ -149,11 +149,13 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
             stack.Push(segment);
         }
         _list.Clear();
-
-        _pool.Return(this);
     }
 
-    void IDisposable.Dispose() => Reset();
+    void IDisposable.Dispose()
+    {
+        Reset();
+        _pool.Return(this);
+    }
 
     private class Segment : ReadOnlySequenceSegment<T>
     {

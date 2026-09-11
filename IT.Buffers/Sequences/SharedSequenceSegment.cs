@@ -71,11 +71,13 @@ public class SharedSequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable
         base.Memory = default;
         base.RunningIndex = 0;
         base.Next = null;
-
-        _pool.Return(this);
     }
 
-    void IDisposable.Dispose() => Reset();
+    void IDisposable.Dispose()
+    {
+        Reset();
+        _pool.Return(this);
+    }
 
     private class SharedBufferPool : BufferPool<SharedSequenceSegment<T>>
     {
