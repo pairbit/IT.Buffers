@@ -210,7 +210,7 @@ public class BufferWriterTest
     [Test]
     public void Test_Pool()
     {
-        using var writer = BufferWriter<byte>.Pool.Rent();
+        var writer = BufferWriter<byte>.Pool.Rent();
         Assert.That(writer.Segments, Is.EqualTo(0));
         Assert.Throws<ArgumentOutOfRangeException>(() => writer.GetWrittenMemory(0));
         try
@@ -219,6 +219,7 @@ public class BufferWriterTest
         }
         finally
         {
+            writer.Reset();
             Assert.That(BufferWriter<byte>.Pool.TryReturn(writer), Is.True);
         }
     }

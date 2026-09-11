@@ -15,6 +15,7 @@ public abstract class ReadOnlySequenceBuilderTest<T>
         }
 		finally
 		{
+            builder.Reset();
             Assert.That(ReadOnlySequenceBuilder<T>.Pool.TryReturn(builder));
         }
     }
