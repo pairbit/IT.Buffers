@@ -8,13 +8,15 @@ using System.Runtime.CompilerServices;
 namespace IT.Buffers;
 
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
+public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>, IRentedBuffer<SequenceBufferWriter<T>>
 {
     private static readonly ReadOnlySequence<T> Empty = new(Segment.Empty, 0, Segment.Empty, 0);
 
     public static BufferPool<SequenceBufferWriter<T>> Pool => BufferPool<SequenceBufferWriter<T>>.Shared;
 
     private readonly Stack<Segment> _stack;
+    private IBufferPool<SequenceBufferWriter<T>>? _pool;
+
     private ArrayPool<T>? _arrayPool;
     //private MemoryPool<T>? _memoryPool;
     private IBufferGrowthStrategy? _growthStrategy;
@@ -85,7 +87,6 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
     public SequencePosition End => _last != null ? new(_last, _last.End) : default;
 
     public long Length => AsReadOnly.Length;
-
 
     public static implicit operator ReadOnlySequence<T>(SequenceBufferWriter<T>? sequence)
         => sequence == null ? Empty : sequence.AsReadOnly;
@@ -174,6 +175,12 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
         _arrayPool = null;
         _growthStrategy = null;
         _nextBufferSize = 0;
+
+        var pool = _pool;
+        if (pool != null)
+        {
+            pool.Return(this);
+        }
     }
 
     private Segment GetSegment(int sizeHint)
@@ -355,4 +362,13 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
     }
 
     void IDisposable.Dispose() => Reset();
+
+    IBufferPool<SequenceBufferWriter<T>>? IRentedBuffer<SequenceBufferWriter<T>>.BufferPool => _pool;
+
+    void IRentedBuffer<SequenceBufferWriter<T>>.SetBufferPool(IBufferPool<SequenceBufferWriter<T>> bufferPool)
+    {
+        if (_pool != null) throw new InvalidOperationException("The buffer pool can be set only once.");
+
+        _pool = bufferPool;
+    }
 }

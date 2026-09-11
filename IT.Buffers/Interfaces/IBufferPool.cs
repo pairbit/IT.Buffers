@@ -1,8 +1,8 @@
-﻿namespace IT.Buffers.Interfaces;
+﻿namespace IT.Buffers;
 
-public interface IBufferPool<TBuffer>
+public interface IBufferPool
 {
-    TBuffer Rent();
+    int Id { get; }
 
-    bool TryReturn(TBuffer buffer);
+    //Type BufferType { get; }
 }

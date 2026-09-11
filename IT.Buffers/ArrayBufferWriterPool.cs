@@ -11,9 +11,18 @@ public class ArrayBufferWriterPool<T> : IBufferPool<ArrayBufferWriter<T>>
 
     private readonly ConcurrentQueue<ArrayBufferWriter<T>> _queue = new();
 
+    public int Id => 0;
+
     public ArrayBufferWriter<T> Rent() => _queue.TryDequeue(out var buffer) ? buffer : new ArrayBufferWriter<T>();
 
     public bool TryReturn(ArrayBufferWriter<T> buffer)
+    {
+        Return(buffer);
+
+        return true;
+    }
+
+    public void Return(ArrayBufferWriter<T> buffer)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 
@@ -23,7 +32,5 @@ public class ArrayBufferWriterPool<T> : IBufferPool<ArrayBufferWriter<T>>
         buffer.Clear();
 #endif
         _queue.Enqueue(buffer);
-
-        return true;
     }
 }
