@@ -76,7 +76,36 @@ internal class SequenceBufferWriterTest
     }
 
     [Test]
-    public async Task ReturnSequenceToSharedPool_Test()
+    public async Task ROSS_Disposable_Test()
+    {
+        var pool = SequenceBufferWriter<byte>.Pool;
+
+        var bufferWriter = pool.Rent();
+        var rentedBuffer = (IRentedBuffer<SequenceBufferWriter<byte>>)bufferWriter;
+        Assert.That(rentedBuffer.BufferPool, Is.EqualTo(pool));
+        Assert.That(rentedBuffer.BufferPool.Id, Is.Zero);
+
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
+
+        bufferWriter.GetSpan(BufferSize.KB_8);
+        bufferWriter.Write(bytes);
+
+        var pos = bufferWriter.End;
+        var ros = bufferWriter.AsReadOnly;
+
+        using var ross = new ReadOnlySequenceStream(ros, bufferWriter);
+
+        await bufferWriter.WriteAsync(ross);
+
+        var ros2 = bufferWriter.AsReadOnly;
+        var sliced = ros2.Slice(pos);
+
+        Assert.That(sliced.SequenceEqual(ros), Is.True);
+    }
+
+    [Test]
+    public async Task ROSS_DisposeArg_Test()
     {
         var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
 
@@ -93,7 +122,7 @@ internal class SequenceBufferWriterTest
         var pos = bufferWriter.End;
         var ros = bufferWriter.AsReadOnly;
 
-        using var ross = new ReadOnlySequenceStream(ros, ReturnSequenceToSharedPool, bufferWriter);
+        using var ross = new ReadOnlySequenceStream(ros, DisposeArg, bufferWriter);
 
         await bufferWriter.WriteAsync(ross);
 
@@ -103,7 +132,7 @@ internal class SequenceBufferWriterTest
         Assert.That(sliced.SequenceEqual(ros), Is.True);
     }
 
-    private static void ReturnSequenceToSharedPool(object? arg)
+    private static void DisposeArg(object? arg)
     {
         var seq = (SequenceBufferWriter<byte>?)arg;
         if (seq == null) throw new ArgumentNullException(nameof(arg));
