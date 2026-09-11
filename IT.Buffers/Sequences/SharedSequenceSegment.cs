@@ -5,7 +5,7 @@ using System.Diagnostics;
 namespace IT.Buffers;
 
 //TODO: add : SequenceSegment<T>
-public class SharedSequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable
+public class SharedSequenceSegment<T> : ReadOnlySequenceSegment<T>, IResetable
 {
     private static readonly SharedBufferPool _pool = new();
 
@@ -71,12 +71,6 @@ public class SharedSequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable
         base.Memory = default;
         base.RunningIndex = 0;
         base.Next = null;
-    }
-
-    void IDisposable.Dispose()
-    {
-        Reset();
-        _pool.Return(this);
     }
 
     private class SharedBufferPool : BufferPool<SharedSequenceSegment<T>>

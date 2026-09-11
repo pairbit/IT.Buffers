@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace IT.Buffers;
 
-public abstract class BufferPool<TBuffer> : IBufferPool<TBuffer>
+public abstract class BufferPool<TBuffer> : IBufferPool<TBuffer> where TBuffer : IResetable
 {
     private readonly ConcurrentQueue<TBuffer> _queue;
     private readonly int _id;
@@ -53,6 +53,8 @@ public abstract class BufferPool<TBuffer> : IBufferPool<TBuffer>
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 
+        buffer.Reset();
+        
         _queue.Enqueue(buffer);
 
         return true;
@@ -61,6 +63,8 @@ public abstract class BufferPool<TBuffer> : IBufferPool<TBuffer>
     public void Return(TBuffer buffer)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
+
+        buffer.Reset();
 
         _queue.Enqueue(buffer);
     }

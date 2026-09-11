@@ -9,11 +9,10 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
+public class BufferWriter<T> : IAdvancedBufferWriter<T>, IResetable
 {
-    private static readonly SharedBufferPool _pool = new();
-
-    public static BufferPool<BufferWriter<T>> Pool => _pool;
+    public static BufferPool<BufferWriter<T>> Pool => 
+        NewBufferPool<BufferWriter<T>>.Shared;
     
     internal ArrayPool<T>? _arrayPool;
     private IBufferGrowthStrategy? _growthStrategy;
@@ -62,7 +61,7 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         }
     }
 
-    private BufferWriter()
+    public BufferWriter()
     {
         _buffers = new List<BufferSegment<T>>();
     }
@@ -328,12 +327,6 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         return (_arrayPool ?? ArrayPool<T>.Shared).Rent(size);
     }
 
-    void IDisposable.Dispose()
-    {
-        Reset();
-        _pool.Return(this);
-    }
-
     public struct Enumerator : IEnumerator<Memory<T>>
     {
         private readonly BufferWriter<T> _parent;
@@ -404,10 +397,5 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
             Current,
             End
         }
-    }
-
-    private class SharedBufferPool : BufferPool<BufferWriter<T>>
-    {
-        protected override BufferWriter<T> NewBuffer() => new();
     }
 }

@@ -87,21 +87,21 @@ public static class BufferPool
     public static int TryReturn<T>(in ReadOnlySequence<T> sequence)
     {
         if (sequence.Start.GetObject() is ReadOnlySequenceSegment<T> segment)
-            return TryDisposeSegments(segment);
+            return TryResetSegments(segment);
 
         return 0;
     }
 
-    internal static int TryDisposeSegments<T>(ReadOnlySequenceSegment<T> segment)
+    internal static int TryResetSegments<T>(ReadOnlySequenceSegment<T> segment)
     {
         var count = 0;
         do
         {
             var next = segment.Next;
 
-            if (segment is IDisposable disposable)
+            if (segment is IResetable resetable)
             {
-                disposable.Dispose();
+                resetable.Reset();
                 count++;
             }
 

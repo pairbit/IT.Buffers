@@ -1,6 +1,6 @@
 ﻿namespace IT.Buffers;
 
-public class NewBoundedBufferPool<TBuffer> : BoundedBufferPool<TBuffer> where TBuffer : class, new()
+public class NewBoundedBufferPool<TBuffer> : BoundedBufferPool<TBuffer> where TBuffer : class, IResetable, new()
 {
     public NewBoundedBufferPool(int id, int pow2 = 5) : base(id, pow2)
     {

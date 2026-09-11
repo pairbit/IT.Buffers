@@ -7,13 +7,12 @@ using System.Runtime.CompilerServices;
 namespace IT.Buffers;
 
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>
+public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequenceOwner<T>
 {
     private static readonly ReadOnlySequence<T> Empty = new(Segment.Empty, 0, Segment.Empty, 0);
 
-    private static readonly SharedBufferPool _pool = new();
-
-    public static BufferPool<SequenceBufferWriter<T>> Pool => _pool;
+    public static BufferPool<SequenceBufferWriter<T>> Pool => 
+        NewBufferPool<SequenceBufferWriter<T>>.Shared;
 
     private readonly Stack<Segment> _stack;
     private ArrayPool<T>? _arrayPool;
@@ -23,7 +22,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>
     private Segment? _last;
     private int _nextBufferSize;
 
-    private SequenceBufferWriter()
+    public SequenceBufferWriter()
     {
         _stack = new();
     }
@@ -261,12 +260,6 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>
         return nextSegment;
     }
 
-    void IDisposable.Dispose()
-    {
-        Reset();
-        _pool.Return(this);
-    }
-
     private class Segment : SequenceSegment<T>
     {
         internal static readonly Segment Empty = new();
@@ -358,10 +351,5 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>
             }
             Start = offset;
         }
-    }
-
-    private class SharedBufferPool : BufferPool<SequenceBufferWriter<T>>
-    {
-        protected override SequenceBufferWriter<T> NewBuffer() => new();
     }
 }

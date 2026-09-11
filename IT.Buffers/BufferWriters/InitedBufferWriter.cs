@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-internal class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
+internal class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IResetable
 {
     internal readonly ArrayPool<T>? _arrayPool;
     internal readonly List<BufferSegment<T>> _buffers;
@@ -399,8 +399,6 @@ internal class InitedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         //TODO: сделать проверку на OutOfMemoryException($"Size {sizeHint} > {Max}")
         return (_arrayPool ?? ArrayPool<T>.Shared).Rent(size);
     }
-
-    void IDisposable.Dispose() => Reset();
 
     public struct Enumerator : IEnumerator<Memory<T>>
     {

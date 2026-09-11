@@ -32,7 +32,10 @@ public class ArrayBufferWriterPool<T> : IBufferPool<ArrayBufferWriter<T>>
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 #if NET8_0_OR_GREATER
-        buffer.ResetWrittenCount();
+        if (System.Runtime.CompilerServices.RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            buffer.Clear();
+        else
+            buffer.ResetWrittenCount();
 #else
         buffer.Clear();
 #endif

@@ -6,11 +6,10 @@ using System.Diagnostics;
 namespace IT.Buffers;
 
 //TODO: add : ISequenceOwner<T>
-public sealed class ReadOnlySequenceBuilder<T> : IDisposable
+public sealed class ReadOnlySequenceBuilder<T> : IResetable
 {
-    private static readonly SharedBufferPool _pool = new();
-
-    public static BufferPool<ReadOnlySequenceBuilder<T>> Pool => _pool;
+    public static BufferPool<ReadOnlySequenceBuilder<T>> Pool => 
+        NewBufferPool<ReadOnlySequenceBuilder<T>>.Shared;
 
     private Stack<Segment>? _stack;
     private readonly List<Segment> _list;
@@ -23,7 +22,7 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
         set => _list.Capacity = value;
     }
 
-    private ReadOnlySequenceBuilder()
+    public ReadOnlySequenceBuilder()
     {
         _list = [];
     }
@@ -151,12 +150,6 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
         _list.Clear();
     }
 
-    void IDisposable.Dispose()
-    {
-        Reset();
-        _pool.Return(this);
-    }
-
     private class Segment : ReadOnlySequenceSegment<T>
     {
         private bool _isRentedMemory;
@@ -200,10 +193,5 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
             base.RunningIndex = 0;
             base.Next = null;
         }
-    }
-
-    private class SharedBufferPool : BufferPool<ReadOnlySequenceBuilder<T>>
-    {
-        protected override ReadOnlySequenceBuilder<T> NewBuffer() => new();
     }
 }

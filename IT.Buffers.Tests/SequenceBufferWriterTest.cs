@@ -8,42 +8,7 @@ internal class SequenceBufferWriterTest
     [Test]
     public async Task Pool_Test()
     {
-        var pool = SequenceBufferWriter<byte>.Pool;
-        
-        var bufferWriter = pool.Rent();
-        try
-        {
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
-
-            bufferWriter.GetSpan(BufferSize.KB_8);
-            bufferWriter.Write(bytes);
-
-            var pos = bufferWriter.End;
-            var ros = bufferWriter.AsReadOnly;
-
-            using var ross = new ReadOnlySequenceStream(ros);
-
-            await bufferWriter.WriteAsync(ross);
-
-            var ros2 = bufferWriter.AsReadOnly;
-            var sliced = ros2.Slice(pos);
-
-            Assert.That(sliced.SequenceEqual(ros), Is.True);
-        }
-        finally
-        {
-            bufferWriter.Reset();
-        }
-    }
-
-    [Test]
-    public async Task ROSS_Disposable_Test()
-    {
-        var pool = SequenceBufferWriter<byte>.Pool;
-
-        var bufferWriter = pool.Rent();
-
+        var bufferWriter = new SequenceBufferWriter<byte>();
         var bytes = new byte[BufferSize.MB];
         Random.Shared.NextBytes(bytes);
 
@@ -53,7 +18,7 @@ internal class SequenceBufferWriterTest
         var pos = bufferWriter.End;
         var ros = bufferWriter.AsReadOnly;
 
-        using var ross = new ReadOnlySequenceStream(ros, bufferWriter);
+        using var ross = new ReadOnlySequenceStream(ros);
 
         await bufferWriter.WriteAsync(ross);
 
@@ -92,7 +57,7 @@ internal class SequenceBufferWriterTest
         var seq = (SequenceBufferWriter<byte>?)arg;
         if (seq == null) throw new ArgumentNullException(nameof(arg));
 
-        SequenceBufferWriter<byte>.Pool.TryReturn(seq);
+        SequenceBufferWriter<byte>.Pool.Return(seq);
     }
 
     [Test]
@@ -124,7 +89,7 @@ internal class SequenceBufferWriterTest
     [Test]
     public void Advance_Test()
     {
-        var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
+        var bufferWriter = new SequenceBufferWriter<byte>();
 
         Assert.Throws<ArgumentOutOfRangeException>(() => bufferWriter.Advance(1));
 
@@ -138,8 +103,8 @@ internal class SequenceBufferWriterTest
     [Test]
     public void Write_Test()
     {
-        using var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
-        
+        var bufferWriter = new SequenceBufferWriter<byte>();
+
         var bytes = new byte[BufferSize.MB];
         Random.Shared.NextBytes(bytes);
 
@@ -159,7 +124,7 @@ internal class SequenceBufferWriterTest
     [Test]
     public async Task WriteAsync_Test()
     {
-        using var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
+        var bufferWriter = new SequenceBufferWriter<byte>();
         var bytes = new byte[BufferSize.MB];
         Random.Shared.NextBytes(bytes);
         var stream = new MemoryStream(bytes);
@@ -177,7 +142,7 @@ internal class SequenceBufferWriterTest
     [Test]
     public async Task WriteAsync_OneOfEachSize_Test()
     {
-        using var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
+        var bufferWriter = new SequenceBufferWriter<byte>();
 
         var bytes = new byte[BufferSize.MB];
         Random.Shared.NextBytes(bytes);
@@ -226,7 +191,7 @@ internal class SequenceBufferWriterTest
     [Test]
     public async Task WriteAsync_TwoOfEachSize_Test()
     {
-        using var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
+        var bufferWriter = new SequenceBufferWriter<byte>();
 
         var bytes = new byte[BufferSize.MB];
         Random.Shared.NextBytes(bytes);
@@ -247,7 +212,7 @@ internal class SequenceBufferWriterTest
     [Test]
     public async Task WriteAsync_FourOfEachSize_Test()
     {
-        using var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
+        var bufferWriter = new SequenceBufferWriter<byte>();
 
         var bytes = new byte[BufferSize.MB];
         Random.Shared.NextBytes(bytes);
@@ -268,8 +233,8 @@ internal class SequenceBufferWriterTest
     [Test]
     public async Task WriteAsync_Off_Test()
     {
-        using var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
-        
+        var bufferWriter = new SequenceBufferWriter<byte>();
+
         var bytes = new byte[BufferSize.MB];
         Random.Shared.NextBytes(bytes);
         var stream = new MemoryStream(bytes);
