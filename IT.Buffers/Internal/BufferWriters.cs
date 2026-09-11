@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿/*
+using System.Buffers;
 
 namespace IT.Buffers.Internal;
 
@@ -9,4 +10,4 @@ internal class BufferWriters
     {
         throw new System.NotImplementedException();
     }
-}
+}*/
