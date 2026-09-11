@@ -27,6 +27,11 @@ public sealed class ReadOnlySequenceBuilder<T> : IResetable
         _list = [];
     }
 
+    public ReadOnlySequenceBuilder(int capacity)
+    {
+        _list = new(capacity);
+    }
+
     public int EnsureCapacity(int capacity)
     {
         return _list.EnsureCapacity(capacity);

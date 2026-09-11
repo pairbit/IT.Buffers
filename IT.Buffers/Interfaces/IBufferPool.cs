@@ -9,4 +9,6 @@ public interface IBufferPool
     Type BufferType { get; }
 
     //bool IsBounded { get; }
+
+    //int BoundedLimit { get; }
 }
