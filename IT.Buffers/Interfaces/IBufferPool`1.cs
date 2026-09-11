@@ -8,7 +8,7 @@ public interface IBufferPool<TBuffer> : IBufferPool
 
     TBuffer Rent();
 
-    bool TryReturn(TBuffer buffer, bool reset = true);
+    bool TryReturn(TBuffer buffer);
 
-    void Return(TBuffer buffer, bool reset = true);
+    void Return(TBuffer buffer);
 }

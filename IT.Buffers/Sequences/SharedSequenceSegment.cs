@@ -72,7 +72,7 @@ public class SharedSequenceSegment<T> : ReadOnlySequenceSegment<T>, IDisposable
         base.RunningIndex = 0;
         base.Next = null;
 
-        _pool.Return(this, dispose: false);
+        _pool.Return(this);
     }
 
     void IDisposable.Dispose() => Reset();

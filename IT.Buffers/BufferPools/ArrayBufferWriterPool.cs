@@ -21,26 +21,21 @@ public class ArrayBufferWriterPool<T> : IBufferPool<ArrayBufferWriter<T>>
     public ArrayBufferWriter<T> Rent() =>
         _queue.TryDequeue(out var buffer) ? buffer : new ArrayBufferWriter<T>();
 
-    public bool TryReturn(ArrayBufferWriter<T> buffer, bool reset = true)
+    public bool TryReturn(ArrayBufferWriter<T> buffer)
     {
-        Return(buffer, reset);
+        Return(buffer);
 
         return true;
     }
 
-    public void Return(ArrayBufferWriter<T> buffer, bool reset = true)
+    public void Return(ArrayBufferWriter<T> buffer)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
-
-        if (reset)
-        {
 #if NET8_0_OR_GREATER
-            buffer.ResetWrittenCount();
+        buffer.ResetWrittenCount();
 #else
-            buffer.Clear();
+        buffer.Clear();
 #endif
-        }
-
         _queue.Enqueue(buffer);
     }
 }

@@ -150,7 +150,7 @@ public sealed class ReadOnlySequenceBuilder<T> : IDisposable
         }
         _list.Clear();
 
-        _pool.Return(this, dispose: false);
+        _pool.Return(this);
     }
 
     void IDisposable.Dispose() => Reset();

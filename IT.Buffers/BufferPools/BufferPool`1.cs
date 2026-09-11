@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace IT.Buffers;
 
-public abstract class BufferPool<TBuffer> : IBufferPool<TBuffer> where TBuffer : IDisposable
+public abstract class BufferPool<TBuffer> : IBufferPool<TBuffer>
 {
     private readonly ConcurrentQueue<TBuffer> _queue;
     private readonly int _id;
@@ -49,21 +49,19 @@ public abstract class BufferPool<TBuffer> : IBufferPool<TBuffer> where TBuffer :
     }
 
     /// <exception cref="ArgumentNullException"></exception>
-    public bool TryReturn(TBuffer buffer, bool dispose = true)
+    public bool TryReturn(TBuffer buffer)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 
-        if (dispose) buffer.Dispose();
         _queue.Enqueue(buffer);
 
         return true;
     }
 
-    public void Return(TBuffer buffer, bool dispose = true)
+    public void Return(TBuffer buffer)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
 
-        if (dispose) buffer.Dispose();
         _queue.Enqueue(buffer);
     }
 

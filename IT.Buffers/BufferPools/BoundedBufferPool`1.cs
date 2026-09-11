@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace IT.Buffers;
 
-public abstract class BoundedBufferPool<TBuffer> : IBufferPool<TBuffer> where TBuffer : IDisposable
+public abstract class BoundedBufferPool<TBuffer> : IBufferPool<TBuffer>
 {
     private readonly BoundedConcurrentQueue<TBuffer> _queue;
     private readonly int _id;
@@ -34,20 +34,16 @@ public abstract class BoundedBufferPool<TBuffer> : IBufferPool<TBuffer> where TB
     }
 
     /// <exception cref="ArgumentNullException"></exception>
-    public bool TryReturn(TBuffer buffer, bool dispose = true)
+    public bool TryReturn(TBuffer buffer)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
-
-        if (dispose) buffer.Dispose();
 
         return _queue.TryEnqueue(buffer);
     }
 
-    public void Return(TBuffer buffer, bool dispose = true)
+    public void Return(TBuffer buffer)
     {
         if (buffer == null) throw new ArgumentNullException(nameof(buffer));
-
-        if (dispose) buffer.Dispose();
 
         if (!_queue.TryEnqueue(buffer))
             throw new InvalidOperationException("The buffer pool is full.");

@@ -175,7 +175,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, ISequenceOwner<T>
         _growthStrategy = null;
         _nextBufferSize = 0;
 
-        _pool.Return(this, dispose: false);
+        _pool.Return(this);
     }
 
     private Segment GetSegment(int sizeHint)
