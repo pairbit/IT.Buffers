@@ -6,7 +6,10 @@ namespace IT.Buffers;
 
 public abstract class SequenceSegment<T> : ReadOnlySequenceSegment<T>
 {
-    public SequenceSegment<T>? Previous { get; protected set; }
+    //TODO: нужен ли предыдущий кусок?
+    //private SequenceSegment<T>? _previous;
+
+    //public SequenceSegment<T>? Previous => _previous;
 
     public new SequenceSegment<T>? Next
     {
@@ -18,5 +21,12 @@ public abstract class SequenceSegment<T> : ReadOnlySequenceSegment<T>
     {
         get => MemoryMarshal.AsMemory(base.Memory);
         protected set => base.Memory = value;
+    }
+
+    protected void Reset()
+    {
+        base.Next = null;
+        base.Memory = default;
+        RunningIndex = 0;
     }
 }
