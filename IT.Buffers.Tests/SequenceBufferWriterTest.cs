@@ -1,4 +1,5 @@
 ﻿using IT.Buffers.Extensions;
+using IT.Buffers.Interfaces;
 using System.Buffers;
 
 namespace IT.Buffers.Tests;
@@ -6,26 +7,106 @@ namespace IT.Buffers.Tests;
 internal class SequenceBufferWriterTest
 {
     [Test]
+    public async Task New_Test()
+    {
+        var bufferWriter = new SequenceBufferWriter<byte>();
+        try
+        {
+            var rentedBuffer = (IRentedBuffer<SequenceBufferWriter<byte>>)bufferWriter;
+            Assert.That(rentedBuffer.BufferPool, Is.Null);
+
+            var bytes = new byte[BufferSize.MB];
+            Random.Shared.NextBytes(bytes);
+
+            bufferWriter.GetSpan(BufferSize.KB_8);
+            bufferWriter.Write(bytes);
+
+            var pos = bufferWriter.End;
+            var ros = bufferWriter.AsReadOnly;
+
+            using var ross = new ReadOnlySequenceStream(ros);
+
+            await bufferWriter.WriteAsync(ross);
+
+            var ros2 = bufferWriter.AsReadOnly;
+            var sliced = ros2.Slice(pos);
+
+            Assert.That(sliced.SequenceEqual(ros), Is.True);
+        }
+        finally
+        {
+            bufferWriter.Reset();
+        }
+    }
+
+    [Test]
     public async Task Pool_Test()
     {
-        var sequence = SequenceBufferWriter<byte>.Pool.Rent();
-        var bytes = new byte[BufferSize.MB];
-        Random.Shared.NextBytes(bytes);
-
-        sequence.GetSpan(BufferSize.KB_8);
-        sequence.Write(bytes);
-
-        var pos = sequence.End;
-        var ros = sequence.AsReadOnly;
+        var pool = SequenceBufferWriter<byte>.Pool;
         
-        using var ross = new ReadOnlySequenceStream(ros, ReturnSequenceToPool, sequence);
+        var bufferWriter = pool.Rent();
+        try
+        {
+            var rentedBuffer = (IRentedBuffer<SequenceBufferWriter<byte>>)bufferWriter;
+            Assert.That(rentedBuffer.BufferPool, Is.EqualTo(pool));
+            Assert.That(rentedBuffer.BufferPool.Id, Is.Zero);
 
-        await sequence.WriteAsync(ross);
+            var bytes = new byte[BufferSize.MB];
+            Random.Shared.NextBytes(bytes);
 
-        var ros2 = sequence.AsReadOnly;
-        var sliced = ros2.Slice(pos);
+            bufferWriter.GetSpan(BufferSize.KB_8);
+            bufferWriter.Write(bytes);
 
-        Assert.That(sliced.SequenceEqual(ros), Is.True);
+            var pos = bufferWriter.End;
+            var ros = bufferWriter.AsReadOnly;
+
+            using var ross = new ReadOnlySequenceStream(ros);
+
+            await bufferWriter.WriteAsync(ross);
+
+            var ros2 = bufferWriter.AsReadOnly;
+            var sliced = ros2.Slice(pos);
+
+            Assert.That(sliced.SequenceEqual(ros), Is.True);
+        }
+        finally
+        {
+            bufferWriter.Reset();
+        }
+    }
+
+    [Test]
+    public async Task ReadOnlySequenceStreamToPool_Test()
+    {
+        var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
+        try
+        {
+            var rentedBuffer = (IRentedBuffer<SequenceBufferWriter<byte>>)bufferWriter;
+            Assert.That(rentedBuffer.BufferPool, Is.EqualTo(SequenceBufferWriter<byte>.Pool));
+            Assert.That(rentedBuffer.BufferPool.Id, Is.Zero);
+
+            var bytes = new byte[BufferSize.MB];
+            Random.Shared.NextBytes(bytes);
+
+            bufferWriter.GetSpan(BufferSize.KB_8);
+            bufferWriter.Write(bytes);
+
+            var pos = bufferWriter.End;
+            var ros = bufferWriter.AsReadOnly;
+
+            using var ross = new ReadOnlySequenceStream(ros, ReturnSequenceToPool, bufferWriter);
+
+            await bufferWriter.WriteAsync(ross);
+
+            var ros2 = bufferWriter.AsReadOnly;
+            var sliced = ros2.Slice(pos);
+
+            Assert.That(sliced.SequenceEqual(ros), Is.True);
+        }
+        finally
+        {
+            bufferWriter.Reset();
+        }
     }
 
     private static void ReturnSequenceToPool(object? arg)

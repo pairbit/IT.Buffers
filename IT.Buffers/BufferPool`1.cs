@@ -55,6 +55,7 @@ public class BufferPool<TBuffer> : IBufferPool<TBuffer> where TBuffer : class, I
                     Debug.Assert(ex.Message == "The buffer pool can be set only once.");
                 }
 #endif
+                return buffer;
             }
         }
 
