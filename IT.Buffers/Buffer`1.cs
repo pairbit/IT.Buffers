@@ -113,7 +113,6 @@ public readonly struct Buffer<T>
 
     public bool IsEmpty => _length == 0 || _length == -1;
 
-    //TODO: что делать с SequenceSegment : IDisposable???
     public bool IsRented => ArrayType != RentedArrayType.None || _buffer is IMemoryOwner<T> || _buffer is ISequenceOwner<T>;
 
     public T this[int index]

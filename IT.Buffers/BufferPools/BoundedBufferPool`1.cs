@@ -12,6 +12,8 @@ public abstract class BoundedBufferPool<TBuffer> : IBufferPool<TBuffer> where TB
 
     public Type BufferType => typeof(TBuffer);
 
+    public int Capacity => _queue.Capacity;
+
     public BoundedBufferPool(int id, int pow2 = 5)
     {
         if (id != 0) throw new ArgumentOutOfRangeException(nameof(id));
