@@ -76,40 +76,34 @@ internal class SequenceBufferWriterTest
     }
 
     [Test]
-    public async Task ReadOnlySequenceStreamToPool_Test()
+    public async Task ReturnSequenceToSharedPool_Test()
     {
         var bufferWriter = SequenceBufferWriter<byte>.Pool.Rent();
-        try
-        {
-            var rentedBuffer = (IRentedBuffer<SequenceBufferWriter<byte>>)bufferWriter;
-            Assert.That(rentedBuffer.BufferPool, Is.EqualTo(SequenceBufferWriter<byte>.Pool));
-            Assert.That(rentedBuffer.BufferPool.Id, Is.Zero);
 
-            var bytes = new byte[BufferSize.MB];
-            Random.Shared.NextBytes(bytes);
+        var rentedBuffer = (IRentedBuffer<SequenceBufferWriter<byte>>)bufferWriter;
+        Assert.That(rentedBuffer.BufferPool, Is.EqualTo(SequenceBufferWriter<byte>.Pool));
+        Assert.That(rentedBuffer.BufferPool.Id, Is.Zero);
 
-            bufferWriter.GetSpan(BufferSize.KB_8);
-            bufferWriter.Write(bytes);
+        var bytes = new byte[BufferSize.MB];
+        Random.Shared.NextBytes(bytes);
 
-            var pos = bufferWriter.End;
-            var ros = bufferWriter.AsReadOnly;
+        bufferWriter.GetSpan(BufferSize.KB_8);
+        bufferWriter.Write(bytes);
 
-            using var ross = new ReadOnlySequenceStream(ros, ReturnSequenceToPool, bufferWriter);
+        var pos = bufferWriter.End;
+        var ros = bufferWriter.AsReadOnly;
 
-            await bufferWriter.WriteAsync(ross);
+        using var ross = new ReadOnlySequenceStream(ros, ReturnSequenceToSharedPool, bufferWriter);
 
-            var ros2 = bufferWriter.AsReadOnly;
-            var sliced = ros2.Slice(pos);
+        await bufferWriter.WriteAsync(ross);
 
-            Assert.That(sliced.SequenceEqual(ros), Is.True);
-        }
-        finally
-        {
-            bufferWriter.Reset();
-        }
+        var ros2 = bufferWriter.AsReadOnly;
+        var sliced = ros2.Slice(pos);
+
+        Assert.That(sliced.SequenceEqual(ros), Is.True);
     }
 
-    private static void ReturnSequenceToPool(object? arg)
+    private static void ReturnSequenceToSharedPool(object? arg)
     {
         var seq = (SequenceBufferWriter<byte>?)arg;
         if (seq == null) throw new ArgumentNullException(nameof(arg));
