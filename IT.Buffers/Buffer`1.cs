@@ -71,6 +71,9 @@ public readonly struct Buffer<T>
             if (buffer is IMemoryOwner<T> memoryOwner)
                 return memoryOwner.Memory.Slice(Start, length);
 
+            if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+                throw new NotSupportedException("The sequence does not support memory.");
+
             throw InvalidState();
         }
     }
@@ -93,9 +96,16 @@ public readonly struct Buffer<T>
             if (buffer is IMemoryOwner<T> memoryOwner)
                 return memoryOwner.Memory.Span.Slice(Start, length);
 
+            if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+                throw new NotSupportedException("The sequence does not support span.");
+
             throw InvalidState();
         }
     }
+
+    internal ISequenceOwner<T>? SequenceOwner => _buffer as ISequenceOwner<T>;
+
+    //internal Sequence<T> Sequence => GetSequence();
 
     public int Start => _start < 0 ? ~_start : _start;
 
@@ -103,7 +113,8 @@ public readonly struct Buffer<T>
 
     public bool IsEmpty => _length == 0 || _length == -1;
 
-    public bool IsRented => ArrayType != RentedArrayType.None || _buffer is IMemoryOwner<T>;
+    //TODO: что делать с SequenceSegment : IDisposable???
+    public bool IsRented => ArrayType != RentedArrayType.None || _buffer is IMemoryOwner<T> || _buffer is ISequenceOwner<T>;
 
     public T this[int index]
     {
@@ -398,6 +409,11 @@ public readonly struct Buffer<T>
         _start = start;
         _length = length;
     }
+
+    /*
+     public Buffer(Sequence<T> sequence, int start, int length)
+     public Buffer(ISequenceOwner<T> sequenceOwner, int start, int length)
+     */
 
     public override int GetHashCode()
         => _buffer is null ? 0 : HashCode.Combine(_buffer.GetHashCode(), _start, _length);
