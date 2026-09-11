@@ -111,13 +111,17 @@ public static class BufferPool
 
             if (segment is IResetable resetable)
             {
-                resetable.Reset();
-                count++;
-
+                //TODO: откуда я знаю что он взят из пула?
                 if (segment is SharedSequenceSegment<T> sharedSequenceSegment)
                 {
                     TryReturn(sharedSequenceSegment);
                 }
+                else
+                {
+                    resetable.Reset();
+                }
+                
+                count++;
             }
 
             segment = next!;
