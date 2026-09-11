@@ -13,7 +13,7 @@ public class ReadOnlySequenceTest
         segment.Reset();
 
         //TODO: что делать?
-        //SharedSequenceSegment<byte>.Pool.Return(segment);
+        SharedSequenceSegment<byte>.Pool.Return(segment);
     }
 
     [Test]
@@ -120,7 +120,7 @@ public class ReadOnlySequenceTest
             rented = buffer.AsMemory(0, nextBufferSize);
             Random.Shared.NextBytes(rented.Span);
 
-            end = end.Append(rented, isRented: true);
+            end = end.AppendRented(rented, isRented: true);
         }
 
         return new ReadOnlySequence<byte>(start, 0, end, end.Memory.Length);

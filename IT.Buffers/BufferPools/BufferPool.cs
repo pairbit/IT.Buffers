@@ -1,6 +1,7 @@
 ﻿using IT.Buffers.Internal;
 using System;
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -33,6 +34,12 @@ public static class BufferPool
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
         return new(array, 0, minimumLength, RentedArrayType.Shared);
     }
+
+    public static TBuffer Rent<TBuffer>() where TBuffer : class, IResetable, new()
+        => NewBufferPool<TBuffer>.Shared.Rent();
+
+    public static bool TryRent<TBuffer>([MaybeNullWhen(false)] out TBuffer buffer) where TBuffer : class, IResetable, new()
+        => NewBufferPool<TBuffer>.Shared.TryRent(out buffer);
 
     public static void Return<T>(T[] array)
         => ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
@@ -92,6 +99,9 @@ public static class BufferPool
         return 0;
     }
 
+    public static bool TryReturn<TBuffer>(TBuffer buffer) where TBuffer : class, IResetable, new()
+        => NewBufferPool<TBuffer>.Shared.TryReturn(buffer);
+
     internal static int TryResetSegments<T>(ReadOnlySequenceSegment<T> segment)
     {
         var count = 0;
@@ -103,6 +113,11 @@ public static class BufferPool
             {
                 resetable.Reset();
                 count++;
+
+                if (segment is SharedSequenceSegment<T> sharedSequenceSegment)
+                {
+                    TryReturn(sharedSequenceSegment);
+                }
             }
 
             segment = next!;

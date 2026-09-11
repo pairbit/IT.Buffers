@@ -7,16 +7,15 @@ namespace IT.Buffers;
 //TODO: add : SequenceSegment<T>
 public class SharedSequenceSegment<T> : ReadOnlySequenceSegment<T>, IResetable
 {
-    private static readonly SharedBufferPool _pool = new();
-
-    public static BufferPool<SharedSequenceSegment<T>> Pool => _pool;
+    public static BufferPool<SharedSequenceSegment<T>> Pool =>
+        NewBufferPool<SharedSequenceSegment<T>>.Shared;
 
     //TODO: можно определить арендована память по признаку RunningIndex < 0
     private bool _isRentedMemory;
 
     public bool IsRentedMemory => _isRentedMemory;
 
-    private SharedSequenceSegment()
+    public SharedSequenceSegment()
     {
 
     }
@@ -48,9 +47,9 @@ public class SharedSequenceSegment<T> : ReadOnlySequenceSegment<T>, IResetable
         _isRentedMemory = isRented;
     }
 
-    public SharedSequenceSegment<T> Append(ReadOnlyMemory<T> memory, bool isRented = false)
+    public SharedSequenceSegment<T> AppendRented(ReadOnlyMemory<T> memory, bool isRented = false)
     {
-        var next = _pool.Rent();
+        var next = Pool.Rent();
 
         next.SetMemory(memory, isRented);
         next.RunningIndex = RunningIndex + Memory.Length;
@@ -71,10 +70,5 @@ public class SharedSequenceSegment<T> : ReadOnlySequenceSegment<T>, IResetable
         base.Memory = default;
         base.RunningIndex = 0;
         base.Next = null;
-    }
-
-    private class SharedBufferPool : BufferPool<SharedSequenceSegment<T>>
-    {
-        protected override SharedSequenceSegment<T> NewBuffer() => new();
     }
 }

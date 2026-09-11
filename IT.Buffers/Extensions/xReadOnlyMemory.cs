@@ -125,7 +125,7 @@ public static class xReadOnlyMemory
 
             if (memory.Length < bufferSize) bufferSize = memory.Length;
 
-            end = end.Append(memory[..bufferSize]);
+            end = end.AppendRented(memory[..bufferSize]);
 
             memory = memory[bufferSize..];
         } while (memory.Length > 0);
