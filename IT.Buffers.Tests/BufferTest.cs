@@ -42,6 +42,11 @@ internal class BufferTest
 
         var buffer = new Buffer<byte>(new byte[1], RentedArrayType.Global);
         Assert.Throws<NotImplementedException>(() => buffer.TryReturn(out _));
+        Assert.Throws<NotImplementedException>(buffer.Return);
+
+        buffer = new Buffer<byte>(new byte[1], RentedArrayType.External);
+        Assert.That(Assert.Throws<InvalidOperationException>(buffer.Return).Message,
+            Is.EqualTo("It is impossible to return an external array."));
     }
 
     [Test]
@@ -156,7 +161,7 @@ internal class BufferTest
     }
 
     [Test]
-    public void RentReturnTest()
+    public void TryReturnTest()
     {
         Buffer<byte> buffer = default;
         EqualTo(buffer, -1);
@@ -216,6 +221,53 @@ internal class BufferTest
         EqualTo(buffer, length: 1, type: RentedArrayType.External);
         Assert.That(buffer.TryReturn(out externalArray), Is.False);
         Assert.That(externalArray, Is.EqualTo(array));
+    }
+
+    [Test]
+    public void ReturnTest()
+    {
+        Buffer<byte> buffer = default;
+        EqualTo(buffer, -1);
+        buffer.Return();
+
+        buffer = BufferPool.Rent<byte>(0);
+        EqualTo(buffer);
+        buffer.Return();
+
+        buffer = BufferPool.Rent<byte>(1);
+        EqualTo(buffer, length: 16, count: 1, type: RentedArrayType.Shared);
+        buffer.Return();
+
+        buffer = BufferPool.Rent<byte>(BufferSize.MB_32);
+        EqualTo(buffer, BufferSize.MB_32, type: RentedArrayType.Shared);
+        buffer.Return();
+
+        buffer = BufferPool.Rent<byte>(BufferSize.GB - 1);
+        EqualTo(buffer, length: BufferSize.GB, count: BufferSize.GB - 1, type: RentedArrayType.Shared);
+        buffer.Return();
+
+        buffer = BufferPool.Rent<byte>(BufferSize.GB + 1);
+        EqualTo(buffer, BufferSize.GB + 1);
+        buffer.Return();
+
+        buffer = BufferPool.Rent<byte>(0, BufferSize.MB_16);
+        EqualTo(buffer);
+        buffer.Return();
+
+        buffer = BufferPool.Rent<byte>(BufferSize.MB_32, BufferSize.MB_16);
+        EqualTo(buffer, BufferSize.MB_32);
+        buffer.Return();
+
+        buffer = new Buffer<byte>(MemoryPool<byte>.Shared.Rent(1));
+        EqualTo(buffer, -1, start: 0, count: 16, isRented: true);
+        buffer.Return();
+
+        buffer = new Buffer<byte>(MemoryPool<byte>.Shared.Rent(16), 10, 4);
+        Assert.That(buffer.MemoryOwner, Is.Not.Null);
+        Assert.That(buffer.AsUnrented().MemoryOwner, Is.Null);
+        Assert.That(new Buffer<byte>(buffer.Memory).MemoryOwner, Is.Null);
+        EqualTo(buffer, -1, start: 10, count: 4, isRented: true);
+        buffer.Return();
     }
 
     private static void EqualTo(Buffer<byte> buffer,
