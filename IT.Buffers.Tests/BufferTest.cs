@@ -165,6 +165,8 @@ internal class BufferTest
 
         Assert.That(buffer.AsUnrented(2), Is.EqualTo(buffer.Slice(2)));
         Assert.That(buffer.AsUnrented(1, 3), Is.EqualTo(buffer.Slice(1, 3)));
+
+        Assert.That(buffer.AsEmpty(), Is.EqualTo(buffer.Slice(0, 0)));
     }
 
     [Test]
@@ -358,6 +360,9 @@ internal class BufferTest
         }
 
         if (!buffer.IsEmpty)
-            EqualTo(buffer.AsEmpty(), type, objLength, 0, 0, arrayType: arrayType, isRented: isRented);
+        {
+            EqualTo(buffer.AsEmpty(), type, objLength, buffer.Start, 0, arrayType: arrayType, isRented: isRented);
+            Assert.That(buffer.AsEmpty(), Is.EqualTo(buffer.Slice(0, 0)));
+        }
     }
 }
