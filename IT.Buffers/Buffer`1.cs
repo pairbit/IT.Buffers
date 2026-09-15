@@ -775,6 +775,8 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
     public static implicit operator Buffer<T>(ArraySegment<T> segment) => new(segment);
 
     public static implicit operator Buffer<T>(T[]? array) => array != null ? new(array) : default;
+    
+    public static implicit operator Buffer<T>(MemoryManager<T>? memoryManager) => memoryManager != null ? new(memoryManager) : default;
 
     public static implicit operator Buffer<T>(Memory<T> memory) => new(memory);
 

@@ -223,7 +223,7 @@ internal class BufferTest
         Assert.That(externalArray, Is.Null);
 
         MemoryManager<byte> mm = new UnmanagedMemoryManager<byte>(18);
-        buffer = new Buffer<byte>(mm);
+        buffer = mm;
         EqualTo(buffer, BufferType.MemoryManager, 18, isRented: true);
         Assert.That(buffer.TryReturn(out externalArray), Is.True);
         Assert.That(externalArray, Is.Null);
@@ -290,7 +290,7 @@ internal class BufferTest
         buffer.Return();
 
         MemoryManager<byte> mm = new UnmanagedMemoryManager<byte>(18);
-        buffer = new Buffer<byte>(mm);
+        buffer = mm;
         EqualTo(buffer, BufferType.MemoryManager, 18, isRented: true);
         buffer.Return();
 
