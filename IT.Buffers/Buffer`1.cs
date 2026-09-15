@@ -365,8 +365,6 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
     public Buffer(Memory<T> memory)
     {
-        // получаем сначала менеджера, чтобы случайно не потерять на него ссылку
-        // с другой стороны зачем нам он нужен, если при получении Manager из Memory, он не арендован
         if (MemoryMarshal.TryGetMemoryManager<T, MemoryManager<T>>(memory, out var manager, out var start, out var length))
         {
             _buffer = manager;
