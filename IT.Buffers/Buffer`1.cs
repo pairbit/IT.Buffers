@@ -71,7 +71,7 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public MemoryManager<T>? UnsafeMemoryManager => _buffer as MemoryManager<T>;
-    
+
     [EditorBrowsable(EditorBrowsableState.Never)]
     public IMemoryOwner<T>? UnsafeMemoryOwner => _buffer as IMemoryOwner<T>;
 
@@ -79,19 +79,18 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
     {
         get
         {
-            var length = Length;
-            if (length == 0)
-                return default;
-
             var buffer = _buffer;
             if (buffer is T[] array)
-                return new(array, Start, length);
+                return new(array, Start, Length);
 
             if (buffer is IMemoryOwner<T> memoryOwner)
-                return memoryOwner.Memory.Slice(Start, length);
+                return memoryOwner.Memory.Slice(Start, Length);
 
             if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
                 throw new NotSupportedException("The sequence does not support memory.");
+
+            if (buffer == null)
+                return Start == 0 && Length == 0 ? default : throw BufferStateInvalid();
 
             throw BufferUnknown();
         }
@@ -101,22 +100,21 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
     {
         get
         {
-            var length = Length;
-            if (length == 0)
-                return default;
-
             var buffer = _buffer;
             if (buffer is T[] array)
-                return new(array, Start, length);
+                return new(array, Start, Length);
 
             if (buffer is MemoryManager<T> memoryManager)
-                return memoryManager.GetSpan().Slice(Start, length);
+                return memoryManager.GetSpan().Slice(Start, Length);
 
             if (buffer is IMemoryOwner<T> memoryOwner)
-                return memoryOwner.Memory.Span.Slice(Start, length);
+                return memoryOwner.Memory.Span.Slice(Start, Length);
 
             if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
                 throw new NotSupportedException("The sequence does not support span.");
+
+            if (buffer == null)
+                return Start == 0 && Length == 0 ? default : throw BufferStateInvalid();
 
             throw BufferUnknown();
         }
