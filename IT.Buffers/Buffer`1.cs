@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace IT.Buffers;
@@ -14,6 +16,18 @@ public readonly struct Buffer<T>
     private readonly object? _buffer;
     private readonly int _start;
     private readonly int _length;
+
+    #region Props
+
+    private RentedArrayType RentedType
+    {
+        get
+        {
+            if (_start < 0) return _length < 0 ? RentedArrayType.External : RentedArrayType.Global;
+
+            return _length < 0 ? RentedArrayType.Shared : RentedArrayType.None;
+        }
+    }
 
     public BufferType Type
     {
@@ -74,7 +88,7 @@ public readonly struct Buffer<T>
             if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
                 throw new NotSupportedException("The sequence does not support memory.");
 
-            throw InvalidState();
+            throw BufferUnknown();
         }
     }
 
@@ -99,7 +113,7 @@ public readonly struct Buffer<T>
             if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
                 throw new NotSupportedException("The sequence does not support span.");
 
-            throw InvalidState();
+            throw BufferUnknown();
         }
     }
 
@@ -113,10 +127,7 @@ public readonly struct Buffer<T>
 
     public bool IsEmpty => _length == 0 || _length == -1;
 
-    //TODO: что делать с SequenceSegment?
-    //1. Может быть как арендован, так и нет (частично решается ISequenceOwner)
-    //2. Может быть память арендована, так и нет (IResetable)
-    public bool IsRented => ArrayType != RentedArrayType.None || _buffer is IMemoryOwner<T> || _buffer is ISequenceOwner<T>;
+    public bool IsRented => _length < 0 || _start < 0;
 
     public T this[int index]
     {
@@ -135,7 +146,7 @@ public readonly struct Buffer<T>
             if (buffer is IMemoryOwner<T> memoryOwner)
                 return memoryOwner.Memory.Span[Start + index];
 
-            throw InvalidState();
+            throw BufferUnknown();
         }
         set
         {
@@ -157,12 +168,16 @@ public readonly struct Buffer<T>
             }
             else
             {
-                throw InvalidState();
+                throw BufferUnknown();
             }
         }
     }
 
-    private Buffer(object buffer, int start, int length)
+    #endregion Props
+
+    #region Ctors
+
+    private Buffer(object? buffer, int start, int length)
     {
         _buffer = buffer;
         _start = start;
@@ -345,14 +360,14 @@ public readonly struct Buffer<T>
         }
     }
 
-    public Buffer(MemoryManager<T> memoryManager)
+    public Buffer(MemoryManager<T> memoryManager, bool isRented = true)
     {
         _buffer = memoryManager ?? throw new ArgumentNullException(nameof(memoryManager));
         _start = 0;
-        _length = memoryManager.Memory.Length;
+        _length = isRented ? ~memoryManager.Memory.Length : memoryManager.Memory.Length;
     }
 
-    public Buffer(MemoryManager<T> memoryManager, int start, int length)
+    public Buffer(MemoryManager<T> memoryManager, int start, int length, bool isRented = true)
     {
         if (memoryManager == null) throw new ArgumentNullException(nameof(memoryManager));
         var memoryManagerLength = memoryManager.Memory.Length;
@@ -365,22 +380,24 @@ public readonly struct Buffer<T>
 
         _buffer = memoryManager;
         _start = start;
-        _length = length;
+        _length = isRented ? ~length : length;
     }
 
     public Buffer(Memory<T> memory)
     {
-        if (MemoryMarshal.TryGetArray((ReadOnlyMemory<T>)memory, out var segment))
-        {
-            _buffer = segment.Array;
-            _start = segment.Offset;
-            _length = segment.Count;
-        }
-        else if (MemoryMarshal.TryGetMemoryManager<T, MemoryManager<T>>(memory, out var manager, out var start, out var length))
+        // получаем сначала менеджера, чтобы случайно не потерять на него ссылку
+        // с другой стороны зачем нам он нужен, если при получении Manager из Memory, он не арендован
+        if (MemoryMarshal.TryGetMemoryManager<T, MemoryManager<T>>(memory, out var manager, out var start, out var length))
         {
             _buffer = manager;
             _start = start;
             _length = length;
+        }
+        else if (MemoryMarshal.TryGetArray((ReadOnlyMemory<T>)memory, out var segment))
+        {
+            _buffer = segment.Array;
+            _start = segment.Offset;
+            _length = segment.Count;
         }
         else
         {
@@ -389,14 +406,14 @@ public readonly struct Buffer<T>
         }
     }
 
-    public Buffer(IMemoryOwner<T> memoryOwner)
+    public Buffer(IMemoryOwner<T> memoryOwner, bool isRented = true)
     {
         _buffer = memoryOwner ?? throw new ArgumentNullException(nameof(memoryOwner));
         _start = 0;
-        _length = memoryOwner.Memory.Length;
+        _length = isRented ? ~memoryOwner.Memory.Length : memoryOwner.Memory.Length;
     }
 
-    public Buffer(IMemoryOwner<T> memoryOwner, int start, int length)
+    public Buffer(IMemoryOwner<T> memoryOwner, int start, int length, bool isRented = true)
     {
         if (memoryOwner == null) throw new ArgumentNullException(nameof(memoryOwner));
         var memoryOwnerLength = memoryOwner.Memory.Length;
@@ -409,13 +426,15 @@ public readonly struct Buffer<T>
 
         _buffer = memoryOwner;
         _start = start;
-        _length = length;
+        _length = isRented ? ~length : length;
     }
 
     /*
      public Buffer(Sequence<T> sequence, int start, int length)
      public Buffer(ISequenceOwner<T> sequenceOwner, int start, int length)
      */
+
+    #endregion Ctors
 
     public override int GetHashCode()
         => _buffer is null ? 0 : HashCode.Combine(_buffer.GetHashCode(), _start, _length);
@@ -442,7 +461,7 @@ public readonly struct Buffer<T>
         if (buffer is IMemoryOwner<T> memoryOwner)
             return new(memoryOwner, Start + start, length - start);
 
-        throw InvalidState();
+        throw BufferUnknown();
     }
 
     public Buffer<T> Slice(int start, int length)
@@ -464,7 +483,103 @@ public readonly struct Buffer<T>
         if (buffer is IMemoryOwner<T> memoryOwner)
             return new(memoryOwner, Start + start, length);
 
-        throw InvalidState();
+        throw BufferUnknown();
+    }
+
+    public Buffer<T> AsUnrented() => new(_buffer, Start, Length);
+
+    public Memory<T> AsMemory(int start)
+    {
+        var length = Length;
+        if ((uint)start > (uint)length)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+            return new(array, Start + start, length - start);
+
+        if (buffer is MemoryManager<T> memoryManager)
+            return memoryManager.Memory.Slice(Start + start, length - start);
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+            return memoryOwner.Memory.Slice(Start + start, length - start);
+
+        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+            throw new NotSupportedException("The sequence does not support memory.");
+
+        throw BufferUnknown();
+    }
+
+    public Memory<T> AsMemory(int start, int length)
+    {
+        var oldLength = Length;
+        if ((uint)start > (uint)oldLength)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        if ((uint)length > (uint)(oldLength - start))
+            throw new ArgumentOutOfRangeException(nameof(length));
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+            return new(array, Start + start, length);
+
+        if (buffer is MemoryManager<T> memoryManager)
+            return memoryManager.Memory.Slice(Start + start, length);
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+            return memoryOwner.Memory.Slice(Start + start, length);
+
+        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+            throw new NotSupportedException("The sequence does not support memory.");
+
+        throw BufferUnknown();
+    }
+
+    public Span<T> AsSpan(int start)
+    {
+        var length = Length;
+        if ((uint)start > (uint)length)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+            return new(array, Start + start, length - start);
+
+        if (buffer is MemoryManager<T> memoryManager)
+            return memoryManager.GetSpan().Slice(Start + start, length - start);
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+            return memoryOwner.Memory.Span.Slice(Start + start, length - start);
+
+        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+            throw new NotSupportedException("The sequence does not support span.");
+
+        throw BufferUnknown();
+    }
+
+    public Span<T> AsSpan(int start, int length)
+    {
+        var oldLength = Length;
+        if ((uint)start > (uint)oldLength)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        if ((uint)length > (uint)(oldLength - start))
+            throw new ArgumentOutOfRangeException(nameof(length));
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+            return new(array, Start + start, length);
+
+        if (buffer is MemoryManager<T> memoryManager)
+            return memoryManager.GetSpan().Slice(Start + start, length);
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+            return memoryOwner.Memory.Span.Slice(Start + start, length);
+
+        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+            throw new NotSupportedException("The sequence does not support span.");
+
+        throw BufferUnknown();
     }
 
     public T[] ToArray()
@@ -488,13 +603,74 @@ public readonly struct Buffer<T>
         if (buffer is IMemoryOwner<T> memoryOwner)
             return memoryOwner.Memory.Slice(Start, length).ToArray();
 
-        throw InvalidState();
+        throw BufferUnknown();
     }
 
     public Buffer<T> CopyIfRented() => IsRented ? ToArray() : this;
 
-    private static InvalidOperationException InvalidState()
-        => new("buffer is invalid");
+    public bool TryReturn(out T[]? externalArray)
+    {
+        var rentedType = RentedType;
+        if (rentedType == RentedArrayType.None)
+        {
+            externalArray = default;
+            return false;
+        }
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+        {
+            if (array.Length == 0)
+                throw new InvalidOperationException("Empty array cannot be rented.");
+
+            if (rentedType == RentedArrayType.Shared)
+            {
+                ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                externalArray = default;
+                return true;
+            }
+
+            if (rentedType == RentedArrayType.Global)
+            {
+                throw new NotImplementedException();
+                //GlobalArrayPool.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+            }
+
+            Debug.Assert(rentedType == RentedArrayType.External);
+
+            externalArray = array;
+            return false;
+        }
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+        {
+            memoryOwner.Dispose();
+            externalArray = default;
+            return true;
+        }
+
+        if (buffer is ISequenceOwner<T> sequenceOwner)
+        {
+            sequenceOwner.Dispose();
+            externalArray = default;
+            return true;
+        }
+
+        if (buffer is SequenceSegment<T> sequenceSegment)
+        {
+            var count = BufferPool.TryResetSegments(sequenceSegment);
+            Debug.Assert(count > 0);
+
+            externalArray = default;
+            return true;
+        }
+
+        throw BufferUnknown();
+    }
+
+    private static InvalidOperationException BufferUnknown() => new("buffer is unknown.");
+
+    #region Operators
 
     public static bool operator ==(Buffer<T> left, Buffer<T> right) => left.Equals(right);
 
@@ -513,4 +689,6 @@ public readonly struct Buffer<T>
     public static implicit operator Span<T>(Buffer<T> buffer) => buffer.Span;
 
     public static implicit operator ReadOnlySpan<T>(Buffer<T> buffer) => buffer.Span;
+
+    #endregion Operators
 }
