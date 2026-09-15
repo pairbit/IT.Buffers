@@ -612,6 +612,8 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
     public Buffer<T> CopyIfRented() => IsRented ? ToArray() : this;
 
+    /// <exception cref="InvalidOperationException">Empty array cannot be rented.</exception>
+    /// <exception cref="NotImplementedException">GlobalArrayPool not implemented.</exception>
     public bool TryReturn(out T[]? externalArray)
     {
         var rentedType = RentedType;
@@ -662,6 +664,7 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
         if (buffer is SequenceSegment<T> sequenceSegment)
         {
+            //TODO: SequenceSegmentPool<T>.Return(sequenceSegment)???
             var count = BufferPool.TryResetSegments(sequenceSegment);
             Debug.Assert(count > 0);
 
@@ -670,6 +673,56 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         }
 
         throw BufferUnknown();
+    }
+
+    /// <exception cref="InvalidOperationException">It is impossible to return an external array.</exception>
+    /// <exception cref="InvalidOperationException">Empty array cannot be rented.</exception>
+    /// <exception cref="NotImplementedException">GlobalArrayPool not implemented.</exception>
+    public void Return()
+    {
+        var rentedType = RentedType;
+        if (rentedType != RentedArrayType.None)
+        {
+            var buffer = _buffer;
+            if (buffer is T[] array)
+            {
+                if (array.Length == 0)
+                    throw new InvalidOperationException("Empty array cannot be rented.");
+
+                if (rentedType == RentedArrayType.Shared)
+                {
+                    ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                }
+
+                if (rentedType == RentedArrayType.Global)
+                {
+                    throw new NotImplementedException("GlobalArrayPool not implemented.");
+                    //GlobalArrayPool.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                }
+
+                Debug.Assert(rentedType == RentedArrayType.External);
+
+                throw new InvalidOperationException("It is impossible to return an external array.");
+            }
+            else if (buffer is IMemoryOwner<T> memoryOwner)
+            {
+                memoryOwner.Dispose();
+            }
+            else if (buffer is ISequenceOwner<T> sequenceOwner)
+            {
+                sequenceOwner.Dispose();
+            }
+            else if (buffer is SequenceSegment<T> sequenceSegment)
+            {
+                //TODO: SequenceSegmentPool<T>.Return(sequenceSegment)???
+                var count = BufferPool.TryResetSegments(sequenceSegment);
+                Debug.Assert(count > 0);
+            }
+            else
+            {
+                throw BufferUnknown();
+            }
+        }
     }
 
     private static InvalidOperationException BufferUnknown() => new("buffer is unknown.");
