@@ -162,6 +162,9 @@ internal class BufferTest
 
         Assert.That(buffer.AsMemory(2).Span.SequenceEqual(buffer.Memory.Span.Slice(2)), Is.True);
         Assert.That(buffer.AsMemory(1, 3).Span.SequenceEqual(buffer.Memory.Span.Slice(1, 3)), Is.True);
+
+        Assert.That(buffer.AsUnrented(2), Is.EqualTo(buffer.Slice(2)));
+        Assert.That(buffer.AsUnrented(1, 3), Is.EqualTo(buffer.Slice(1, 3)));
     }
 
     [Test]

@@ -37,6 +37,8 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             if (buffer is T[]) return BufferType.Array;
             if (buffer is MemoryManager<T>) return BufferType.MemoryManager;
             if (buffer is IMemoryOwner<T>) return BufferType.MemoryOwner;
+
+            //TODO: что если SequenceSegment будет наследовать IMemoryOwner или ISequenceOwner?
             if (buffer is SequenceSegment<T>) return BufferType.Sequence;
             if (buffer is ISequenceOwner<T>) return BufferType.SequenceOwner;
 
