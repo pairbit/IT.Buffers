@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -67,6 +68,12 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
     public MemoryManager<T>? MemoryManager => IsRented ? _buffer as MemoryManager<T> : null;
 
     public IMemoryOwner<T>? MemoryOwner => IsRented ? _buffer as IMemoryOwner<T> : null;
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public MemoryManager<T>? UnsafeMemoryManager => _buffer as MemoryManager<T>;
+    
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public IMemoryOwner<T>? UnsafeMemoryOwner => _buffer as IMemoryOwner<T>;
 
     public Memory<T> Memory
     {

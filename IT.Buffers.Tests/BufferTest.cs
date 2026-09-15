@@ -245,7 +245,6 @@ internal class BufferTest
     public void ReturnTest()
     {
         Buffer<byte> buffer = default;
-        Assert.That(buffer.Type, Is.EqualTo(BufferType.Null));
         EqualTo(buffer, BufferType.Null);
         buffer.Return();
 
@@ -357,6 +356,13 @@ internal class BufferTest
             {
                 Assert.That(buffer.MemoryManager, Is.Null);
                 Assert.That(buffer.MemoryOwner, Is.Null);
+
+                Assert.That(buffer.UnsafeMemoryManager, Is.Not.Null);
+                Assert.That(buffer.UnsafeMemoryOwner, Is.Not.Null);
+
+                Assert.That(buffer.UnsafeMemoryManager.Memory.Length, Is.EqualTo(objLength));
+                Assert.That(buffer.UnsafeMemoryManager.GetSpan().Length, Is.EqualTo(objLength));
+                Assert.That(buffer.UnsafeMemoryOwner.Memory.Length, Is.EqualTo(objLength));
             }
         }
 
