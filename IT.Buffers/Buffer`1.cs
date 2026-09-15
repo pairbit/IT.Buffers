@@ -676,6 +676,8 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         throw BufferUnknown();
     }
 
+    public Buffer<T> AsEmpty() => new(_buffer, _start < 0 ? -1 : 0, _length < 0 ? -1 : 0);
+
     public Buffer<T> CopyIfRented() => IsRented ? ToArray() : this;
 
     /// <exception cref="InvalidOperationException">Empty array cannot be rented.</exception>

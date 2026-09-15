@@ -306,7 +306,7 @@ internal class BufferTest
         {
             Assert.That(buffer.Array, Is.Null);
             Assert.That(buffer.MemoryManager, Is.Null);
-            
+
             if (buffer.IsRented)
             {
                 Assert.That(buffer.MemoryOwner, Is.Not.Null);
@@ -344,6 +344,9 @@ internal class BufferTest
         Assert.That(buffer.IsEmpty, Is.EqualTo(length == 0));
         Assert.That(buffer.IsRented, Is.EqualTo(isRented));
 
+        Assert.That(buffer.Slice(0).IsRented, Is.EqualTo(isRented));
+        Assert.That(buffer.Slice(0, 0).IsRented, Is.EqualTo(isRented));
+
         if (isRented)
         {
             EqualTo(buffer.AsUnrented(), type, objLength, start, length);
@@ -352,9 +355,9 @@ internal class BufferTest
         {
             Assert.That(buffer.TryReturn(out _), Is.False);
             buffer.Return();
-
-            Assert.That(buffer.Slice(0).IsRented, Is.False);
-            Assert.That(buffer.Slice(0, 0).IsRented, Is.False);
         }
+
+        if (!buffer.IsEmpty)
+            EqualTo(buffer.AsEmpty(), type, objLength, 0, 0, arrayType: arrayType, isRented: isRented);
     }
 }
