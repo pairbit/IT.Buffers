@@ -71,7 +71,7 @@ public static class BufferPool
     public static int TryReturn<T>(in ReadOnlySequence<T> sequence)
     {
         if (sequence.Start.GetObject() is ReadOnlySequenceSegment<T> segment)
-            return TryResetSegments(segment);
+            return TryReturnSegments(segment);
 
         return 0;
     }
@@ -79,25 +79,21 @@ public static class BufferPool
     public static bool TryReturn<TBuffer>(TBuffer buffer) where TBuffer : class, IResetable, new()
         => NewBufferPool<TBuffer>.Shared.TryReturn(buffer);
 
-    internal static int TryResetSegments<T>(ReadOnlySequenceSegment<T> segment)
+    internal static int TryReturnSegments<T>(ReadOnlySequenceSegment<T> segment)
     {
         var count = 0;
         do
         {
             var next = segment.Next;
 
-            if (segment is IResetable resetable)
+            if (segment is IDisposable disposable)
             {
-                //TODO: откуда я знаю что он взят из пула?
-                if (segment is SharedSequenceSegment<T> sharedSequenceSegment)
-                {
-                    TryReturn(sharedSequenceSegment);
-                }
-                else
-                {
-                    resetable.Reset();
-                }
-                
+                disposable.Dispose();
+                count++;
+            }
+            else if (segment is SharedSequenceSegment<T> sharedSequenceSegment)
+            {
+                SharedSequenceSegment<T>.Pool.Return(sharedSequenceSegment);
                 count++;
             }
 

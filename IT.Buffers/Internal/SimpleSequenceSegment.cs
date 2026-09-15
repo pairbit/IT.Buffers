@@ -2,10 +2,10 @@
 using System.Buffers;
 using System.Diagnostics;
 
-namespace IT.Buffers;
+namespace IT.Buffers.Internal;
 
 //TODO: add : SequenceSegment<T>
-public class SimpleSequenceSegment<T> : ReadOnlySequenceSegment<T>
+internal class SimpleSequenceSegment<T> : ReadOnlySequenceSegment<T>
 {
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     public new ReadOnlyMemory<T> Memory

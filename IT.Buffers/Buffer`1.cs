@@ -691,8 +691,7 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
         if (buffer is SequenceSegment<T> sequenceSegment)
         {
-            //TODO: SequenceSegmentPool<T>.Return(sequenceSegment)???
-            var count = BufferPool.TryResetSegments(sequenceSegment);
+            var count = BufferPool.TryReturnSegments(sequenceSegment);
             Debug.Assert(count > 0);
 
             externalArray = default;
@@ -746,7 +745,7 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             else if (buffer is SequenceSegment<T> sequenceSegment)
             {
                 //TODO: SequenceSegmentPool<T>.Return(sequenceSegment)???
-                var count = BufferPool.TryResetSegments(sequenceSegment);
+                var count = BufferPool.TryReturnSegments(sequenceSegment);
                 Debug.Assert(count > 0);
             }
             else if (buffer == null)

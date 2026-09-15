@@ -5,17 +5,18 @@ using System.Diagnostics;
 namespace IT.Buffers;
 
 //TODO: add : SequenceSegment<T>
-public class SharedSequenceSegment<T> : ReadOnlySequenceSegment<T>, IResetable
+internal sealed class SharedSequenceSegment<T> : ReadOnlySequenceSegment<T>, IResetable
 {
-    public static BufferPool<SharedSequenceSegment<T>> Pool =>
-        NewBufferPool<SharedSequenceSegment<T>>.Shared;
+    private readonly static _Pool _pool = new();
+
+    public static BufferPool<SharedSequenceSegment<T>> Pool => _pool;
 
     //TODO: можно определить арендована память по признаку RunningIndex < 0
     private bool _isRentedMemory;
 
     public bool IsRentedMemory => _isRentedMemory;
 
-    public SharedSequenceSegment()
+    private SharedSequenceSegment()
     {
 
     }
@@ -70,5 +71,10 @@ public class SharedSequenceSegment<T> : ReadOnlySequenceSegment<T>, IResetable
         base.Memory = default;
         base.RunningIndex = 0;
         base.Next = null;
+    }
+
+    class _Pool : BufferPool<SharedSequenceSegment<T>>
+    {
+        protected override SharedSequenceSegment<T> NewBuffer() => new();
     }
 }
