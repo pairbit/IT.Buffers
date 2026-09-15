@@ -34,14 +34,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         get
         {
             var buffer = _buffer;
-            if (buffer is null) return BufferType.Null;
             if (buffer is T[]) return BufferType.Array;
             if (buffer is MemoryManager<T>) return BufferType.MemoryManager;
             if (buffer is IMemoryOwner<T>) return BufferType.MemoryOwner;
             if (buffer is SequenceSegment<T>) return BufferType.Sequence;
             if (buffer is ISequenceOwner<T>) return BufferType.SequenceOwner;
 
-            return BufferType.Unknown;
+            return buffer is null ? BufferType.Null : BufferType.Unknown;
         }
     }
 
@@ -458,10 +457,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             return new(array, Start + start, length - start, ArrayType);
 
         if (buffer is MemoryManager<T> memoryManager)
-            return new(memoryManager, Start + start, length - start);
+            return new(memoryManager, Start + start, length - start, IsRented);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
-            return new(memoryOwner, Start + start, length - start);
+            return new(memoryOwner, Start + start, length - start, IsRented);
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
 
         throw BufferUnknown();
     }
@@ -480,15 +482,65 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             return new(array, Start + start, length, ArrayType);
 
         if (buffer is MemoryManager<T> memoryManager)
-            return new(memoryManager, Start + start, length);
+            return new(memoryManager, Start + start, length, IsRented);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
-            return new(memoryOwner, Start + start, length);
+            return new(memoryOwner, Start + start, length, IsRented);
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
 
         throw BufferUnknown();
     }
 
     public Buffer<T> AsUnrented() => new(_buffer, Start, Length);
+
+    public Buffer<T> AsUnrented(int start)
+    {
+        var length = Length;
+        if ((uint)start > (uint)length)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+            return new(array, Start + start, length - start);
+
+        if (buffer is MemoryManager<T> memoryManager)
+            return new(memoryManager, Start + start, length - start, isRented: false);
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+            return new(memoryOwner, Start + start, length - start, isRented: false);
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
+
+        throw BufferUnknown();
+    }
+
+    public Buffer<T> AsUnrented(int start, int length)
+    {
+        var oldLength = Length;
+        if ((uint)start > (uint)oldLength)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        if ((uint)length > (uint)(oldLength - start))
+            throw new ArgumentOutOfRangeException(nameof(length));
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+            return new(array, Start + start, length);
+
+        if (buffer is MemoryManager<T> memoryManager)
+            return new(memoryManager, Start + start, length, isRented: false);
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+            return new(memoryOwner, Start + start, length, isRented: false);
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
+
+        throw BufferUnknown();
+    }
 
     public Memory<T> AsMemory(int start)
     {
@@ -508,6 +560,9 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
         if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
             throw new NotSupportedException("The sequence does not support memory.");
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
 
         throw BufferUnknown();
     }
@@ -534,6 +589,9 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
             throw new NotSupportedException("The sequence does not support memory.");
 
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
+
         throw BufferUnknown();
     }
 
@@ -555,6 +613,9 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
         if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
             throw new NotSupportedException("The sequence does not support span.");
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
 
         throw BufferUnknown();
     }
@@ -580,6 +641,9 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
         if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
             throw new NotSupportedException("The sequence does not support span.");
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
 
         throw BufferUnknown();
     }
@@ -672,6 +736,11 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             return true;
         }
 
+        if (buffer == null)
+        {
+            throw BufferStateInvalid();
+        }
+
         throw BufferUnknown();
     }
 
@@ -717,6 +786,10 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
                 var count = BufferPool.TryResetSegments(sequenceSegment);
                 Debug.Assert(count > 0);
             }
+            else if (buffer == null)
+            {
+                throw BufferStateInvalid();
+            }
             else
             {
                 throw BufferUnknown();
@@ -725,6 +798,10 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
     }
 
     private static InvalidOperationException BufferUnknown() => new("buffer is unknown.");
+
+    private static InvalidOperationException BufferStateInvalid() => throw new("buffer state is invalid.");
+
+    private static Buffer<T> ThrowBufferStateInvalid() => throw BufferStateInvalid();
 
     #region Operators
 
