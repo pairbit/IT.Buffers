@@ -32,7 +32,8 @@ public static class BufferPool
         }
 
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
-        return new(array, 0, minimumLength, RentedArrayType.Shared);
+        return new(array, 0, minimumLength, minimumLength > BufferSize.GB
+            ? RentedArrayType.None : RentedArrayType.Shared);
     }
 
     public static TBuffer Rent<TBuffer>() where TBuffer : class, IResetable, new()
@@ -43,30 +44,6 @@ public static class BufferPool
 
     public static void Return<T>(T[] array)
         => ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-
-    public static bool TryReturn<T>(Buffer<T> buffer)
-    {
-        var memoryOwner = buffer.MemoryOwner;
-        if (memoryOwner != null)
-        {
-            memoryOwner.Dispose();
-            return true;
-        }
-
-        var array = buffer.Array;
-        if (array != null && array.Length > 0)
-        {
-            var arrayType = buffer.ArrayType;
-            if (arrayType == RentedArrayType.Shared)
-            {
-                Return(array);
-                return true;
-            }
-            if (arrayType != RentedArrayType.None)
-                throw new InvalidOperationException($"the array is rented from {arrayType} pool");
-        }
-        return false;
-    }
 
     public static bool TryReturn<T>(ArraySegment<T> arraySegment)
     {
