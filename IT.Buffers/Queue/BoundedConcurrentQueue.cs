@@ -24,9 +24,6 @@ public sealed class BoundedConcurrentQueue<T>
     private readonly int _slotsMask;
     private PaddedHeadAndTail _headAndTail;
 
-    /// <param name="boundedLength">
-    /// The maximum number of elements the segment can contain.  Must be a power of 2.
-    /// </param>
     public BoundedConcurrentQueue(int pow2 = 5)
     {
         if (pow2 < 1 || pow2 > 30)

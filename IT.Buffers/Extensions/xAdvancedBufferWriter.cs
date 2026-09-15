@@ -1,6 +1,4 @@
-﻿using IT.Buffers.Interfaces;
-
-namespace IT.Buffers.Extensions;
+﻿namespace IT.Buffers.Extensions;
 
 public static class xAdvancedBufferWriter
 {

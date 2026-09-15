@@ -1,6 +1,7 @@
 ﻿using IT.Buffers.Internal;
 using System;
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -31,38 +32,18 @@ public static class BufferPool
         }
 
         var array = ArrayPool<T>.Shared.Rent(minimumLength);
-        return new(array, 0, minimumLength, RentedArrayType.Shared);
+        return new(array, 0, minimumLength, minimumLength > BufferSize.GB
+            ? RentedArrayType.None : RentedArrayType.Shared);
     }
 
-    public static TBuffer Rent<TBuffer>() where TBuffer : class, IDisposable, new()
-        => BufferPool<TBuffer>.Shared.Rent();
+    public static TBuffer Rent<TBuffer>() where TBuffer : class, IResetable, new()
+        => NewBufferPool<TBuffer>.Shared.Rent();
+
+    public static bool TryRent<TBuffer>([MaybeNullWhen(false)] out TBuffer buffer) where TBuffer : class, IResetable, new()
+        => NewBufferPool<TBuffer>.Shared.TryRent(out buffer);
 
     public static void Return<T>(T[] array)
         => ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
-
-    public static bool TryReturn<T>(Buffer<T> buffer)
-    {
-        var memoryOwner = buffer.MemoryOwner;
-        if (memoryOwner != null)
-        {
-            memoryOwner.Dispose();
-            return true;
-        }
-
-        var array = buffer.Array;
-        if (array != null && array.Length > 0)
-        {
-            var arrayType = buffer.ArrayType;
-            if (arrayType == RentedArrayType.Shared)
-            {
-                Return(array);
-                return true;
-            }
-            if (arrayType != RentedArrayType.None)
-                throw new InvalidOperationException($"the array is rented from {arrayType} pool");
-        }
-        return false;
-    }
 
     public static bool TryReturn<T>(ArraySegment<T> arraySegment)
     {
@@ -89,20 +70,32 @@ public static class BufferPool
 
     public static int TryReturn<T>(in ReadOnlySequence<T> sequence)
     {
-        if (sequence.Start.GetObject() is RentableSequenceSegment<T> segment)
+        if (sequence.Start.GetObject() is ReadOnlySequenceSegment<T> segment)
             return TryReturnSegments(segment);
 
         return 0;
     }
 
-    public static int TryReturnSegments<T>(RentableSequenceSegment<T> segment)
+    public static bool TryReturn<TBuffer>(TBuffer buffer) where TBuffer : class, IResetable, new()
+        => NewBufferPool<TBuffer>.Shared.TryReturn(buffer);
+
+    internal static int TryReturnSegments<T>(ReadOnlySequenceSegment<T> segment)
     {
         var count = 0;
         do
         {
             var next = segment.Next;
 
-            if (TryReturn(segment)) count++;
+            if (segment is IDisposable disposable)
+            {
+                disposable.Dispose();
+                count++;
+            }
+            else if (segment is SharedSequenceSegment<T> sharedSequenceSegment)
+            {
+                SharedSequenceSegment<T>.Pool.Return(sharedSequenceSegment);
+                count++;
+            }
 
             segment = next!;
 
@@ -110,7 +103,4 @@ public static class BufferPool
 
         return count;
     }
-
-    public static bool TryReturn<TBuffer>(TBuffer buffer) where TBuffer : class, IDisposable, new()
-        => BufferPool<TBuffer>.Shared.TryReturn(buffer);
 }

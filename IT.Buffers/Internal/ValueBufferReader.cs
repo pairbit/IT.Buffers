@@ -1,4 +1,4 @@
-﻿using IT.Buffers.Interfaces;
+﻿/*
 using System;
 using System.Buffers;
 
@@ -48,3 +48,4 @@ internal ref struct ValueBufferReader<T> : IBufferReader<T>
         throw new NotImplementedException();
     }
 }
+*/

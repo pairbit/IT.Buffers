@@ -1,5 +1,4 @@
-﻿using IT.Buffers.Interfaces;
-using System.Buffers;
+﻿using System.Buffers;
 
 namespace IT.Buffers.Tests;
 

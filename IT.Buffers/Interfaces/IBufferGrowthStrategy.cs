@@ -1,4 +1,4 @@
-﻿namespace IT.Buffers.Interfaces;
+﻿namespace IT.Buffers;
 
 public interface IBufferGrowthStrategy
 {

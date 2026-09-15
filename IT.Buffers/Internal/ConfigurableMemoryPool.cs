@@ -2,7 +2,7 @@
 using System.Buffers;
 using System.Threading;
 
-namespace IT.Buffers;
+namespace IT.Buffers.Internal;
 
 internal sealed class ConfigurableMemoryPool<T> : MemoryPool<T>
 {

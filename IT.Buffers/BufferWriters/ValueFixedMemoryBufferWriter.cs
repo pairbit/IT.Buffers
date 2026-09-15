@@ -1,5 +1,4 @@
 ﻿using IT.Buffers.Extensions;
-using IT.Buffers.Interfaces;
 using System;
 using System.Buffers;
 using System.Diagnostics;
@@ -7,15 +6,24 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
+public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
 {
-    private readonly Span<T> _buffer;
+    private readonly Memory<T> _buffer;
     private int _written;
 
-    public ValueFixedSpanBufferWriter(Span<T> buffer)
+    public ValueFixedMemoryBufferWriter(Memory<T> buffer)
     {
         _buffer = buffer;
         _written = 0;
+    }
+
+    public readonly Memory<T> WrittenMemory
+    {
+        get
+        {
+            Debug.Assert(_buffer.Length >= _written);
+            return _buffer.Slice(0, _written);
+        }
     }
 
     public readonly Span<T> WrittenSpan
@@ -23,7 +31,7 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
         get
         {
             Debug.Assert(_buffer.Length >= _written);
-            return _buffer.Slice(0, _written);
+            return _buffer.Slice(0, _written).Span;
         }
     }
 
@@ -33,7 +41,7 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
 
     readonly int IAdvancedBufferWriter<T>.Segments => 1;
 
-    readonly bool IAdvancedBufferWriter<T>.HasMemory => false;
+    readonly bool IAdvancedBufferWriter<T>.HasMemory => true;
 
     readonly bool IAdvancedBufferWriter<T>.IsFixed => true;
 
@@ -62,9 +70,18 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
         }
     }
 
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="OutOfMemoryException"></exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    readonly Memory<T> IBufferWriter<T>.GetMemory(int sizeHint)
-        => throw new NotSupportedException($"Method '{nameof(IBufferWriter<T>.GetMemory)}' is not supported");
+    public readonly Memory<T> GetMemory(int sizeHint = 0)
+    {
+        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+
+        var memory = _buffer.Slice(_written);
+        if (memory.Length >= sizeHint) return memory;
+
+        throw new OutOfMemoryException($"SizeHint {sizeHint} > {memory.Length}");
+    }
 
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     /// <exception cref="OutOfMemoryException"></exception>
@@ -73,7 +90,7 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
-        var span = _buffer.Slice(_written);
+        var span = _buffer.Slice(_written).Span;
         if (span.Length >= sizeHint) return span;
 
         throw new OutOfMemoryException($"SizeHint {sizeHint} > {span.Length}");
@@ -89,7 +106,7 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
         if (written > 0)
         {
             Debug.Assert(_buffer.Length >= written);
-            _buffer.Slice(0, written).CopyTo(span);
+            _buffer.Slice(0, written).Span.CopyTo(span);
         }
 
         return true;
@@ -104,10 +121,13 @@ public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
         if (written > 0)
         {
             Debug.Assert(_buffer.Length >= written);
-            RefBufferWriter.WriteSpan(ref writer, (ReadOnlySpan<T>)_buffer.Slice(0, _written));
+            RefBufferWriter.WriteSpan(ref writer, (ReadOnlySpan<T>)_buffer.Slice(0, _written).Span);
         }
     }
 
     readonly Memory<T> IAdvancedBufferWriter<T>.GetWrittenMemory(int segment)
-        => throw new NotSupportedException($"Method '{nameof(IAdvancedBufferWriter<T>.GetWrittenMemory)}' is not supported");
+    {
+        if (segment != 0) throw new ArgumentOutOfRangeException(nameof(segment));
+        return WrittenMemory;
+    }
 }

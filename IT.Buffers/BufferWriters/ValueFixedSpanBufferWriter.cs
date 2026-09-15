@@ -1,0 +1,112 @@
+﻿using IT.Buffers.Extensions;
+using System;
+using System.Buffers;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+
+namespace IT.Buffers;
+
+public ref struct ValueFixedSpanBufferWriter<T> : IAdvancedBufferWriter<T>
+{
+    private readonly Span<T> _buffer;
+    private int _written;
+
+    public ValueFixedSpanBufferWriter(Span<T> buffer)
+    {
+        _buffer = buffer;
+        _written = 0;
+    }
+
+    public readonly Span<T> WrittenSpan
+    {
+        get
+        {
+            Debug.Assert(_buffer.Length >= _written);
+            return _buffer.Slice(0, _written);
+        }
+    }
+
+    public readonly int Written => _written;
+
+    readonly long IAdvancedBufferWriter<T>.WrittenLong => _written;
+
+    readonly int IAdvancedBufferWriter<T>.Segments => 1;
+
+    readonly bool IAdvancedBufferWriter<T>.HasMemory => false;
+
+    readonly bool IAdvancedBufferWriter<T>.IsFixed => true;
+
+    public readonly int Capacity => _buffer.Length;
+
+    public readonly int FreeCapacity
+    {
+        get
+        {
+            Debug.Assert(_buffer.Length >= _written);
+            return _buffer.Length - _written;
+        }
+    }
+
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Advance(int count)
+    {
+        if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (count > 0)
+        {
+            var written = _written + count;
+            if (written > _buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
+
+            _written = written;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    readonly Memory<T> IBufferWriter<T>.GetMemory(int sizeHint)
+        => throw new NotSupportedException($"Method '{nameof(IBufferWriter<T>.GetMemory)}' is not supported");
+
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="OutOfMemoryException"></exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly Span<T> GetSpan(int sizeHint = 0)
+    {
+        if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
+
+        var span = _buffer.Slice(_written);
+        if (span.Length >= sizeHint) return span;
+
+        throw new OutOfMemoryException($"SizeHint {sizeHint} > {span.Length}");
+    }
+
+    public void ResetWritten() => _written = 0;
+
+    public readonly bool TryWriteTo(Span<T> span)
+    {
+        var written = _written;
+        if (span.Length < written) return false;
+
+        if (written > 0)
+        {
+            Debug.Assert(_buffer.Length >= written);
+            _buffer.Slice(0, written).CopyTo(span);
+        }
+
+        return true;
+    }
+
+    public readonly void WriteTo<TBufferWriter>(ref TBufferWriter writer) where TBufferWriter : IBufferWriter<T>
+#if NET9_0_OR_GREATER
+        , allows ref struct
+#endif
+    {
+        var written = _written;
+        if (written > 0)
+        {
+            Debug.Assert(_buffer.Length >= written);
+            RefBufferWriter.WriteSpan(ref writer, (ReadOnlySpan<T>)_buffer.Slice(0, _written));
+        }
+    }
+
+    readonly Memory<T> IAdvancedBufferWriter<T>.GetWrittenMemory(int segment)
+        => throw new NotSupportedException($"Method '{nameof(IAdvancedBufferWriter<T>.GetWrittenMemory)}' is not supported");
+}

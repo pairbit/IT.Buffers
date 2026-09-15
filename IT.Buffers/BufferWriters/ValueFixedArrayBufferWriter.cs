@@ -1,5 +1,4 @@
 ﻿using IT.Buffers.Extensions;
-using IT.Buffers.Interfaces;
 using System;
 using System.Buffers;
 using System.Diagnostics;
@@ -7,14 +6,14 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
+public struct ValueFixedArrayBufferWriter<T> : IAdvancedBufferWriter<T>
 {
-    private readonly Memory<T> _buffer;
+    private readonly T[]? _buffer;
     private int _written;
 
-    public ValueFixedMemoryBufferWriter(Memory<T> buffer)
+    public ValueFixedArrayBufferWriter(T[] buffer)
     {
-        _buffer = buffer;
+        _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
         _written = 0;
     }
 
@@ -22,8 +21,11 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
     {
         get
         {
-            Debug.Assert(_buffer.Length >= _written);
-            return _buffer.Slice(0, _written);
+            var buffer = _buffer;
+            if (buffer == null) return default;
+
+            Debug.Assert(buffer.Length >= _written);
+            return buffer.AsMemory(0, _written);
         }
     }
 
@@ -31,8 +33,11 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
     {
         get
         {
-            Debug.Assert(_buffer.Length >= _written);
-            return _buffer.Slice(0, _written).Span;
+            var buffer = _buffer;
+            if (buffer == null) return default;
+
+            Debug.Assert(buffer.Length >= _written);
+            return buffer.AsSpan(0, _written);
         }
     }
 
@@ -46,14 +51,24 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
 
     readonly bool IAdvancedBufferWriter<T>.IsFixed => true;
 
-    public readonly int Capacity => _buffer.Length;
+    public readonly int Capacity
+    {
+        get
+        {
+            var buffer = _buffer;
+            return buffer == null ? 0 : buffer.Length;
+        }
+    }
 
     public readonly int FreeCapacity
     {
         get
         {
-            Debug.Assert(_buffer.Length >= _written);
-            return _buffer.Length - _written;
+            var buffer = _buffer;
+            if (buffer == null) return 0;
+
+            Debug.Assert(buffer.Length >= _written);
+            return buffer.Length - _written;
         }
     }
 
@@ -64,8 +79,9 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
         if (count > 0)
         {
+            var buffer = _buffer ?? throw new ArgumentOutOfRangeException(nameof(count));
             var written = _written + count;
-            if (written > _buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
+            if (written > buffer.Length) throw new ArgumentOutOfRangeException(nameof(count));
 
             _written = written;
         }
@@ -78,7 +94,10 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
-        var memory = _buffer.Slice(_written);
+        var buffer = _buffer;
+        if (buffer == null) return sizeHint == 0 ? default : throw new OutOfMemoryException($"SizeHint {sizeHint} > 0");
+
+        var memory = buffer.AsMemory(_written);
         if (memory.Length >= sizeHint) return memory;
 
         throw new OutOfMemoryException($"SizeHint {sizeHint} > {memory.Length}");
@@ -91,7 +110,10 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
     {
         if (sizeHint < 0) throw new ArgumentOutOfRangeException(nameof(sizeHint));
 
-        var span = _buffer.Slice(_written).Span;
+        var buffer = _buffer;
+        if (buffer == null) return sizeHint == 0 ? default : throw new OutOfMemoryException($"SizeHint {sizeHint} > 0");
+
+        var span = buffer.AsSpan(_written);
         if (span.Length >= sizeHint) return span;
 
         throw new OutOfMemoryException($"SizeHint {sizeHint} > {span.Length}");
@@ -104,10 +126,11 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
         var written = _written;
         if (span.Length < written) return false;
 
-        if (written > 0)
+        var buffer = _buffer;
+        if (buffer != null && written > 0)
         {
-            Debug.Assert(_buffer.Length >= written);
-            _buffer.Slice(0, written).Span.CopyTo(span);
+            Debug.Assert(buffer.Length >= written);
+            buffer.AsSpan(0, written).CopyTo(span);
         }
 
         return true;
@@ -118,13 +141,17 @@ public struct ValueFixedMemoryBufferWriter<T> : IAdvancedBufferWriter<T>
         , allows ref struct
 #endif
     {
+        var buffer = _buffer;
         var written = _written;
-        if (written > 0)
+        if (buffer != null && written > 0)
         {
-            Debug.Assert(_buffer.Length >= written);
-            RefBufferWriter.WriteSpan(ref writer, (ReadOnlySpan<T>)_buffer.Slice(0, _written).Span);
+            Debug.Assert(buffer.Length >= written);
+            RefBufferWriter.WriteSpan(ref writer, new ReadOnlySpan<T>(buffer, 0, written));
         }
     }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    public readonly T[]? DangerousGetBuffer() => _buffer;
 
     readonly Memory<T> IAdvancedBufferWriter<T>.GetWrittenMemory(int segment)
     {

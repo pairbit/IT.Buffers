@@ -10,25 +10,60 @@ public sealed class ReadOnlySequenceStream : Stream
 {
     private static readonly Task<int> TaskOfZero = Task.FromResult(0);
 
-    private readonly Action<object?>? _dispose;
+    private readonly object? _dispose;//Action<object?> or Action or IDisposable
     private readonly object? _disposeArg;
     private ReadOnlySequence<byte> _sequence;
     private SequencePosition _position;
     private long _absolutePosition;
     private bool _isDisposed;
 
-    public ReadOnlySequenceStream(ReadOnlySequence<byte> sequence,
-        Action<object?>? dispose = null, object? disposeArg = null)
+    public ReadOnlySequenceStream(ReadOnlySequence<byte> sequence)
     {
-        if (disposeArg != null && dispose == null)
-            throw new ArgumentNullException(nameof(dispose));
-
         _sequence = sequence;
         _position = sequence.Start;
         _absolutePosition = 0;
         _isDisposed = false;
-        _dispose = dispose;
+    }
+
+    /* 
+    //TODO: add
+    public ReadOnlySequenceStream(ISequenceOwner<byte> sequenceOwner)
+    {
+        _dispose = sequenceOwner ?? throw new ArgumentNullException(nameof(sequenceOwner));
+        _sequence = sequenceOwner.Sequence;
+        _position = _sequence.Start;
+        _absolutePosition = 0;
+        _isDisposed = false;
+    }
+     */
+
+    public ReadOnlySequenceStream(ReadOnlySequence<byte> sequence, IDisposable dispose)
+    {
+        _dispose = dispose ?? throw new ArgumentNullException(nameof(dispose));
+        _sequence = sequence;
+        _position = sequence.Start;
+        _absolutePosition = 0;
+        _isDisposed = false;
+    }
+
+    public ReadOnlySequenceStream(ReadOnlySequence<byte> sequence, Action dispose)
+    {
+        _dispose = dispose ?? throw new ArgumentNullException(nameof(dispose));
+        _sequence = sequence;
+        _position = sequence.Start;
+        _absolutePosition = 0;
+        _isDisposed = false;
+    }
+
+    public ReadOnlySequenceStream(ReadOnlySequence<byte> sequence, Action<object?> dispose,
+        object? disposeArg = null)
+    {
+        _dispose = dispose ?? throw new ArgumentNullException(nameof(dispose));
         _disposeArg = disposeArg;
+        _sequence = sequence;
+        _position = sequence.Start;
+        _absolutePosition = 0;
+        _isDisposed = false;
     }
 
     public override bool CanRead => !_isDisposed;
@@ -283,7 +318,27 @@ public sealed class ReadOnlySequenceStream : Stream
         if (!_isDisposed)
         {
             _isDisposed = true;
-            _dispose?.Invoke(_disposeArg);
+
+            var dispose = _dispose;
+            if (dispose != null)
+            {
+                if (dispose is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+                else if (dispose is Action action)
+                {
+                    action();
+                }
+                else if (dispose is Action<object?> actionArg)
+                {
+                    actionArg(_disposeArg);
+                }
+                else
+                {
+                    throw new InvalidOperationException("_dispose is invalid.");
+                }
+            }
             _sequence = default;
             base.Dispose(disposing);
         }

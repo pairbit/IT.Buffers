@@ -1,5 +1,4 @@
 ﻿using IT.Buffers.Extensions;
-using IT.Buffers.Interfaces;
 using IT.Buffers.Internal;
 using System;
 using System.Buffers;
@@ -10,10 +9,10 @@ using System.Runtime.CompilerServices;
 
 namespace IT.Buffers;
 
-public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
+public class BufferWriter<T> : IAdvancedBufferWriter<T>, IResetable
 {
-    public static BufferPool<BufferWriter<T>> Pool =>
-        BufferPool<BufferWriter<T>>.Shared;
+    public static BufferPool<BufferWriter<T>> Pool => 
+        NewBufferPool<BufferWriter<T>>.Shared;
     
     internal ArrayPool<T>? _arrayPool;
     private IBufferGrowthStrategy? _growthStrategy;
@@ -327,8 +326,6 @@ public class BufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
         //TODO: сделать проверку на OutOfMemoryException($"Size {sizeHint} > {Max}")
         return (_arrayPool ?? ArrayPool<T>.Shared).Rent(size);
     }
-
-    void IDisposable.Dispose() => Reset();
 
     public struct Enumerator : IEnumerator<Memory<T>>
     {

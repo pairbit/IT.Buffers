@@ -1,4 +1,5 @@
-﻿namespace IT.Buffers;
+﻿/*
+namespace IT.Buffers;
 
 internal readonly struct SequenceSegments<T>
 {
@@ -11,4 +12,4 @@ internal readonly struct SequenceSegments<T>
         Start = start;
         End = end;
     }
-}
+}*/

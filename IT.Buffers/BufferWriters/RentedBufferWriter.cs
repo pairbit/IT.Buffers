@@ -1,5 +1,4 @@
 ﻿using IT.Buffers.Extensions;
-using IT.Buffers.Interfaces;
 using System;
 using System.Buffers;
 using System.Diagnostics;
@@ -7,10 +6,10 @@ using System.Diagnostics;
 namespace IT.Buffers;
 
 //Rerented
-public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposable
+public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IResetable
 {
-    public static BufferPool<RentedBufferWriter<T>> Pool
-        => BufferPool<RentedBufferWriter<T>>.Shared;
+    public static BufferPool<RentedBufferWriter<T>> Pool => 
+        NewBufferPool<RentedBufferWriter<T>>.Shared;
 
     private T[] _buffer;
     private int _written;
@@ -153,6 +152,4 @@ public sealed class RentedBufferWriter<T> : IAdvancedBufferWriter<T>, IDisposabl
         if (segment != 0) throw new ArgumentOutOfRangeException(nameof(segment));
         return WrittenMemory;
     }
-
-    void IDisposable.Dispose() => Reset();
 }

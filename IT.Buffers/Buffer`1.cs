@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Buffers;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace IT.Buffers;
 
-public readonly struct Buffer<T>
+public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 {
 #pragma warning disable CA1825 // Avoid zero-length array allocations
     public static Buffer<T> Empty { get; } = new((object)new T[0], default, default);
@@ -15,18 +18,32 @@ public readonly struct Buffer<T>
     private readonly int _start;
     private readonly int _length;
 
+    #region Props
+
+    private RentedArrayType RentedType
+    {
+        get
+        {
+            if (_start < 0) return _length < 0 ? RentedArrayType.External : RentedArrayType.Global;
+
+            return _length < 0 ? RentedArrayType.Shared : RentedArrayType.None;
+        }
+    }
+
     public BufferType Type
     {
         get
         {
             var buffer = _buffer;
-            if (buffer is null) return BufferType.Null;
             if (buffer is T[]) return BufferType.Array;
             if (buffer is MemoryManager<T>) return BufferType.MemoryManager;
             if (buffer is IMemoryOwner<T>) return BufferType.MemoryOwner;
-            //if (buffer is SequenceSegment<T>) return BufferType.Sequence;
 
-            return BufferType.Unknown;
+            //TODO: что если SequenceSegment будет наследовать IMemoryOwner или ISequenceOwner?
+            if (buffer is SequenceSegment<T>) return BufferType.Sequence;
+            if (buffer is ISequenceOwner<T>) return BufferType.SequenceOwner;
+
+            return buffer is null ? BufferType.Null : BufferType.Unknown;
         }
     }
 
@@ -48,29 +65,34 @@ public readonly struct Buffer<T>
 
     public T[]? Array => _buffer as T[];
 
-    public MemoryManager<T>? MemoryManager => _buffer as MemoryManager<T>;
+    public MemoryManager<T>? MemoryManager => IsRented ? _buffer as MemoryManager<T> : null;
 
-    public IMemoryOwner<T>? MemoryOwner => _buffer as IMemoryOwner<T>;
+    public IMemoryOwner<T>? MemoryOwner => IsRented ? _buffer as IMemoryOwner<T> : null;
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public MemoryManager<T>? UnsafeMemoryManager => _buffer as MemoryManager<T>;
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public IMemoryOwner<T>? UnsafeMemoryOwner => _buffer as IMemoryOwner<T>;
 
     public Memory<T> Memory
     {
         get
         {
-            var length = Length;
-            if (length == 0)
-                return default;
-
             var buffer = _buffer;
             if (buffer is T[] array)
-                return new(array, Start, length);
-
-            if (buffer is MemoryManager<T> memoryManager)
-                return memoryManager.Memory.Slice(Start, length);
+                return new(array, Start, Length);
 
             if (buffer is IMemoryOwner<T> memoryOwner)
-                return memoryOwner.Memory.Slice(Start, length);
+                return memoryOwner.Memory.Slice(Start, Length);
 
-            throw InvalidState();
+            if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+                throw new NotSupportedException("The sequence does not support memory.");
+
+            if (buffer == null)
+                return Start == 0 && Length == 0 ? default : throw BufferStateInvalid();
+
+            throw BufferUnknown();
         }
     }
 
@@ -78,23 +100,29 @@ public readonly struct Buffer<T>
     {
         get
         {
-            var length = Length;
-            if (length == 0)
-                return default;
-
             var buffer = _buffer;
             if (buffer is T[] array)
-                return new(array, Start, length);
+                return new(array, Start, Length);
 
             if (buffer is MemoryManager<T> memoryManager)
-                return memoryManager.GetSpan().Slice(Start, length);
+                return memoryManager.GetSpan().Slice(Start, Length);
 
             if (buffer is IMemoryOwner<T> memoryOwner)
-                return memoryOwner.Memory.Span.Slice(Start, length);
+                return memoryOwner.Memory.Span.Slice(Start, Length);
 
-            throw InvalidState();
+            if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+                throw new NotSupportedException("The sequence does not support span.");
+
+            if (buffer == null)
+                return Start == 0 && Length == 0 ? default : throw BufferStateInvalid();
+
+            throw BufferUnknown();
         }
     }
+
+    internal ISequenceOwner<T>? SequenceOwner => _buffer as ISequenceOwner<T>;
+
+    //internal Sequence<T> Sequence => GetSequence();
 
     public int Start => _start < 0 ? ~_start : _start;
 
@@ -102,7 +130,7 @@ public readonly struct Buffer<T>
 
     public bool IsEmpty => _length == 0 || _length == -1;
 
-    public bool IsRented => ArrayType != RentedArrayType.None || _buffer is IMemoryOwner<T>;
+    public bool IsRented => _length < 0 || _start < 0;
 
     public T this[int index]
     {
@@ -121,7 +149,7 @@ public readonly struct Buffer<T>
             if (buffer is IMemoryOwner<T> memoryOwner)
                 return memoryOwner.Memory.Span[Start + index];
 
-            throw InvalidState();
+            throw BufferUnknown();
         }
         set
         {
@@ -143,12 +171,16 @@ public readonly struct Buffer<T>
             }
             else
             {
-                throw InvalidState();
+                throw BufferUnknown();
             }
         }
     }
 
-    private Buffer(object buffer, int start, int length)
+    #endregion Props
+
+    #region Ctors
+
+    private Buffer(object? buffer, int start, int length)
     {
         _buffer = buffer;
         _start = start;
@@ -331,42 +363,19 @@ public readonly struct Buffer<T>
         }
     }
 
-    public Buffer(MemoryManager<T> memoryManager)
-    {
-        _buffer = memoryManager ?? throw new ArgumentNullException(nameof(memoryManager));
-        _start = 0;
-        _length = memoryManager.Memory.Length;
-    }
-
-    public Buffer(MemoryManager<T> memoryManager, int start, int length)
-    {
-        if (memoryManager == null) throw new ArgumentNullException(nameof(memoryManager));
-        var memoryManagerLength = memoryManager.Memory.Length;
-
-        if ((uint)start > (uint)memoryManagerLength)
-            throw new ArgumentOutOfRangeException(nameof(start));
-
-        if ((uint)length > (uint)(memoryManagerLength - start))
-            throw new ArgumentOutOfRangeException(nameof(length));
-
-        _buffer = memoryManager;
-        _start = start;
-        _length = length;
-    }
-
     public Buffer(Memory<T> memory)
     {
-        if (MemoryMarshal.TryGetArray((ReadOnlyMemory<T>)memory, out var segment))
-        {
-            _buffer = segment.Array;
-            _start = segment.Offset;
-            _length = segment.Count;
-        }
-        else if (MemoryMarshal.TryGetMemoryManager<T, MemoryManager<T>>(memory, out var manager, out var start, out var length))
+        if (MemoryMarshal.TryGetMemoryManager<T, MemoryManager<T>>(memory, out var manager, out var start, out var length))
         {
             _buffer = manager;
             _start = start;
             _length = length;
+        }
+        else if (MemoryMarshal.TryGetArray((ReadOnlyMemory<T>)memory, out var segment))
+        {
+            _buffer = segment.Array;
+            _start = segment.Offset;
+            _length = segment.Count;
         }
         else
         {
@@ -375,28 +384,35 @@ public readonly struct Buffer<T>
         }
     }
 
-    public Buffer(IMemoryOwner<T> memoryOwner)
+    public Buffer(IMemoryOwner<T> memoryOwner, bool isRented = true)
     {
         _buffer = memoryOwner ?? throw new ArgumentNullException(nameof(memoryOwner));
         _start = 0;
-        _length = memoryOwner.Memory.Length;
+        _length = isRented ? ~memoryOwner.Memory.Length : memoryOwner.Memory.Length;
     }
 
-    public Buffer(IMemoryOwner<T> memoryOwner, int start, int length)
+    public Buffer(IMemoryOwner<T> memoryOwner, int start, int length, bool isRented = true)
     {
         if (memoryOwner == null) throw new ArgumentNullException(nameof(memoryOwner));
-        var memoryOwnerLength = memoryOwner.Memory.Length;
+        var memoryLength = memoryOwner.Memory.Length;
 
-        if ((uint)start > (uint)memoryOwnerLength)
+        if ((uint)start > (uint)memoryLength)
             throw new ArgumentOutOfRangeException(nameof(start));
 
-        if ((uint)length > (uint)(memoryOwnerLength - start))
+        if ((uint)length > (uint)(memoryLength - start))
             throw new ArgumentOutOfRangeException(nameof(length));
 
         _buffer = memoryOwner;
         _start = start;
-        _length = length;
+        _length = isRented ? ~length : length;
     }
+
+    /*
+     public Buffer(Sequence<T> sequence, int start, int length)
+     public Buffer(ISequenceOwner<T> sequenceOwner, int start, int length)
+     */
+
+    #endregion Ctors
 
     public override int GetHashCode()
         => _buffer is null ? 0 : HashCode.Combine(_buffer.GetHashCode(), _start, _length);
@@ -406,6 +422,8 @@ public readonly struct Buffer<T>
 
     public bool Equals(Buffer<T> other)
         => other._buffer == _buffer && other._start == _start && other._length == _length;
+
+    #region Slicing
 
     public Buffer<T> Slice(int start)
     {
@@ -417,13 +435,13 @@ public readonly struct Buffer<T>
         if (buffer is T[] array)
             return new(array, Start + start, length - start, ArrayType);
 
-        if (buffer is MemoryManager<T> memoryManager)
-            return new(memoryManager, Start + start, length - start);
-
         if (buffer is IMemoryOwner<T> memoryOwner)
-            return new(memoryOwner, Start + start, length - start);
+            return new(memoryOwner, Start + start, length - start, IsRented);
 
-        throw InvalidState();
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
+
+        throw BufferUnknown();
     }
 
     public Buffer<T> Slice(int start, int length)
@@ -439,14 +457,159 @@ public readonly struct Buffer<T>
         if (buffer is T[] array)
             return new(array, Start + start, length, ArrayType);
 
-        if (buffer is MemoryManager<T> memoryManager)
-            return new(memoryManager, Start + start, length);
+        if (buffer is IMemoryOwner<T> memoryOwner)
+            return new(memoryOwner, Start + start, length, IsRented);
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
+
+        throw BufferUnknown();
+    }
+
+    public Buffer<T> AsUnrented() => new(_buffer, Start, Length);
+
+    public Buffer<T> AsUnrented(int start)
+    {
+        var length = Length;
+        if ((uint)start > (uint)length)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+            return new(array, Start + start, length - start);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
-            return new(memoryOwner, Start + start, length);
+            return new(memoryOwner, Start + start, length - start, isRented: false);
 
-        throw InvalidState();
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
+
+        throw BufferUnknown();
     }
+
+    public Buffer<T> AsUnrented(int start, int length)
+    {
+        var oldLength = Length;
+        if ((uint)start > (uint)oldLength)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        if ((uint)length > (uint)(oldLength - start))
+            throw new ArgumentOutOfRangeException(nameof(length));
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+            return new(array, Start + start, length);
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+            return new(memoryOwner, Start + start, length, isRented: false);
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
+
+        throw BufferUnknown();
+    }
+
+    public Memory<T> AsMemory(int start)
+    {
+        var length = Length;
+        if ((uint)start > (uint)length)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+            return new(array, Start + start, length - start);
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+            return memoryOwner.Memory.Slice(Start + start, length - start);
+
+        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+            throw new NotSupportedException("The sequence does not support memory.");
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
+
+        throw BufferUnknown();
+    }
+
+    public Memory<T> AsMemory(int start, int length)
+    {
+        var oldLength = Length;
+        if ((uint)start > (uint)oldLength)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        if ((uint)length > (uint)(oldLength - start))
+            throw new ArgumentOutOfRangeException(nameof(length));
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+            return new(array, Start + start, length);
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+            return memoryOwner.Memory.Slice(Start + start, length);
+
+        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+            throw new NotSupportedException("The sequence does not support memory.");
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
+
+        throw BufferUnknown();
+    }
+
+    public Span<T> AsSpan(int start)
+    {
+        var length = Length;
+        if ((uint)start > (uint)length)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+            return new(array, Start + start, length - start);
+
+        if (buffer is MemoryManager<T> memoryManager)
+            return memoryManager.GetSpan().Slice(Start + start, length - start);
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+            return memoryOwner.Memory.Span.Slice(Start + start, length - start);
+
+        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+            throw new NotSupportedException("The sequence does not support span.");
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
+
+        throw BufferUnknown();
+    }
+
+    public Span<T> AsSpan(int start, int length)
+    {
+        var oldLength = Length;
+        if ((uint)start > (uint)oldLength)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        if ((uint)length > (uint)(oldLength - start))
+            throw new ArgumentOutOfRangeException(nameof(length));
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+            return new(array, Start + start, length);
+
+        if (buffer is MemoryManager<T> memoryManager)
+            return memoryManager.GetSpan().Slice(Start + start, length);
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+            return memoryOwner.Memory.Span.Slice(Start + start, length);
+
+        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+            throw new NotSupportedException("The sequence does not support span.");
+
+        if (buffer == null)
+            return length == 0 ? default : ThrowBufferStateInvalid();
+
+        throw BufferUnknown();
+    }
+
+    #endregion Slicing
 
     public T[] ToArray()
     {
@@ -469,13 +632,140 @@ public readonly struct Buffer<T>
         if (buffer is IMemoryOwner<T> memoryOwner)
             return memoryOwner.Memory.Slice(Start, length).ToArray();
 
-        throw InvalidState();
+        throw BufferUnknown();
     }
+
+    public Buffer<T> AsEmpty() => new(_buffer, _start, _length < 0 ? -1 : 0);
 
     public Buffer<T> CopyIfRented() => IsRented ? ToArray() : this;
 
-    private static InvalidOperationException InvalidState()
-        => new("buffer is invalid");
+    /// <exception cref="InvalidOperationException">Empty array cannot be rented.</exception>
+    /// <exception cref="NotImplementedException">GlobalArrayPool not implemented.</exception>
+    public bool TryReturn(out T[]? externalArray)
+    {
+        var rentedType = RentedType;
+        if (rentedType == RentedArrayType.None)
+        {
+            externalArray = default;
+            return false;
+        }
+
+        var buffer = _buffer;
+        if (buffer is T[] array)
+        {
+            if (array.Length == 0)
+                throw new InvalidOperationException("Empty array cannot be rented.");
+
+            if (rentedType == RentedArrayType.Shared)
+            {
+                ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                externalArray = default;
+                return true;
+            }
+
+            if (rentedType == RentedArrayType.Global)
+            {
+                throw new NotImplementedException();
+                //GlobalArrayPool.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+            }
+
+            Debug.Assert(rentedType == RentedArrayType.External);
+
+            externalArray = array;
+            return false;
+        }
+
+        if (buffer is IMemoryOwner<T> memoryOwner)
+        {
+            memoryOwner.Dispose();
+            externalArray = default;
+            return true;
+        }
+
+        if (buffer is ISequenceOwner<T> sequenceOwner)
+        {
+            sequenceOwner.Dispose();
+            externalArray = default;
+            return true;
+        }
+
+        if (buffer is SequenceSegment<T> sequenceSegment)
+        {
+            var count = BufferPool.TryReturnSegments(sequenceSegment);
+            Debug.Assert(count > 0);
+
+            externalArray = default;
+            return true;
+        }
+
+        if (buffer == null)
+        {
+            throw BufferStateInvalid();
+        }
+
+        throw BufferUnknown();
+    }
+
+    /// <exception cref="InvalidOperationException">It is impossible to return an external array.</exception>
+    /// <exception cref="NotImplementedException">GlobalArrayPool not implemented.</exception>
+    public void Return()
+    {
+        var rentedType = RentedType;
+        if (rentedType != RentedArrayType.None)
+        {
+            var buffer = _buffer;
+            if (buffer is T[] array)
+            {
+                Debug.Assert(array.Length > 0, "Empty array cannot be rented.");
+
+                if (rentedType == RentedArrayType.Shared)
+                {
+                    ArrayPool<T>.Shared.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                }
+                else if (rentedType == RentedArrayType.Global)
+                {
+                    throw new NotImplementedException("GlobalArrayPool not implemented.");
+                    //GlobalArrayPool.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                }
+                else
+                {
+                    Debug.Assert(rentedType == RentedArrayType.External);
+
+                    throw new InvalidOperationException("It is impossible to return an external array.");
+                }
+            }
+            else if (buffer is IMemoryOwner<T> memoryOwner)
+            {
+                memoryOwner.Dispose();
+            }
+            else if (buffer is ISequenceOwner<T> sequenceOwner)
+            {
+                sequenceOwner.Dispose();
+            }
+            else if (buffer is SequenceSegment<T> sequenceSegment)
+            {
+                //TODO: SequenceSegmentPool<T>.Return(sequenceSegment)???
+                var count = BufferPool.TryReturnSegments(sequenceSegment);
+                Debug.Assert(count > 0);
+            }
+            else if (buffer == null)
+            {
+                throw BufferStateInvalid();
+            }
+            else
+            {
+                throw BufferUnknown();
+            }
+        }
+    }
+
+    private static InvalidOperationException BufferUnknown() => new("buffer is unknown.");
+
+    private static InvalidOperationException BufferStateInvalid() => throw new("buffer state is invalid.");
+
+    private static Buffer<T> ThrowBufferStateInvalid() => throw BufferStateInvalid();
+
+    #region Operators
 
     public static bool operator ==(Buffer<T> left, Buffer<T> right) => left.Equals(right);
 
@@ -484,6 +774,8 @@ public readonly struct Buffer<T>
     public static implicit operator Buffer<T>(ArraySegment<T> segment) => new(segment);
 
     public static implicit operator Buffer<T>(T[]? array) => array != null ? new(array) : default;
+    
+    public static implicit operator Buffer<T>(MemoryManager<T>? memoryManager) => memoryManager != null ? new(memoryManager) : default;
 
     public static implicit operator Buffer<T>(Memory<T> memory) => new(memory);
 
@@ -494,4 +786,6 @@ public readonly struct Buffer<T>
     public static implicit operator Span<T>(Buffer<T> buffer) => buffer.Span;
 
     public static implicit operator ReadOnlySpan<T>(Buffer<T> buffer) => buffer.Span;
+
+    #endregion Operators
 }

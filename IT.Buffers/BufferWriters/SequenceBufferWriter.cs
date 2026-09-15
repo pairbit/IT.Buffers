@@ -1,5 +1,4 @@
-﻿using IT.Buffers.Interfaces;
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,14 +7,16 @@ using System.Runtime.CompilerServices;
 namespace IT.Buffers;
 
 [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
-public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
+public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequenceOwner<T>
 {
     private static readonly ReadOnlySequence<T> Empty = new(Segment.Empty, 0, Segment.Empty, 0);
 
-    public static BufferPool<SequenceBufferWriter<T>> Pool => BufferPool<SequenceBufferWriter<T>>.Shared;
+    public static BufferPool<SequenceBufferWriter<T>> Pool => 
+        NewBufferPool<SequenceBufferWriter<T>>.Shared;
 
     private readonly Stack<Segment> _stack;
     private ArrayPool<T>? _arrayPool;
+    //private MemoryPool<T>? _memoryPool;
     private IBufferGrowthStrategy? _growthStrategy;
     private Segment? _first;
     private Segment? _last;
@@ -85,7 +86,6 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
 
     public long Length => AsReadOnly.Length;
 
-
     public static implicit operator ReadOnlySequence<T>(SequenceBufferWriter<T>? sequence)
         => sequence == null ? Empty : sequence.AsReadOnly;
 
@@ -150,7 +150,8 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
 
     public Span<T> GetSpan(int sizeHint = 0) => GetSegment(sizeHint).FreeSpan;
 
-    public void Append(ReadOnlyMemory<T> memory)
+    //TODO: Buffer<T>??
+    public void Append(Memory<T> memory)
     {
         if (memory.Length > 0)
         {
@@ -259,11 +260,11 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
         return nextSegment;
     }
 
-    private class Segment : ReadOnlySequenceSegment<T>
+    private class Segment : SequenceSegment<T>
     {
         internal static readonly Segment Empty = new();
 
-        //TODO: remove and replace to MemoryMarshal.TryGetArray(Memory)
+        //TODO: add object? _buffer and store IOwnerMemory
         private T[]? _array;
 
         internal int Start { get; private set; }
@@ -294,7 +295,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
             Memory = array;
         }
 
-        internal void AssignForeign(ReadOnlyMemory<T> memory)
+        internal void AssignForeign(Memory<T> memory)
         {
             Memory = memory;
             End = memory.Length;
@@ -302,9 +303,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
 
         internal void ResetMemory(ArrayPool<T>? arrayPool)
         {
-            Memory = default;
-            Next = null;
-            RunningIndex = 0;
+            Reset();
             Start = 0;
             End = 0;
             var array = _array;
@@ -353,6 +352,4 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IDisposable
             Start = offset;
         }
     }
-
-    void IDisposable.Dispose() => Reset();
 }
