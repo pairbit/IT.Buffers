@@ -133,13 +133,26 @@ internal class BufferTest
         external = new Buffer<byte>([1], 1, 0, RentedArrayType.External);
         EqualTo(external, length: 1, start: 1, count: 0, type: RentedArrayType.External);
 
-        buffer = new Buffer<byte>(new byte[10], 5, 2);
+        buffer = new Buffer<byte>(new byte[10], 5, 4);
         buffer[0] = 1;
         Assert.That(buffer[0], Is.EqualTo(1));
         buffer[1] = 2;
         Assert.That(buffer[1], Is.EqualTo(2));
+        buffer[2] = 3;
+        Assert.That(buffer[2], Is.EqualTo(3));
+        buffer[3] = 4;
+        Assert.That(buffer[3], Is.EqualTo(4));
 
-        Assert.That(buffer.Span.SequenceEqual([(byte)1, (byte)2]), Is.True);
+        Assert.That(buffer.Span.SequenceEqual([(byte)1, (byte)2, (byte)3, (byte)4]), Is.True);
+
+        Assert.That(buffer.AsMemory(2).Span.SequenceEqual(buffer.AsSpan(2)), Is.True);
+        Assert.That(buffer.AsMemory(1, 2).Span.SequenceEqual(buffer.AsSpan(1, 2)), Is.True);
+
+        Assert.That(buffer.Slice(2).Span.SequenceEqual(buffer.Span.Slice(2)), Is.True);
+        Assert.That(buffer.Slice(1, 3).Span.SequenceEqual(buffer.Span.Slice(1, 3)), Is.True);
+
+        Assert.That(buffer.AsMemory(2).Span.SequenceEqual(buffer.Memory.Span.Slice(2)), Is.True);
+        Assert.That(buffer.AsMemory(1, 3).Span.SequenceEqual(buffer.Memory.Span.Slice(1, 3)), Is.True);
     }
 
     [Test]
@@ -191,6 +204,9 @@ internal class BufferTest
         Assert.That(externalArray, Is.Null);
 
         buffer = new Buffer<byte>(MemoryPool<byte>.Shared.Rent(16), 10, 4);
+        Assert.That(buffer.MemoryOwner, Is.Not.Null);
+        Assert.That(buffer.AsUnrented().MemoryOwner, Is.Null);
+        Assert.That(new Buffer<byte>(buffer.Memory).MemoryOwner, Is.Null);
         EqualTo(buffer, -1, start: 10, count: 4, isRented: true);
         Assert.That(buffer.TryReturn(out externalArray), Is.True);
         Assert.That(externalArray, Is.Null);
