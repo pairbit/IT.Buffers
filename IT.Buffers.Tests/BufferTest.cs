@@ -39,6 +39,9 @@ internal class BufferTest
 
         Assert.That(ex.ParamName, Is.EqualTo("memory"));
         Assert.That(ex.Message, Is.EqualTo("Unrecognized memory type. (Parameter 'memory')"));
+
+        var buffer = new Buffer<byte>(new byte[1], RentedArrayType.Global);
+        Assert.Throws<NotImplementedException>(() => buffer.TryReturn(out _));
     }
 
     [Test]
@@ -140,43 +143,63 @@ internal class BufferTest
     }
 
     [Test]
-    public void RentTest()
+    public void RentReturnTest()
     {
-        var buffer = BufferPool.Rent<byte>(0);
-        Equals(buffer);
-        Assert.That(BufferPool.TryReturn(buffer), Is.False);
+        Buffer<byte> buffer = default;
+        EqualTo(buffer, -1);
+        Assert.That(buffer.TryReturn(out var externalArray), Is.False);
+        Assert.That(externalArray, Is.Null);
+
+        buffer = BufferPool.Rent<byte>(0);
+        EqualTo(buffer);
+        Assert.That(buffer.TryReturn(out externalArray), Is.False);
+        Assert.That(externalArray, Is.Null);
 
         buffer = BufferPool.Rent<byte>(1);
         EqualTo(buffer, length: 16, count: 1, type: RentedArrayType.Shared);
-        Assert.That(BufferPool.TryReturn(buffer), Is.True);
+        Assert.That(buffer.TryReturn(out externalArray), Is.True);
+        Assert.That(externalArray, Is.Null);
 
         buffer = BufferPool.Rent<byte>(BufferSize.MB_32);
         EqualTo(buffer, BufferSize.MB_32, type: RentedArrayType.Shared);
-        Assert.That(BufferPool.TryReturn(buffer), Is.True);
+        Assert.That(buffer.TryReturn(out externalArray), Is.True);
+        Assert.That(externalArray, Is.Null);
 
         buffer = BufferPool.Rent<byte>(BufferSize.GB - 1);
         EqualTo(buffer, length: BufferSize.GB, count: BufferSize.GB - 1, type: RentedArrayType.Shared);
-        Assert.That(BufferPool.TryReturn(buffer), Is.True);
+        Assert.That(buffer.TryReturn(out externalArray), Is.True);
+        Assert.That(externalArray, Is.Null);
 
         buffer = BufferPool.Rent<byte>(BufferSize.GB + 1);
         EqualTo(buffer, BufferSize.GB + 1);
-        Assert.That(BufferPool.TryReturn(buffer), Is.False);
+        Assert.That(buffer.TryReturn(out externalArray), Is.False);
+        Assert.That(externalArray, Is.Null);
 
         buffer = BufferPool.Rent<byte>(0, BufferSize.MB_16);
         EqualTo(buffer);
-        Assert.That(BufferPool.TryReturn(buffer), Is.False);
+        Assert.That(buffer.TryReturn(out externalArray), Is.False);
+        Assert.That(externalArray, Is.Null);
 
         buffer = BufferPool.Rent<byte>(BufferSize.MB_32, BufferSize.MB_16);
         EqualTo(buffer, BufferSize.MB_32);
-        Assert.That(BufferPool.TryReturn(buffer), Is.False);
+        Assert.That(buffer.TryReturn(out externalArray), Is.False);
+        Assert.That(externalArray, Is.Null);
 
         buffer = new Buffer<byte>(MemoryPool<byte>.Shared.Rent(1));
         EqualTo(buffer, -1, start: 0, count: 16, isRented: true);
-        Assert.That(BufferPool.TryReturn(buffer), Is.True);
+        Assert.That(buffer.TryReturn(out externalArray), Is.True);
+        Assert.That(externalArray, Is.Null);
 
         buffer = new Buffer<byte>(MemoryPool<byte>.Shared.Rent(16), 10, 4);
         EqualTo(buffer, -1, start: 10, count: 4, isRented: true);
-        Assert.That(BufferPool.TryReturn(buffer), Is.True);
+        Assert.That(buffer.TryReturn(out externalArray), Is.True);
+        Assert.That(externalArray, Is.Null);
+
+        var array = new byte[1];
+        buffer = new Buffer<byte>(array, RentedArrayType.External);
+        EqualTo(buffer, length: 1, type: RentedArrayType.External);
+        Assert.That(buffer.TryReturn(out externalArray), Is.False);
+        Assert.That(externalArray, Is.EqualTo(array));
     }
 
     private static void EqualTo(Buffer<byte> buffer,
@@ -194,6 +217,7 @@ internal class BufferTest
         if (length < 0)
         {
             Assert.That(buffer.Array, Is.Null);
+            if (count < 0) count = 0;
         }
         else
         {
@@ -208,5 +232,7 @@ internal class BufferTest
 
         if (isRented)
             EqualTo(buffer.AsUnrented(), length, start, count);
+        else
+            Assert.That(buffer.TryReturn(out _), Is.False);
     }
 }

@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace IT.Buffers;
 
-public readonly struct Buffer<T>
+public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 {
 #pragma warning disable CA1825 // Avoid zero-length array allocations
     public static Buffer<T> Empty { get; } = new((object)new T[0], default, default);
@@ -63,9 +63,9 @@ public readonly struct Buffer<T>
 
     public T[]? Array => _buffer as T[];
 
-    public MemoryManager<T>? MemoryManager => _buffer as MemoryManager<T>;
+    public MemoryManager<T>? MemoryManager => IsRented ? _buffer as MemoryManager<T> : null;
 
-    public IMemoryOwner<T>? MemoryOwner => _buffer as IMemoryOwner<T>;
+    public IMemoryOwner<T>? MemoryOwner => IsRented ? _buffer as IMemoryOwner<T> : null;
 
     public Memory<T> Memory
     {
@@ -445,6 +445,8 @@ public readonly struct Buffer<T>
     public bool Equals(Buffer<T> other)
         => other._buffer == _buffer && other._start == _start && other._length == _length;
 
+    #region Slicing
+
     public Buffer<T> Slice(int start)
     {
         var length = Length;
@@ -581,6 +583,8 @@ public readonly struct Buffer<T>
 
         throw BufferUnknown();
     }
+
+    #endregion Slicing
 
     public T[] ToArray()
     {
