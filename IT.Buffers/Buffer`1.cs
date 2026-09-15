@@ -87,9 +87,6 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             if (buffer is T[] array)
                 return new(array, Start, length);
 
-            if (buffer is MemoryManager<T> memoryManager)
-                return memoryManager.Memory.Slice(Start, length);
-
             if (buffer is IMemoryOwner<T> memoryOwner)
                 return memoryOwner.Memory.Slice(Start, length);
 
@@ -368,29 +365,6 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         }
     }
 
-    public Buffer(MemoryManager<T> memoryManager, bool isRented = true)
-    {
-        _buffer = memoryManager ?? throw new ArgumentNullException(nameof(memoryManager));
-        _start = 0;
-        _length = isRented ? ~memoryManager.Memory.Length : memoryManager.Memory.Length;
-    }
-
-    public Buffer(MemoryManager<T> memoryManager, int start, int length, bool isRented = true)
-    {
-        if (memoryManager == null) throw new ArgumentNullException(nameof(memoryManager));
-        var memoryManagerLength = memoryManager.Memory.Length;
-
-        if ((uint)start > (uint)memoryManagerLength)
-            throw new ArgumentOutOfRangeException(nameof(start));
-
-        if ((uint)length > (uint)(memoryManagerLength - start))
-            throw new ArgumentOutOfRangeException(nameof(length));
-
-        _buffer = memoryManager;
-        _start = start;
-        _length = isRented ? ~length : length;
-    }
-
     public Buffer(Memory<T> memory)
     {
         // получаем сначала менеджера, чтобы случайно не потерять на него ссылку
@@ -424,12 +398,12 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
     public Buffer(IMemoryOwner<T> memoryOwner, int start, int length, bool isRented = true)
     {
         if (memoryOwner == null) throw new ArgumentNullException(nameof(memoryOwner));
-        var memoryOwnerLength = memoryOwner.Memory.Length;
+        var memoryLength = memoryOwner.Memory.Length;
 
-        if ((uint)start > (uint)memoryOwnerLength)
+        if ((uint)start > (uint)memoryLength)
             throw new ArgumentOutOfRangeException(nameof(start));
 
-        if ((uint)length > (uint)(memoryOwnerLength - start))
+        if ((uint)length > (uint)(memoryLength - start))
             throw new ArgumentOutOfRangeException(nameof(length));
 
         _buffer = memoryOwner;
@@ -465,9 +439,6 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         if (buffer is T[] array)
             return new(array, Start + start, length - start, ArrayType);
 
-        if (buffer is MemoryManager<T> memoryManager)
-            return new(memoryManager, Start + start, length - start, IsRented);
-
         if (buffer is IMemoryOwner<T> memoryOwner)
             return new(memoryOwner, Start + start, length - start, IsRented);
 
@@ -490,9 +461,6 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         if (buffer is T[] array)
             return new(array, Start + start, length, ArrayType);
 
-        if (buffer is MemoryManager<T> memoryManager)
-            return new(memoryManager, Start + start, length, IsRented);
-
         if (buffer is IMemoryOwner<T> memoryOwner)
             return new(memoryOwner, Start + start, length, IsRented);
 
@@ -513,9 +481,6 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         var buffer = _buffer;
         if (buffer is T[] array)
             return new(array, Start + start, length - start);
-
-        if (buffer is MemoryManager<T> memoryManager)
-            return new(memoryManager, Start + start, length - start, isRented: false);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
             return new(memoryOwner, Start + start, length - start, isRented: false);
@@ -539,9 +504,6 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         if (buffer is T[] array)
             return new(array, Start + start, length);
 
-        if (buffer is MemoryManager<T> memoryManager)
-            return new(memoryManager, Start + start, length, isRented: false);
-
         if (buffer is IMemoryOwner<T> memoryOwner)
             return new(memoryOwner, Start + start, length, isRented: false);
 
@@ -560,9 +522,6 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         var buffer = _buffer;
         if (buffer is T[] array)
             return new(array, Start + start, length - start);
-
-        if (buffer is MemoryManager<T> memoryManager)
-            return memoryManager.Memory.Slice(Start + start, length - start);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
             return memoryOwner.Memory.Slice(Start + start, length - start);
@@ -588,9 +547,6 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         var buffer = _buffer;
         if (buffer is T[] array)
             return new(array, Start + start, length);
-
-        if (buffer is MemoryManager<T> memoryManager)
-            return memoryManager.Memory.Slice(Start + start, length);
 
         if (buffer is IMemoryOwner<T> memoryOwner)
             return memoryOwner.Memory.Slice(Start + start, length);
