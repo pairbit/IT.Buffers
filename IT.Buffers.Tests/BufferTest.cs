@@ -218,10 +218,19 @@ internal class BufferTest
         Assert.That(externalArray, Is.Null);
 
         buffer = new Buffer<byte>(MemoryPool<byte>.Shared.Rent(16), 10, 4);
-        Assert.That(buffer.MemoryOwner, Is.Not.Null);
-        Assert.That(buffer.AsUnrented().MemoryOwner, Is.Null);
-        Assert.That(new Buffer<byte>(buffer.Memory).MemoryOwner, Is.Null);
         EqualTo(buffer, BufferType.MemoryOwner, 16, start: 10, length: 4, isRented: true);
+        Assert.That(buffer.TryReturn(out externalArray), Is.True);
+        Assert.That(externalArray, Is.Null);
+
+        var mm = new UnmanagedMemoryManager<byte>(18);
+        buffer = new Buffer<byte>(mm);
+        EqualTo(buffer, BufferType.MemoryManager, 18, isRented: true);
+        Assert.That(buffer.TryReturn(out externalArray), Is.True);
+        Assert.That(externalArray, Is.Null);
+
+        mm = new UnmanagedMemoryManager<byte>(22);
+        buffer = new Buffer<byte>(mm, 8, 5);
+        EqualTo(buffer, BufferType.MemoryManager, 22, start: 8, length: 5, isRented: true);
         Assert.That(buffer.TryReturn(out externalArray), Is.True);
         Assert.That(externalArray, Is.Null);
 
@@ -273,10 +282,17 @@ internal class BufferTest
         buffer.Return();
 
         buffer = new Buffer<byte>(MemoryPool<byte>.Shared.Rent(16), 10, 4);
-        Assert.That(buffer.MemoryOwner, Is.Not.Null);
-        Assert.That(buffer.AsUnrented().MemoryOwner, Is.Null);
-        Assert.That(new Buffer<byte>(buffer.Memory).MemoryOwner, Is.Null);
         EqualTo(buffer, BufferType.MemoryOwner, 16, start: 10, length: 4, isRented: true);
+        buffer.Return();
+
+        var mm = new UnmanagedMemoryManager<byte>(18);
+        buffer = new Buffer<byte>(mm);
+        EqualTo(buffer, BufferType.MemoryManager, 18, isRented: true);
+        buffer.Return();
+
+        mm = new UnmanagedMemoryManager<byte>(22);
+        buffer = new Buffer<byte>(mm, 8, 5);
+        EqualTo(buffer, BufferType.MemoryManager, 22, start: 8, length: 5, isRented: true);
         buffer.Return();
     }
 
@@ -313,6 +329,8 @@ internal class BufferTest
             {
                 Assert.That(buffer.MemoryOwner, Is.Not.Null);
                 Assert.That(buffer.MemoryOwner.Memory.Length, Is.EqualTo(objLength));
+
+                Assert.That(new Buffer<byte>(buffer.Memory).MemoryOwner, Is.Null);
             }
             else
             {
@@ -331,6 +349,9 @@ internal class BufferTest
                 Assert.That(buffer.MemoryManager.Memory.Length, Is.EqualTo(objLength));
                 Assert.That(buffer.MemoryManager.GetSpan().Length, Is.EqualTo(objLength));
                 Assert.That(buffer.MemoryOwner.Memory.Length, Is.EqualTo(objLength));
+
+                Assert.That(new Buffer<byte>(buffer.Memory).MemoryManager, Is.Null);
+                Assert.That(new Buffer<byte>(buffer.Memory).MemoryOwner, Is.Null);
             }
             else
             {

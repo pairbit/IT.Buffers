@@ -10,6 +10,7 @@
     <IsTestProject>true</IsTestProject>
 	<SignAssembly>true</SignAssembly>
 	<AssemblyOriginatorKeyFile>..\IT.snk</AssemblyOriginatorKeyFile>
+	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
