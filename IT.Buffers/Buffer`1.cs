@@ -665,7 +665,7 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
             if (rentedType == RentedArrayType.Global)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("GlobalArrayPool not implemented.");
                 //GlobalArrayPool.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
             }
 
@@ -675,25 +675,20 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             return false;
         }
 
-        if (buffer is IMemoryOwner<T> memoryOwner)
-        {
-            memoryOwner.Dispose();
-            externalArray = default;
-            return true;
-        }
-
-        if (buffer is ISequenceOwner<T> sequenceOwner)
-        {
-            sequenceOwner.Dispose();
-            externalArray = default;
-            return true;
-        }
-
         if (buffer is SequenceSegment<T> sequenceSegment)
         {
             var count = BufferPool.TryReturnSegments(sequenceSegment);
             Debug.Assert(count > 0);
 
+            externalArray = default;
+            return true;
+        }
+
+        if (buffer is IDisposable disposable)
+        {
+            Debug.Assert(buffer is ISequenceOwner<T> || buffer is IMemoryOwner<T>);
+
+            disposable.Dispose();
             externalArray = default;
             return true;
         }
@@ -725,7 +720,7 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
                 else if (rentedType == RentedArrayType.Global)
                 {
                     throw new NotImplementedException("GlobalArrayPool not implemented.");
-                    //GlobalArrayPool.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                    //GlobalArrayPool<T>.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
                 }
                 else
                 {
@@ -734,19 +729,16 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
                     throw new InvalidOperationException("It is impossible to return an external array.");
                 }
             }
-            else if (buffer is IMemoryOwner<T> memoryOwner)
-            {
-                memoryOwner.Dispose();
-            }
-            else if (buffer is ISequenceOwner<T> sequenceOwner)
-            {
-                sequenceOwner.Dispose();
-            }
             else if (buffer is SequenceSegment<T> sequenceSegment)
             {
                 //TODO: SequenceSegmentPool<T>.Return(sequenceSegment)???
                 var count = BufferPool.TryReturnSegments(sequenceSegment);
                 Debug.Assert(count > 0);
+            }
+            else if (buffer is IDisposable disposable)
+            {
+                Debug.Assert(buffer is ISequenceOwner<T> || buffer is IMemoryOwner<T>);
+                disposable.Dispose();
             }
             else if (buffer == null)
             {
@@ -774,7 +766,7 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
     public static implicit operator Buffer<T>(ArraySegment<T> segment) => new(segment);
 
     public static implicit operator Buffer<T>(T[]? array) => array != null ? new(array) : default;
-    
+
     public static implicit operator Buffer<T>(MemoryManager<T>? memoryManager) => memoryManager != null ? new(memoryManager) : default;
 
     public static implicit operator Buffer<T>(Memory<T> memory) => new(memory);
