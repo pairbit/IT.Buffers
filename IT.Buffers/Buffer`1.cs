@@ -37,10 +37,8 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             var buffer = _buffer;
             if (buffer is T[]) return BufferType.Array;
             if (buffer is MemoryManager<T>) return BufferType.MemoryManager;
-            if (buffer is IMemoryOwner<T>) return BufferType.MemoryOwner;
-
-            //TODO: что если SequenceSegment будет наследовать IMemoryOwner или ISequenceOwner?
             if (buffer is SequenceSegment<T>) return BufferType.Sequence;
+            if (buffer is IMemoryOwner<T>) return BufferType.MemoryOwner;
             if (buffer is ISequenceOwner<T>) return BufferType.SequenceOwner;
 
             return buffer is null ? BufferType.Null : BufferType.Unknown;
@@ -83,10 +81,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             if (buffer is T[] array)
                 return new(array, Start, Length);
 
+            if (buffer is SequenceSegment<T>)
+                throw new NotSupportedException("The sequence does not support memory.");
+
             if (buffer is IMemoryOwner<T> memoryOwner)
                 return memoryOwner.Memory.Slice(Start, Length);
 
-            if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+            if (buffer is ISequenceOwner<T>)
                 throw new NotSupportedException("The sequence does not support memory.");
 
             if (buffer == null)
@@ -107,10 +108,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             if (buffer is MemoryManager<T> memoryManager)
                 return memoryManager.GetSpan().Slice(Start, Length);
 
+            if (buffer is SequenceSegment<T>)
+                throw new NotSupportedException("The sequence does not support span.");
+
             if (buffer is IMemoryOwner<T> memoryOwner)
                 return memoryOwner.Memory.Span.Slice(Start, Length);
 
-            if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+            if (buffer is ISequenceOwner<T>)
                 throw new NotSupportedException("The sequence does not support span.");
 
             if (buffer == null)
@@ -519,10 +523,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         if (buffer is T[] array)
             return new(array, Start + start, length - start);
 
+        if (buffer is SequenceSegment<T>)
+            throw new NotSupportedException("The sequence does not support memory.");
+
         if (buffer is IMemoryOwner<T> memoryOwner)
             return memoryOwner.Memory.Slice(Start + start, length - start);
 
-        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+        if (buffer is ISequenceOwner<T>)
             throw new NotSupportedException("The sequence does not support memory.");
 
         if (buffer == null)
@@ -544,10 +551,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         if (buffer is T[] array)
             return new(array, Start + start, length);
 
+        if (buffer is SequenceSegment<T>)
+            throw new NotSupportedException("The sequence does not support memory.");
+
         if (buffer is IMemoryOwner<T> memoryOwner)
             return memoryOwner.Memory.Slice(Start + start, length);
 
-        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+        if (buffer is ISequenceOwner<T>)
             throw new NotSupportedException("The sequence does not support memory.");
 
         if (buffer == null)
@@ -569,10 +579,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         if (buffer is MemoryManager<T> memoryManager)
             return memoryManager.GetSpan().Slice(Start + start, length - start);
 
+        if (buffer is SequenceSegment<T>)
+            throw new NotSupportedException("The sequence does not support span.");
+
         if (buffer is IMemoryOwner<T> memoryOwner)
             return memoryOwner.Memory.Span.Slice(Start + start, length - start);
 
-        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+        if (buffer is ISequenceOwner<T>)
             throw new NotSupportedException("The sequence does not support span.");
 
         if (buffer == null)
@@ -597,10 +610,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         if (buffer is MemoryManager<T> memoryManager)
             return memoryManager.GetSpan().Slice(Start + start, length);
 
+        if (buffer is SequenceSegment<T>)
+            throw new NotSupportedException("The sequence does not support span.");
+
         if (buffer is IMemoryOwner<T> memoryOwner)
             return memoryOwner.Memory.Span.Slice(Start + start, length);
 
-        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+        if (buffer is ISequenceOwner<T>)
             throw new NotSupportedException("The sequence does not support span.");
 
         if (buffer == null)
