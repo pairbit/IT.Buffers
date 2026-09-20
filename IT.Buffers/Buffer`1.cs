@@ -61,11 +61,14 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
     public bool IsNull => _buffer == null;
 
-    public T[]? Array => _buffer as T[];
+    public T[]? Array => IsRented ? _buffer as T[] : null;
 
     public MemoryManager<T>? MemoryManager => IsRented ? _buffer as MemoryManager<T> : null;
 
     public IMemoryOwner<T>? MemoryOwner => IsRented ? _buffer as IMemoryOwner<T> : null;
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public T[]? UnsafeArray => _buffer as T[];
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public MemoryManager<T>? UnsafeMemoryManager => _buffer as MemoryManager<T>;

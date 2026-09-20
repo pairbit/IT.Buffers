@@ -325,7 +325,19 @@ internal class BufferTest
         }
         else if (type == BufferType.Array)
         {
-            Assert.That(buffer.Array != null && buffer.Array.Length == objLength, Is.True);
+            if (buffer.IsRented)
+            {
+                Assert.That(buffer.Array, Is.Not.Null);
+                Assert.That(buffer.Array.Length, Is.EqualTo(objLength));
+
+                Assert.That(new Buffer<byte>(buffer.Memory).MemoryOwner, Is.Null);
+            }
+            else
+            {
+                Assert.That(buffer.UnsafeArray, Is.Not.Null);
+                Assert.That(buffer.UnsafeArray.Length, Is.EqualTo(objLength));
+            }
+            
             Assert.That(buffer.MemoryManager, Is.Null);
             Assert.That(buffer.MemoryOwner, Is.Null);
         }
