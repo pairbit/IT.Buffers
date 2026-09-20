@@ -16,13 +16,13 @@ internal class SequenceBufferWriterTest
         bufferWriter.Write(bytes);
 
         var pos = bufferWriter.End;
-        var ros = bufferWriter.AsReadOnly;
+        var ros = bufferWriter.Sequence;
 
         using var ross = new ReadOnlySequenceStream(ros);
 
         await bufferWriter.WriteAsync(ross);
 
-        var ros2 = bufferWriter.AsReadOnly;
+        var ros2 = bufferWriter.Sequence;
         var sliced = ros2.Slice(pos);
 
         Assert.That(sliced.SequenceEqual(ros), Is.True);
@@ -40,13 +40,13 @@ internal class SequenceBufferWriterTest
         bufferWriter.Write(bytes);
 
         var pos = bufferWriter.End;
-        var ros = bufferWriter.AsReadOnly;
+        var ros = bufferWriter.Sequence;
 
         using var ross = new ReadOnlySequenceStream(ros, DisposeArg, bufferWriter);
 
         await bufferWriter.WriteAsync(ross);
 
-        var ros2 = bufferWriter.AsReadOnly;
+        var ros2 = bufferWriter.Sequence;
         var sliced = ros2.Slice(pos);
 
         Assert.That(sliced.SequenceEqual(ros), Is.True);
@@ -110,7 +110,7 @@ internal class SequenceBufferWriterTest
 
         bufferWriter.Write(bytes);
 
-        var ros = bufferWriter.AsReadOnly;
+        var ros = bufferWriter.Sequence;
         Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
         Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
 
@@ -131,7 +131,7 @@ internal class SequenceBufferWriterTest
 
         await bufferWriter.WriteAsync(stream);
 
-        var ros = bufferWriter.AsReadOnly;
+        var ros = bufferWriter.Sequence;
         Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
         Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
 
@@ -153,7 +153,7 @@ internal class SequenceBufferWriterTest
 
         await bufferWriter.WriteAsync(stream);
 
-        var ros = bufferWriter.AsReadOnly;
+        var ros = bufferWriter.Sequence;
         var start = bufferWriter.End;
 
         Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
@@ -168,7 +168,7 @@ internal class SequenceBufferWriterTest
         Random.Shared.NextBytes(lastBuffer);
         bufferWriter.Write(lastBuffer);
 
-        ros = bufferWriter.AsReadOnly;
+        ros = bufferWriter.Sequence;
         Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
         Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
 
@@ -180,7 +180,7 @@ internal class SequenceBufferWriterTest
         Assert.That(lastROS.SequenceEqual(lastBuffer), Is.True);
 
         bufferWriter.AdvanceTo(start);
-        ros = bufferWriter.AsReadOnly;
+        ros = bufferWriter.Sequence;
         Assert.That(ros.SequenceEqual(lastROS), Is.True);
         Assert.That(ros.Length, Is.EqualTo(lastBuffer.Length));
         Assert.That(ros.SequenceEqual(lastBuffer), Is.True);
@@ -201,7 +201,7 @@ internal class SequenceBufferWriterTest
 
         await bufferWriter.WriteAsync(stream);
 
-        var ros = bufferWriter.AsReadOnly;
+        var ros = bufferWriter.Sequence;
         Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
         Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
 
@@ -222,7 +222,7 @@ internal class SequenceBufferWriterTest
 
         await bufferWriter.WriteAsync(stream);
 
-        var ros = bufferWriter.AsReadOnly;
+        var ros = bufferWriter.Sequence;
         Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
         Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
 
@@ -244,7 +244,7 @@ internal class SequenceBufferWriterTest
 
         await bufferWriter.WriteAsync(stream);
 
-        var ros = bufferWriter.AsReadOnly;
+        var ros = bufferWriter.Sequence;
         Assert.That(ros.Start, Is.EqualTo(bufferWriter.Start));
         Assert.That(ros.End, Is.EqualTo(bufferWriter.End));
 
