@@ -27,7 +27,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
         _stack = new();
     }
 
-    private string DebuggerDisplay => $"Length: {AsReadOnly.Length}";
+    private string DebuggerDisplay => $"Length: {Sequence.Length}";
 
 #if NET
     public int EnsureCapacitySegments(int capacity)
@@ -63,7 +63,8 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
         }
     }
 
-    public ReadOnlySequence<T> AsReadOnly
+    //TODO: change to Sequence<T>
+    public ReadOnlySequence<T> Sequence
     {
         get
         {
@@ -84,10 +85,10 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
     public SequencePosition End => _last != null ? new(_last, _last.End) : default;
 
-    public long Length => AsReadOnly.Length;
+    public long Length => Sequence.Length;
 
     public static implicit operator ReadOnlySequence<T>(SequenceBufferWriter<T>? sequence)
-        => sequence == null ? Empty : sequence.AsReadOnly;
+        => sequence == null ? Empty : sequence.Sequence;
 
     public void AdvanceTo(SequencePosition position)
     {

@@ -79,6 +79,9 @@ public static class BufferPool
     public static bool TryReturn<TBuffer>(TBuffer buffer) where TBuffer : class, IResetable, new()
         => NewBufferPool<TBuffer>.Shared.TryReturn(buffer);
 
+    public static void Return<TBuffer>(TBuffer buffer) where TBuffer : class, IResetable, new()
+        => NewBufferPool<TBuffer>.Shared.Return(buffer);
+
     internal static int TryReturnSegments<T>(ReadOnlySequenceSegment<T> segment)
     {
         var count = 0;

@@ -37,10 +37,8 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             var buffer = _buffer;
             if (buffer is T[]) return BufferType.Array;
             if (buffer is MemoryManager<T>) return BufferType.MemoryManager;
-            if (buffer is IMemoryOwner<T>) return BufferType.MemoryOwner;
-
-            //TODO: что если SequenceSegment будет наследовать IMemoryOwner или ISequenceOwner?
             if (buffer is SequenceSegment<T>) return BufferType.Sequence;
+            if (buffer is IMemoryOwner<T>) return BufferType.MemoryOwner;
             if (buffer is ISequenceOwner<T>) return BufferType.SequenceOwner;
 
             return buffer is null ? BufferType.Null : BufferType.Unknown;
@@ -63,11 +61,14 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
     public bool IsNull => _buffer == null;
 
-    public T[]? Array => _buffer as T[];
+    public T[]? Array => IsRented ? _buffer as T[] : null;
 
     public MemoryManager<T>? MemoryManager => IsRented ? _buffer as MemoryManager<T> : null;
 
     public IMemoryOwner<T>? MemoryOwner => IsRented ? _buffer as IMemoryOwner<T> : null;
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public T[]? UnsafeArray => _buffer as T[];
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public MemoryManager<T>? UnsafeMemoryManager => _buffer as MemoryManager<T>;
@@ -83,10 +84,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             if (buffer is T[] array)
                 return new(array, Start, Length);
 
+            if (buffer is SequenceSegment<T>)
+                throw new NotSupportedException("The sequence does not support memory.");
+
             if (buffer is IMemoryOwner<T> memoryOwner)
                 return memoryOwner.Memory.Slice(Start, Length);
 
-            if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+            if (buffer is ISequenceOwner<T>)
                 throw new NotSupportedException("The sequence does not support memory.");
 
             if (buffer == null)
@@ -107,10 +111,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             if (buffer is MemoryManager<T> memoryManager)
                 return memoryManager.GetSpan().Slice(Start, Length);
 
+            if (buffer is SequenceSegment<T>)
+                throw new NotSupportedException("The sequence does not support span.");
+
             if (buffer is IMemoryOwner<T> memoryOwner)
                 return memoryOwner.Memory.Span.Slice(Start, Length);
 
-            if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+            if (buffer is ISequenceOwner<T>)
                 throw new NotSupportedException("The sequence does not support span.");
 
             if (buffer == null)
@@ -519,10 +526,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         if (buffer is T[] array)
             return new(array, Start + start, length - start);
 
+        if (buffer is SequenceSegment<T>)
+            throw new NotSupportedException("The sequence does not support memory.");
+
         if (buffer is IMemoryOwner<T> memoryOwner)
             return memoryOwner.Memory.Slice(Start + start, length - start);
 
-        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+        if (buffer is ISequenceOwner<T>)
             throw new NotSupportedException("The sequence does not support memory.");
 
         if (buffer == null)
@@ -544,10 +554,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         if (buffer is T[] array)
             return new(array, Start + start, length);
 
+        if (buffer is SequenceSegment<T>)
+            throw new NotSupportedException("The sequence does not support memory.");
+
         if (buffer is IMemoryOwner<T> memoryOwner)
             return memoryOwner.Memory.Slice(Start + start, length);
 
-        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+        if (buffer is ISequenceOwner<T>)
             throw new NotSupportedException("The sequence does not support memory.");
 
         if (buffer == null)
@@ -569,10 +582,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         if (buffer is MemoryManager<T> memoryManager)
             return memoryManager.GetSpan().Slice(Start + start, length - start);
 
+        if (buffer is SequenceSegment<T>)
+            throw new NotSupportedException("The sequence does not support span.");
+
         if (buffer is IMemoryOwner<T> memoryOwner)
             return memoryOwner.Memory.Span.Slice(Start + start, length - start);
 
-        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+        if (buffer is ISequenceOwner<T>)
             throw new NotSupportedException("The sequence does not support span.");
 
         if (buffer == null)
@@ -597,10 +613,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         if (buffer is MemoryManager<T> memoryManager)
             return memoryManager.GetSpan().Slice(Start + start, length);
 
+        if (buffer is SequenceSegment<T>)
+            throw new NotSupportedException("The sequence does not support span.");
+
         if (buffer is IMemoryOwner<T> memoryOwner)
             return memoryOwner.Memory.Span.Slice(Start + start, length);
 
-        if (buffer is SequenceSegment<T> || buffer is ISequenceOwner<T>)
+        if (buffer is ISequenceOwner<T>)
             throw new NotSupportedException("The sequence does not support span.");
 
         if (buffer == null)
@@ -665,7 +684,7 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
             if (rentedType == RentedArrayType.Global)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException("GlobalArrayPool not implemented.");
                 //GlobalArrayPool.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
             }
 
@@ -675,25 +694,20 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
             return false;
         }
 
-        if (buffer is IMemoryOwner<T> memoryOwner)
-        {
-            memoryOwner.Dispose();
-            externalArray = default;
-            return true;
-        }
-
-        if (buffer is ISequenceOwner<T> sequenceOwner)
-        {
-            sequenceOwner.Dispose();
-            externalArray = default;
-            return true;
-        }
-
         if (buffer is SequenceSegment<T> sequenceSegment)
         {
             var count = BufferPool.TryReturnSegments(sequenceSegment);
             Debug.Assert(count > 0);
 
+            externalArray = default;
+            return true;
+        }
+
+        if (buffer is IDisposable disposable)
+        {
+            Debug.Assert(buffer is ISequenceOwner<T> || buffer is IMemoryOwner<T>);
+
+            disposable.Dispose();
             externalArray = default;
             return true;
         }
@@ -725,7 +739,7 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
                 else if (rentedType == RentedArrayType.Global)
                 {
                     throw new NotImplementedException("GlobalArrayPool not implemented.");
-                    //GlobalArrayPool.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                    //GlobalArrayPool<T>.Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
                 }
                 else
                 {
@@ -734,19 +748,16 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
                     throw new InvalidOperationException("It is impossible to return an external array.");
                 }
             }
-            else if (buffer is IMemoryOwner<T> memoryOwner)
-            {
-                memoryOwner.Dispose();
-            }
-            else if (buffer is ISequenceOwner<T> sequenceOwner)
-            {
-                sequenceOwner.Dispose();
-            }
             else if (buffer is SequenceSegment<T> sequenceSegment)
             {
                 //TODO: SequenceSegmentPool<T>.Return(sequenceSegment)???
                 var count = BufferPool.TryReturnSegments(sequenceSegment);
                 Debug.Assert(count > 0);
+            }
+            else if (buffer is IDisposable disposable)
+            {
+                Debug.Assert(buffer is ISequenceOwner<T> || buffer is IMemoryOwner<T>);
+                disposable.Dispose();
             }
             else if (buffer == null)
             {
@@ -774,7 +785,7 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
     public static implicit operator Buffer<T>(ArraySegment<T> segment) => new(segment);
 
     public static implicit operator Buffer<T>(T[]? array) => array != null ? new(array) : default;
-    
+
     public static implicit operator Buffer<T>(MemoryManager<T>? memoryManager) => memoryManager != null ? new(memoryManager) : default;
 
     public static implicit operator Buffer<T>(Memory<T> memory) => new(memory);
