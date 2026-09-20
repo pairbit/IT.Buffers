@@ -330,7 +330,7 @@ internal class BufferTest
                 Assert.That(buffer.Array, Is.Not.Null);
                 Assert.That(buffer.Array.Length, Is.EqualTo(objLength));
 
-                Assert.That(new Buffer<byte>(buffer.Memory).MemoryOwner, Is.Null);
+                Assert.That(new Buffer<byte>(buffer.Memory).Array, Is.Null);
             }
             else
             {
