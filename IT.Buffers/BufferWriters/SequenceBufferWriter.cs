@@ -158,7 +158,6 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
     public Span<T> GetSpan(int sizeHint = 0) => GetSegment(sizeHint).FreeSpan;
 
-    //TODO: Buffer<T>??
     public void Append(Memory<T> memory)
     {
         if (memory.Length > 0)
@@ -327,8 +326,6 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
             set => base.Next = value;
         }
 
-        internal bool IsForeignMemory => _buffer == null;
-
         internal void AssignArray(T[] array)
         {
             _buffer = array;
@@ -369,15 +366,18 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
         internal void SetNext(Segment segment)
         {
             Next = segment;
-            segment.RunningIndex = RunningIndex + Start + Length;
+
+            Debug.Assert(Start + Length == End);
+
+            segment.RunningIndex = RunningIndex + End;
 
             // Trim any slack on this segment.
-            if (!IsForeignMemory)
+            if (_buffer != null)
             {
                 // When setting Memory, we start with index 0 instead of Start because
                 // the first segment has an explicit index set anyway,
                 // and we don't want to double-count it here.
-                Memory = AvailableMemory.Slice(0, Start + Length);
+                Memory = AvailableMemory.Slice(0, End);
             }
         }
 
