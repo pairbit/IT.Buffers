@@ -169,6 +169,15 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
         }
     }
 
+    public void Append(IMemoryOwner<T> memoryOwner)
+    {
+        if (memoryOwner == null) throw new ArgumentNullException(nameof(memoryOwner));
+
+        var segment = GetOrNewSegment();
+        segment.AssignMemoryOwner(memoryOwner);
+        Append(segment);
+    }
+
     public void Reset()
     {
         var current = _first;
