@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace IT.Buffers;
 
@@ -16,7 +17,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
     private readonly Stack<Segment> _stack;
     private ArrayPool<T>? _arrayPool;
-    //private MemoryPool<T>? _memoryPool;
+    private MemoryPool<T>? _memoryPool;
     private IBufferGrowthStrategy? _growthStrategy;
     private Segment? _first;
     private Segment? _last;
@@ -45,6 +46,12 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
             _arrayPool = value;
         }
+    }
+
+    public MemoryPool<T>? MemoryPool
+    {
+        get => _memoryPool;
+        set => _memoryPool = value;
     }
 
     public IBufferGrowthStrategy? GrowthStrategy
@@ -172,6 +179,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
         _first = _last = null;
         _arrayPool = null;
+        _memoryPool = null;
         _growthStrategy = null;
         _nextBufferSize = 0;
     }
@@ -193,10 +201,21 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
                 _nextBufferSize = growthStrategy.Grow(bufferSize);
                 sizeHint = bufferSize;
             }
-            var array = Rent(sizeHint);
-            var segment = GetOrNewSegment();
-            segment.Assign(array);
-            Append(segment);
+
+            if (_memoryPool != null)
+            {
+                var memoryOwner = _memoryPool.Rent(sizeHint);
+                var segment = GetOrNewSegment();
+                segment.AssignMemoryOwner(memoryOwner);
+                Append(segment);
+            }
+            else
+            {
+                var array = Rent(sizeHint);
+                var segment = GetOrNewSegment();
+                segment.AssignArray(array);
+                Append(segment);
+            }
         }
 
         return _last!;
@@ -256,7 +275,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
     private Segment? RecycleAndGetNext(Segment segment)
     {
         var nextSegment = segment.Next;
-        segment.ResetMemory(_arrayPool);
+        segment.ResetBuffer(_arrayPool);
         _stack.Push(segment);
         return nextSegment;
     }
@@ -265,8 +284,8 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
     {
         internal static readonly Segment Empty = new();
 
-        //TODO: add object? _buffer and store IOwnerMemory
-        private T[]? _array;
+        //Array or IMemoryOwner
+        private object? _buffer;
 
         internal int Start { get; private set; }
 
@@ -280,7 +299,18 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
         internal Span<T> FreeSpan => AvailableMemory.Span.Slice(End);
 
-        internal Memory<T> AvailableMemory => _array ?? default;
+        internal Memory<T> AvailableMemory
+        {
+            get
+            {
+                var buffer = _buffer;
+                if (buffer is T[] array) return array;
+                if (buffer is IMemoryOwner<T> memoryOwner) return memoryOwner.Memory;
+                if (buffer == null) return default;
+
+                throw new InvalidOperationException("buffer is unknown.");
+            }
+        }
 
         internal new Segment? Next
         {
@@ -288,12 +318,18 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
             set => base.Next = value;
         }
 
-        internal bool IsForeignMemory => _array == null;
+        internal bool IsForeignMemory => _buffer == null;
 
-        internal void Assign(T[] array)
+        internal void AssignArray(T[] array)
         {
-            _array = array;
+            _buffer = array;
             Memory = array;
+        }
+
+        internal void AssignMemoryOwner(IMemoryOwner<T> memoryOwner)
+        {
+            _buffer = memoryOwner;
+            Memory = memoryOwner.Memory;
         }
 
         internal void AssignForeign(Memory<T> memory)
@@ -302,16 +338,22 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
             End = memory.Length;
         }
 
-        internal void ResetMemory(ArrayPool<T>? arrayPool)
+        internal void ResetBuffer(ArrayPool<T>? arrayPool)
         {
             Reset();
             Start = 0;
             End = 0;
-            var array = _array;
-            if (array != null)
+            var buffer = Interlocked.Exchange(ref _buffer, null);
+            if (buffer != null)
             {
-                _array = null;
-                (arrayPool ?? ArrayPool<T>.Shared).Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                if (buffer is T[] array)
+                {
+                    (arrayPool ?? ArrayPool<T>.Shared).Return(array, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<T>());
+                }
+                else
+                {
+                    ((IMemoryOwner<T>)buffer).Dispose();
+                }
             }
         }
 
