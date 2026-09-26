@@ -1,10 +1,12 @@
 ﻿#if NET
+using System;
 using System.Buffers;
 using System.Diagnostics;
+using System.Text.Encodings.Web;
 
-namespace System.Text.Encodings.Web;
+namespace IT.Buffers.Extensions;
 
-internal static class xTextEncoder
+public static class xTextEncoder
 {
     public static long EncodeUtf8(this TextEncoder textEncoder, ReadOnlySpan<byte> utf8Text, IBufferWriter<byte> bufferWriter)
     {

@@ -1,8 +1,11 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Buffers;
+using System.Buffers.Text;
+using System.Diagnostics;
 
-namespace System.Buffers.Text;
+namespace IT.Buffers.Extensions;
 
-internal static class xBase64
+public static class xBase64
 {
     extension(Base64)
     {
