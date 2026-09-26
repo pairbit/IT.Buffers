@@ -10,27 +10,35 @@ internal static class xTextEncoder
     {
         ArgumentNullException.ThrowIfNull(textEncoder);
         ArgumentNullException.ThrowIfNull(bufferWriter);
-        long length = 0;
-        do
+        long lengthLong = 0;
+        if (utf8Text.Length > 0)
         {
-            var status = textEncoder.EncodeUtf8(utf8Text, bufferWriter.GetSpan(textEncoder.MaxOutputCharactersPerInputCharacter), out var consumed, out var written);
-            if (written > 0)
+            var max = textEncoder.MaxOutputCharactersPerInputCharacter;
+            do
             {
-                bufferWriter.Advance(written);
-                length += written;
-                utf8Text = utf8Text.Slice(consumed);
+                var status = textEncoder.EncodeUtf8(utf8Text, bufferWriter.GetSpan(max), out var consumed, out var written);
+                if (written > 0)
+                {
+                    bufferWriter.Advance(written);
+
+                    lengthLong += written;
+
+                    utf8Text = utf8Text.Slice(consumed);
+                }
+                else if (status == OperationStatus.DestinationTooSmall)
+                {
+                    Debug.Assert(consumed == 0);
+                    throw new InvalidOperationException("DestinationTooSmall");
+                }
 
                 if (status == OperationStatus.Done) break;
-            }
-            else if (status == OperationStatus.DestinationTooSmall)
-            {
-                throw new InvalidOperationException("DestinationTooSmall");
-            }
-        } while (true);
 
-        Debug.Assert(utf8Text.IsEmpty);
+                Debug.Assert(status == OperationStatus.DestinationTooSmall);
+            } while (true);
 
-        return length;
+            Debug.Assert(utf8Text.IsEmpty);
+        }
+        return lengthLong;
     }
 }
 #endif

@@ -12,31 +12,32 @@ internal static class xBase64
 
             long lengthLong = 0;
 
-            while (bytes.Length > 0)
+            if (bytes.Length > 0)
             {
-                var status = Base64.EncodeToUtf8(bytes, bufferWriter.GetSpan(4), out var consumed, out var written);
-
-                if (written > 0)
+                do
                 {
-                    bufferWriter.Advance(written);
+                    var status = Base64.EncodeToUtf8(bytes, bufferWriter.GetSpan(4), out var consumed, out var written);
 
-                    lengthLong += written;
+                    if (written > 0)
+                    {
+                        bufferWriter.Advance(written);
 
-                    bytes = bytes.Slice(consumed);
-                }
-                else if (status == OperationStatus.DestinationTooSmall)
-                {
-                    throw new InvalidOperationException("DestinationTooSmall");
-                }
-                else if (status == OperationStatus.DestinationTooSmall)
-                {
-                    throw new InvalidOperationException("DestinationTooSmall");
-                }
+                        lengthLong += written;
 
-                if (status == OperationStatus.Done)
-                    break;
+                        bytes = bytes.Slice(consumed);
+                    }
+                    else if (status == OperationStatus.DestinationTooSmall)
+                    {
+                        Debug.Assert(consumed == 0);
+                        throw new InvalidOperationException("DestinationTooSmall");
+                    }
 
-                Debug.Assert(status == OperationStatus.DestinationTooSmall);
+                    if (status == OperationStatus.Done) break;
+
+                    Debug.Assert(status == OperationStatus.DestinationTooSmall);
+                } while (true);
+
+                Debug.Assert(bytes.IsEmpty);
             }
 
             return lengthLong;
