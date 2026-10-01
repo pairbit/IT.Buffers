@@ -294,18 +294,20 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
         //Array or IMemoryOwner
         private object? _buffer;
+        private int _start;
+        private int _end;
 
-        internal int Start { get; private set; }
+        internal int Start => _start;
 
-        internal int End { get; private set; }
+        internal int End => _end;
 
-        internal int Length => End - Start;
+        internal int Length => _end - _start;
 
-        internal int FreeLength => Memory.Length - End;
+        internal int FreeLength => Memory.Length - _end;
 
-        internal Memory<T> FreeMemory => Memory.Slice(End);
+        internal Memory<T> FreeMemory => Memory.Slice(_end);
 
-        internal Span<T> FreeSpan => Memory.Span.Slice(End);
+        internal Span<T> FreeSpan => Memory.Span.Slice(_end);
 
         internal new Segment? Next
         {
@@ -328,14 +330,14 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
         internal void AssignForeign(Memory<T> memory)
         {
             Memory = memory;
-            End = memory.Length;
+            _end = memory.Length;
         }
 
         internal void ResetBuffer(ArrayPool<T>? arrayPool)
         {
             Reset();
-            Start = 0;
-            End = 0;
+            _start = 0;
+            _end = 0;
             var buffer = Interlocked.Exchange(ref _buffer, null);
             if (buffer != null)
             {
@@ -354,9 +356,9 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
         {
             Next = segment;
 
-            Debug.Assert(Start + Length == End);
+            Debug.Assert(_start + Length == _end);
 
-            segment.RunningIndex = RunningIndex + End;
+            segment.RunningIndex = RunningIndex + _end;
 
             // Trim any slack on this segment.
             if (_buffer != null)
@@ -364,7 +366,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
                 // When setting Memory, we start with index 0 instead of Start because
                 // the first segment has an explicit index set anyway,
                 // and we don't want to double-count it here.
-                Memory = Memory.Slice(0, End);
+                Memory = Memory.Slice(0, _end);
             }
         }
 
@@ -372,23 +374,23 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
         {
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
 
-            var end = End + count;
+            var end = _end + count;
             if ((uint)end > Memory.Length)
                 throw new ArgumentOutOfRangeException(nameof(count));
 
-            End = end;
+            _end = end;
         }
 
         internal void AdvanceTo(int offset)
         {
-            Debug.Assert(offset >= Start);
-            Debug.Assert(offset <= End);
+            Debug.Assert(offset >= _start);
+            Debug.Assert(offset <= _end);
 
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                Memory.Span.Slice(Start, offset - Start).Clear();
+                Memory.Span.Slice(_start, offset - _start).Clear();
             }
-            Start = offset;
+            _start = offset;
         }
     }
 }
