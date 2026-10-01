@@ -301,24 +301,11 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
         internal int Length => End - Start;
 
-        internal int FreeLength => AvailableMemory.Length - End;
+        internal int FreeLength => Memory.Length - End;
 
-        internal Memory<T> FreeMemory => AvailableMemory.Slice(End);
+        internal Memory<T> FreeMemory => Memory.Slice(End);
 
-        internal Span<T> FreeSpan => AvailableMemory.Span.Slice(End);
-
-        internal Memory<T> AvailableMemory
-        {
-            get
-            {
-                var buffer = _buffer;
-                if (buffer is T[] array) return array;
-                if (buffer is IMemoryOwner<T> memoryOwner) return memoryOwner.Memory;
-                if (buffer == null) return default;
-
-                throw new InvalidOperationException("buffer is unknown.");
-            }
-        }
+        internal Span<T> FreeSpan => Memory.Span.Slice(End);
 
         internal new Segment? Next
         {
@@ -377,7 +364,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
                 // When setting Memory, we start with index 0 instead of Start because
                 // the first segment has an explicit index set anyway,
                 // and we don't want to double-count it here.
-                Memory = AvailableMemory.Slice(0, End);
+                Memory = Memory.Slice(0, End);
             }
         }
 
@@ -399,7 +386,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                AvailableMemory.Span.Slice(Start, offset - Start).Clear();
+                Memory.Span.Slice(Start, offset - Start).Clear();
             }
             Start = offset;
         }
