@@ -6,6 +6,24 @@ namespace IT.Buffers.Tests;
 internal class SequenceBufferWriterTest
 {
     [Test]
+    public void Write_KB_8_Test()
+    {
+        var bufferWriter = new SequenceBufferWriter<byte>();
+
+        var bytes = new byte[8000 * 2];
+        Random.Shared.NextBytes(bytes);
+
+        bytes.AsSpan(0, 8000).CopyTo(bufferWriter.GetSpan(8000));
+        bufferWriter.Advance(8000);
+
+        bytes.AsSpan(8000).CopyTo(bufferWriter.GetSpan(8000));
+        bufferWriter.Advance(8000);
+
+        var seq = bufferWriter.Sequence;
+        Assert.That(seq.SequenceEqual(bytes), Is.True);
+    }
+
+    [Test]
     public async Task Pool_Test()
     {
         var bufferWriter = new SequenceBufferWriter<byte>();

@@ -12,7 +12,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 {
     private static readonly ReadOnlySequence<T> Empty = new(Segment.Empty, 0, Segment.Empty, 0);
 
-    public static BufferPool<SequenceBufferWriter<T>> Pool => 
+    public static BufferPool<SequenceBufferWriter<T>> Pool =>
         NewBufferPool<SequenceBufferWriter<T>>.Shared;
 
     private readonly Stack<Segment> _stack;
