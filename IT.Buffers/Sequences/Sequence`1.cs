@@ -25,9 +25,9 @@ internal readonly struct Sequence<T>
         }
     }
 
-    public long Length => AsReadOnly.Length;
+    public long Length => GetLength();
 
-    public bool IsEmpty => AsReadOnly.IsEmpty;
+    public bool IsEmpty => GetLength() == 0;
 
     public bool IsSingleSegment
     {
@@ -51,11 +51,27 @@ internal readonly struct Sequence<T>
         get => new(_endObject, GetIndex(_endInteger));
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal Sequence(object? startSegment, int startIndexAndFlags, object? endSegment, int endIndexAndFlags)
+    {
+        // Used by SliceImpl to create new Sequence
+
+        // startSegment and endSegment can be null for default Sequence only
+        Debug.Assert((startSegment != null && endSegment != null) ||
+            (startSegment == null && endSegment == null && startIndexAndFlags == 0 && endIndexAndFlags == 0));
+
+        _startObject = startSegment;
+        _endObject = endSegment;
+        _startInteger = startIndexAndFlags;
+        _endInteger = endIndexAndFlags;
+    }
+
     public Sequence(SequenceSegment<T> startSegment, int startIndex, SequenceSegment<T> endSegment, int endIndex)
     {
-        if (startSegment == null ||
-            endSegment == null ||
-            (startSegment != endSegment && startSegment.RunningIndex > endSegment.RunningIndex) ||
+        if (startSegment == null) throw new ArgumentNullException(nameof(startSegment));
+        if (endSegment == null) throw new ArgumentNullException(nameof(endSegment));
+
+        if ((startSegment != endSegment && startSegment.RunningIndex > endSegment.RunningIndex) ||
             (uint)startSegment.Memory.Length < (uint)startIndex ||
             (uint)endSegment.Memory.Length < (uint)endIndex ||
             (startSegment == endSegment && endIndex < startIndex))
@@ -80,8 +96,10 @@ internal readonly struct Sequence<T>
 
     public Sequence(T[] array, int start, int length)
     {
-        if (array == null ||
-            (uint)start > (uint)array.Length ||
+        if (array == null)
+            throw new ArgumentNullException(nameof(array));
+
+        if ((uint)start > (uint)array.Length ||
             (uint)length > (uint)(array.Length - start))
             throw new ArgumentOutOfRangeException();
 
@@ -417,6 +435,26 @@ internal readonly struct Sequence<T>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int GetIndex(int value) => value & SequenceFlags.IndexBitMask;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private long GetLength()
+    {
+        object? startObject = _startObject;
+        object? endObject = _endObject;
+        int startIndex = GetIndex(_startInteger);
+        int endIndex = GetIndex(_endInteger);
+
+        if (startObject != endObject)
+        {
+            var startSegment = (SequenceSegment<T>)startObject!;
+            var endSegment = (SequenceSegment<T>)endObject!;
+            // (End offset) - (start offset)
+            return (endSegment.RunningIndex + endIndex) - (startSegment.RunningIndex + startIndex);
+        }
+
+        // Single segment length
+        return endIndex - startIndex;
+    }
 
     private static void ThrowInvalidOperationException_EndPositionNotReached()=>
         throw new InvalidOperationException("EndPositionNotReached");
