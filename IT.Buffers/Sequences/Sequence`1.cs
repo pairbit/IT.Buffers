@@ -51,6 +51,8 @@ internal readonly struct Sequence<T>
         get => new(_endObject, GetIndex(_endInteger));
     }
 
+    #region Ctors
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal Sequence(object? startSegment, int startIndexAndFlags, object? endSegment, int endIndexAndFlags)
     {
@@ -133,6 +135,10 @@ internal readonly struct Sequence<T>
         }
     }
 
+    #endregion Ctors
+
+    #region Slicing
+
     public Sequence<T> Slice(long start, long length)
     {
         var local = AsReadOnly.Slice(start, length);
@@ -174,6 +180,8 @@ internal readonly struct Sequence<T>
         var local = AsReadOnly.Slice(start);
         return Unsafe.As<ReadOnlySequence<T>, Sequence<T>>(ref local);
     }
+
+    #endregion Slicing
 
     /// <inheritdoc />
     public override string ToString()
