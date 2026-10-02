@@ -183,10 +183,11 @@ internal readonly struct Sequence<T>
         {
             Sequence<T> local = this;
             var charSequence = Unsafe.As<Sequence<T>, ReadOnlySequence<char>>(ref local);
-
-            if (Length < int.MaxValue)
+            
+            var length = Length;
+            if (length <= BufferSize.Max_String)
             {
-                return string.Create((int)Length, charSequence, (span, sequence) => sequence.CopyTo(span));
+                return string.Create((int)length, charSequence, (span, sequence) => sequence.CopyTo(span));
             }
         }
 

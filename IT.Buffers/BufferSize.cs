@@ -33,6 +33,7 @@ public static class BufferSize
     public const int MB_256 = 268435456;//2^28
     public const int MB_512 = 536870912;//2^29
     public const int GB_Half = 536870912;//2^29
+    public const int Max_String = 1073741791;
     public const int Max_Half = 1073741795;//0X7FFFFFC7 / 2 = 2^30 - 29
     public const int GB = 1073741824;//2^30
     public const int Max = 2147483591;// 0X7FFFFFC7 = 2^31 - 57
