@@ -16,7 +16,14 @@ internal readonly struct Sequence<T>
 
     public static readonly Sequence<T> Empty = new(Array.Empty<T>());
 
-    public ReadOnlySequence<T> AsReadOnly => Unsafe.As<Sequence<T>, ReadOnlySequence<T>>(ref Unsafe.AsRef(in this));
+    public ReadOnlySequence<T> AsReadOnly
+    {
+        get
+        {
+            var local = this;
+            return Unsafe.As<Sequence<T>, ReadOnlySequence<T>>(ref local);
+        }
+    }
 
     public long Length => AsReadOnly.Length;
 
