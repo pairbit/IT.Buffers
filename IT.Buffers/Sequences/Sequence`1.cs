@@ -111,14 +111,14 @@ internal readonly struct Sequence<T>
 
     public Sequence(Memory<T> memory)
     {
-        if (MemoryMarshal.TryGetMemoryManager((ReadOnlyMemory<T>)memory, out MemoryManager<T>? manager, out int start, out int length))
+        if (MemoryMarshal.TryGetMemoryManager<T, MemoryManager<T>>(memory, out var manager, out int start, out int length))
         {
             _startObject = manager;
             _endObject = manager;
             _startInteger = SequenceFlags.MemoryManagerToSequenceStart(start);
             _endInteger = start + length;
         }
-        else if (MemoryMarshal.TryGetArray(memory, out ArraySegment<T> segment))
+        else if (MemoryMarshal.TryGetArray<T>(memory, out var segment))
         {
             T[]? array = segment.Array;
             int offset = segment.Offset;
@@ -129,8 +129,7 @@ internal readonly struct Sequence<T>
         }
         else
         {
-            Throw();
-            static void Throw() => throw new ArgumentException("Unrecognized memory type.", nameof(memory));
+            ThrowInvalidMemoryType(memory);
         }
     }
 
@@ -459,6 +458,15 @@ internal readonly struct Sequence<T>
 
     private static void ThrowInvalidOperationException_EndPositionNotReached()=>
         throw new InvalidOperationException("EndPositionNotReached");
+
+    private static void ThrowInvalidMemoryType(Memory<T> memory)
+    {
+        if (typeof(T) == typeof(char) && MemoryMarshal.TryGetString(Unsafe.As<Memory<T>, Memory<char>>(ref memory), out _, out _, out _))
+        {
+            throw new ArgumentException("Invalid memory type. String not supported.", nameof(memory));
+        }
+        throw new ArgumentException("Unrecognized memory type.", nameof(memory));
+    }
 
     #endregion Private
 

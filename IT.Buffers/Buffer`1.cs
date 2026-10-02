@@ -372,13 +372,13 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
 
     public Buffer(Memory<T> memory)
     {
-        if (MemoryMarshal.TryGetMemoryManager<T, MemoryManager<T>>(memory, out var manager, out var start, out var length))
+        if (MemoryMarshal.TryGetMemoryManager<T, MemoryManager<T>>(memory, out var manager, out int start, out int length))
         {
             _buffer = manager;
             _start = start;
             _length = length;
         }
-        else if (MemoryMarshal.TryGetArray((ReadOnlyMemory<T>)memory, out var segment))
+        else if (MemoryMarshal.TryGetArray<T>(memory, out var segment))
         {
             _buffer = segment.Array;
             _start = segment.Offset;
@@ -386,8 +386,7 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
         }
         else
         {
-            Throw();
-            static void Throw() => throw new ArgumentException("Unrecognized memory type.", nameof(memory));
+            ThrowInvalidMemoryType(memory);
         }
     }
 
@@ -775,6 +774,15 @@ public readonly struct Buffer<T> : IEquatable<Buffer<T>>
     private static InvalidOperationException BufferStateInvalid() => throw new("buffer state is invalid.");
 
     private static Buffer<T> ThrowBufferStateInvalid() => throw BufferStateInvalid();
+
+    private static void ThrowInvalidMemoryType(Memory<T> memory)
+    {
+        if (typeof(T) == typeof(char) && MemoryMarshal.TryGetString(Unsafe.As<Memory<T>, Memory<char>>(ref memory), out _, out _, out _))
+        {
+            throw new ArgumentException("Invalid memory type. String not supported.", nameof(memory));
+        }
+        throw new ArgumentException("Unrecognized memory type.", nameof(memory));
+    }
 
     #region Operators
 
