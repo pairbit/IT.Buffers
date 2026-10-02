@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IT.Buffers.Internal;
+using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -43,7 +44,7 @@ internal readonly struct Sequence<T>
         get => new(_endObject, GetIndex(_endInteger));
     }
 
-    public Sequence(ReadOnlySequenceSegment<T> startSegment, int startIndex, ReadOnlySequenceSegment<T> endSegment, int endIndex)
+    public Sequence(SequenceSegment<T> startSegment, int startIndex, SequenceSegment<T> endSegment, int endIndex)
     {
         if (startSegment == null ||
             endSegment == null ||
@@ -67,7 +68,7 @@ internal readonly struct Sequence<T>
         _startObject = array;
         _endObject = array;
         _startInteger = 0;
-        _endInteger = Flags.ArrayToSequenceEnd(array.Length);
+        _endInteger = SequenceFlags.ArrayToSequenceEnd(array.Length);
     }
 
     public Sequence(T[] array, int start, int length)
@@ -80,7 +81,7 @@ internal readonly struct Sequence<T>
         _startObject = array;
         _endObject = array;
         _startInteger = start;
-        _endInteger = Flags.ArrayToSequenceEnd(start + length);
+        _endInteger = SequenceFlags.ArrayToSequenceEnd(start + length);
     }
 
     public Sequence(Memory<T> memory)
@@ -89,7 +90,7 @@ internal readonly struct Sequence<T>
         {
             _startObject = manager;
             _endObject = manager;
-            _startInteger = Flags.MemoryManagerToSequenceStart(start);
+            _startInteger = SequenceFlags.MemoryManagerToSequenceStart(start);
             _endInteger = start + length;
         }
         else if (MemoryMarshal.TryGetArray(memory, out ArraySegment<T> segment))
@@ -99,7 +100,7 @@ internal readonly struct Sequence<T>
             _startObject = array;
             _endObject = array;
             _startInteger = offset;
-            _endInteger = Flags.ArrayToSequenceEnd(offset + segment.Count);
+            _endInteger = SequenceFlags.ArrayToSequenceEnd(offset + segment.Count);
         }
         else
         {
@@ -180,13 +181,76 @@ internal readonly struct Sequence<T>
 
     public bool TryGet(ref SequencePosition position, out Memory<T> memory, bool advance = true)
     {
-        var status = AsReadOnly.TryGet(ref position, out var readOnlyMemory, advance);
-
-        memory = MemoryMarshal.AsMemory(readOnlyMemory);
-        return status;
+        bool result = TryGetBuffer(position, out memory, out SequencePosition next);
+        if (advance)
+        {
+            position = next;
+        }
+        return result;
     }
 
     #region Private
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal bool TryGetBuffer(in SequencePosition position, out Memory<T> memory, out SequencePosition next)
+    {
+        object? positionObject = position.GetObject();
+        next = default;
+
+        if (positionObject == null)
+        {
+            memory = default;
+            return false;
+        }
+
+        SequenceType type = GetSequenceType();
+        object? endObject = _endObject;
+        int startIndex = position.GetInteger();
+        int endIndex = GetIndex(_endInteger);
+
+        if (type == SequenceType.MultiSegment)
+        {
+            Debug.Assert(positionObject is SequenceSegment<T>);
+
+            SequenceSegment<T> startSegment = (SequenceSegment<T>)positionObject;
+
+            if (startSegment != endObject)
+            {
+                SequenceSegment<T>? nextSegment = startSegment.Next;
+
+                if (nextSegment == null)
+                    ThrowInvalidOperationException_EndPositionNotReached();
+
+                next = new SequencePosition(nextSegment, 0);
+                memory = startSegment.Memory.Slice(startIndex);
+            }
+            else
+            {
+                memory = startSegment.Memory.Slice(startIndex, endIndex - startIndex);
+            }
+        }
+        else
+        {
+            if (positionObject != endObject)
+                ThrowInvalidOperationException_EndPositionNotReached();
+
+            if (type == SequenceType.Array)
+            {
+                Debug.Assert(positionObject is T[]);
+
+                memory = new Memory<T>((T[])positionObject, startIndex, endIndex - startIndex);
+            }
+            else // type == SequenceType.MemoryManager
+            {
+                Debug.Assert(type == SequenceType.MemoryManager);
+                Debug.Assert(positionObject is MemoryManager<T>);
+
+                memory = ((MemoryManager<T>)positionObject).Memory.Slice(startIndex, endIndex - startIndex);
+            }
+        }
+
+        return true;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Memory<T> GetFirst()
@@ -233,7 +297,7 @@ internal readonly struct Sequence<T>
     private Memory<T> GetFirstSlow(object startObject, bool isMultiSegment)
     {
         if (isMultiSegment)
-            throw new InvalidOperationException("EndPositionNotReached");
+            ThrowInvalidOperationException_EndPositionNotReached();
 
         int startIndex = _startInteger;
         int endIndex = _endInteger;
@@ -244,17 +308,14 @@ internal readonly struct Sequence<T>
         if (startIndex >= 0)
         {
             Debug.Assert(endIndex < 0);
-            return new Memory<T>((T[])startObject, startIndex, (endIndex & Flags.IndexBitMask) - startIndex);
+            return new Memory<T>((T[])startObject, startIndex, (endIndex & SequenceFlags.IndexBitMask) - startIndex);
         }
         else
         {
-            startIndex &= Flags.IndexBitMask;
+            startIndex &= SequenceFlags.IndexBitMask;
             return ((MemoryManager<T>)startObject).Memory.Slice(startIndex, endIndex - startIndex);
         }
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int GetIndex(int value) => value & Flags.IndexBitMask;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Span<T> GetFirstSpan()
@@ -301,7 +362,7 @@ internal readonly struct Sequence<T>
     private Span<T> GetFirstSpanSlow(object startObject, bool isMultiSegment)
     {
         if (isMultiSegment)
-            throw new InvalidOperationException("EndPositionNotReached");
+            ThrowInvalidOperationException_EndPositionNotReached();
 
         int startIndex = _startInteger;
         int endIndex = _endInteger;
@@ -313,14 +374,45 @@ internal readonly struct Sequence<T>
         {
             Debug.Assert(endIndex < 0);
             Span<T> span = (T[])startObject;
-            return span.Slice(startIndex, (endIndex & Flags.IndexBitMask) - startIndex);
+            return span.Slice(startIndex, (endIndex & SequenceFlags.IndexBitMask) - startIndex);
         }
         else
         {
-            startIndex &= Flags.IndexBitMask;
+            startIndex &= SequenceFlags.IndexBitMask;
             return ((MemoryManager<T>)startObject).GetSpan().Slice(startIndex, endIndex - startIndex);
         }
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private SequenceType GetSequenceType()
+    {
+        // We take high order bits of two indexes and move them
+        // to a first and second position to convert to SequenceType
+
+        // if (start < 0  and end < 0)
+        // start >> 31 = -1, end >> 31 = -1
+        // 2 * (-1) + (-1) = -3, result = (SequenceType)3
+
+        // if (start < 0  and end >= 0)
+        // start >> 31 = -1, end >> 31 = 0
+        // 2 * (-1) + 0 = -2, result = (SequenceType)2
+
+        // if (start >= 0  and end >= 0)
+        // start >> 31 = 0, end >> 31 = 0
+        // 2 * 0 + 0 = 0, result = (SequenceType)0
+
+        // if (start >= 0  and end < 0)
+        // start >> 31 = 0, end >> 31 = -1
+        // 2 * 0 + (-1) = -1, result = (SequenceType)1
+
+        return (SequenceType)(-(2 * (_startInteger >> 31) + (_endInteger >> 31)));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int GetIndex(int value) => value & SequenceFlags.IndexBitMask;
+
+    private static void ThrowInvalidOperationException_EndPositionNotReached()=>
+        throw new InvalidOperationException("EndPositionNotReached");
 
     #endregion Private
 
@@ -348,21 +440,5 @@ internal readonly struct Sequence<T>
 
             return _sequence.TryGet(ref _next, out _current);
         }
-    }
-
-    static class Flags
-    {
-        public const int FlagBitMask = 1 << 31;
-        public const int IndexBitMask = ~FlagBitMask;
-
-        public const int ArrayEndMask = FlagBitMask;
-
-        public const int MemoryManagerStartMask = FlagBitMask;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ArrayToSequenceEnd(int endIndex) => endIndex | ArrayEndMask;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int MemoryManagerToSequenceStart(int startIndex) => startIndex | MemoryManagerStartMask;
     }
 }
