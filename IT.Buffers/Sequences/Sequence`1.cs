@@ -12,7 +12,7 @@ internal readonly struct Sequence<T>
     private readonly int _startInteger;
     private readonly int _endInteger;
 
-    public static readonly Sequence<T> Empty = new Sequence<T>(Array.Empty<T>());
+    public static readonly Sequence<T> Empty = new(Array.Empty<T>());
 
     public ReadOnlySequence<T> AsReadOnly => Unsafe.As<Sequence<T>, ReadOnlySequence<T>>(ref Unsafe.AsRef(in this));
 
@@ -30,9 +30,17 @@ internal readonly struct Sequence<T>
 
     public Span<T> FirstSpan => First.Span;
 
-    public SequencePosition Start => AsReadOnly.Start;
+    public SequencePosition Start
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => new(_startObject, GetIndex(_startInteger));
+    }
 
-    public SequencePosition End => AsReadOnly.End;
+    public SequencePosition End
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => new(_endObject, GetIndex(_endInteger));
+    }
 
     public Sequence(ReadOnlySequenceSegment<T> startSegment, int startIndex, ReadOnlySequenceSegment<T> endSegment, int endIndex)
     {
@@ -76,21 +84,21 @@ internal readonly struct Sequence<T>
 
     public Sequence(Memory<T> memory)
     {
-        if (MemoryMarshal.TryGetMemoryManager((ReadOnlyMemory<T>)memory, out MemoryManager<T>? manager, out int index, out int length))
+        if (MemoryMarshal.TryGetMemoryManager((ReadOnlyMemory<T>)memory, out MemoryManager<T>? manager, out int start, out int length))
         {
             _startObject = manager;
             _endObject = manager;
-            _startInteger = Flags.MemoryManagerToSequenceStart(index);
-            _endInteger = index + length;
+            _startInteger = Flags.MemoryManagerToSequenceStart(start);
+            _endInteger = start + length;
         }
         else if (MemoryMarshal.TryGetArray(memory, out ArraySegment<T> segment))
         {
             T[]? array = segment.Array;
-            int start = segment.Offset;
+            int offset = segment.Offset;
             _startObject = array;
             _endObject = array;
-            _startInteger = start;
-            _endInteger = Flags.ArrayToSequenceEnd(start + segment.Count);
+            _startInteger = offset;
+            _endInteger = Flags.ArrayToSequenceEnd(offset + segment.Count);
         }
         else
         {
@@ -165,7 +173,7 @@ internal readonly struct Sequence<T>
     public long GetOffset(SequencePosition position) => AsReadOnly.GetOffset(position);
 #endif
 
-    public SequencePosition GetPosition(long offset, SequencePosition origin) => 
+    public SequencePosition GetPosition(long offset, SequencePosition origin) =>
         AsReadOnly.GetPosition(offset, origin);
 
     public bool TryGet(ref SequencePosition position, out Memory<T> memory, bool advance = true)
@@ -175,6 +183,9 @@ internal readonly struct Sequence<T>
         memory = MemoryMarshal.AsMemory(readOnlyMemory);
         return status;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int GetIndex(int value) => value & Flags.IndexBitMask;
 
     public struct Enumerator
     {
@@ -202,7 +213,7 @@ internal readonly struct Sequence<T>
         }
     }
 
-    internal static class Flags
+    static class Flags
     {
         public const int FlagBitMask = 1 << 31;
         public const int IndexBitMask = ~FlagBitMask;
@@ -211,19 +222,10 @@ internal readonly struct Sequence<T>
 
         public const int MemoryManagerStartMask = FlagBitMask;
 
-        public const int StringStartMask = FlagBitMask;
-        public const int StringEndMask = FlagBitMask;
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int ArrayToSequenceEnd(int endIndex) => endIndex | ArrayEndMask;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int MemoryManagerToSequenceStart(int startIndex) => startIndex | MemoryManagerStartMask;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int StringToSequenceStart(int startIndex) => startIndex | StringStartMask;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int StringToSequenceEnd(int endIndex) => endIndex | StringEndMask;
     }
 }
