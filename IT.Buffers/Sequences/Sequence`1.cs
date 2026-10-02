@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -28,7 +29,7 @@ internal readonly struct Sequence<T>
 
     public Memory<T> First => MemoryMarshal.AsMemory(AsReadOnly.First);
 
-    public Span<T> FirstSpan => First.Span;
+    public Span<T> FirstSpan => GetFirstSpan();
 
     public SequencePosition Start
     {
@@ -102,7 +103,8 @@ internal readonly struct Sequence<T>
         }
         else
         {
-            throw new ArgumentException();
+            Throw();
+            static void Throw() => throw new ArgumentException("Unrecognized memory type.", nameof(memory));
         }
     }
 
@@ -186,6 +188,72 @@ internal readonly struct Sequence<T>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int GetIndex(int value) => value & Flags.IndexBitMask;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private Span<T> GetFirstSpan()
+    {
+        object? startObject = _startObject;
+
+        if (startObject == null)
+            return default;
+
+        int startIndex = _startInteger;
+        int endIndex = _endInteger;
+
+        bool isMultiSegment = startObject != _endObject;
+
+        // The highest bit of startIndex and endIndex are used to infer the sequence type
+        // The code below is structured this way for performance reasons and is equivalent to the following:
+        // SequenceType type = GetSequenceType();
+        // if (type == SequenceType.MultiSegment) { ... }
+        // else if (type == SequenceType.Array) { ... }
+        // else if (type == SequenceType.String){ ... }
+        // else if (type == SequenceType.MemoryManager) { ... }
+
+        // Highest bit of startIndex: A = startIndex >> 31
+        // Highest bit of endIndex: B = endIndex >> 31
+
+        // A == 0 && B == 0 means SequenceType.MultiSegment
+        // Equivalent to startIndex >= 0 && endIndex >= 0
+        if ((startIndex | endIndex) >= 0)
+        {
+            Span<T> span = ((SequenceSegment<T>)startObject).Memory.Span;
+            if (isMultiSegment)
+            {
+                return span.Slice(startIndex);
+            }
+            return span.Slice(startIndex, endIndex - startIndex);
+        }
+        else
+        {
+            return GetFirstSpanSlow(startObject, isMultiSegment);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private Span<T> GetFirstSpanSlow(object startObject, bool isMultiSegment)
+    {
+        if (isMultiSegment)
+            throw new InvalidOperationException("EndPositionNotReached");
+
+        int startIndex = _startInteger;
+        int endIndex = _endInteger;
+
+        Debug.Assert(startIndex < 0 || endIndex < 0);
+
+        // A == 0 && B == 1 means SequenceType.Array
+        if (startIndex >= 0)
+        {
+            Debug.Assert(endIndex < 0);
+            Span<T> span = (T[])startObject;
+            return span.Slice(startIndex, (endIndex & Flags.IndexBitMask) - startIndex);
+        }
+        else
+        {
+            startIndex &= Flags.IndexBitMask;
+            return ((MemoryManager<T>)startObject).GetSpan().Slice(startIndex, endIndex - startIndex);
+        }
+    }
 
     public struct Enumerator
     {
