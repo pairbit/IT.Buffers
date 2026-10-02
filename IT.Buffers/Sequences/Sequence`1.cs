@@ -190,7 +190,7 @@ internal readonly struct Sequence<T>
         {
             Sequence<T> local = this;
             var charSequence = Unsafe.As<Sequence<T>, ReadOnlySequence<char>>(ref local);
-            
+
             var length = Length;
             if (length <= BufferSize.Max_String)
             {
@@ -464,7 +464,7 @@ internal readonly struct Sequence<T>
         return endIndex - startIndex;
     }
 
-    private static void ThrowInvalidOperationException_EndPositionNotReached()=>
+    private static void ThrowInvalidOperationException_EndPositionNotReached() =>
         throw new InvalidOperationException("EndPositionNotReached");
 
     private static void ThrowInvalidMemoryType(Memory<T> memory)
@@ -477,6 +477,8 @@ internal readonly struct Sequence<T>
     }
 
     #endregion Private
+
+    public static implicit operator ReadOnlySequence<T>(Sequence<T> sequence) => Unsafe.As<Sequence<T>, ReadOnlySequence<T>>(ref sequence);
 
     public struct Enumerator
     {
