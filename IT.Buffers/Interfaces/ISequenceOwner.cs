@@ -4,5 +4,5 @@ namespace IT.Buffers;
 
 internal interface ISequenceOwner<T> : IDisposable
 {
-    //Sequence<T> Sequence { get; }
+    Sequence<T> Sequence { get; }
 }

@@ -38,7 +38,7 @@ internal class BufferTest
         ex = Assert.Throws<ArgumentException>(() => new Buffer<char>(strMemory));
 
         Assert.That(ex.ParamName, Is.EqualTo("memory"));
-        Assert.That(ex.Message, Is.EqualTo("Unrecognized memory type. (Parameter 'memory')"));
+        Assert.That(ex.Message, Is.EqualTo("Invalid memory type. String not supported. (Parameter 'memory')"));
 
         var buffer = new Buffer<byte>(new byte[1], RentedArrayType.Global);
         Assert.Throws<NotImplementedException>(() => buffer.TryReturn(out _));

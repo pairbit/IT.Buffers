@@ -6,6 +6,150 @@ namespace IT.Buffers.Tests;
 internal class SequenceBufferWriterTest
 {
     [Test]
+    public async Task AppendMemoryOwner_Test()
+    {
+        var bytes = new byte[32];
+        Random.Shared.NextBytes(bytes);
+        var stream = new MemoryStream(bytes);
+
+        var memoryOwner = MemoryPool<byte>.Shared.Rent(16);
+
+        var read = await stream.ReadAtLeastAsync(memoryOwner.Memory, memoryOwner.Memory.Length, throwOnEndOfStream: false);
+        Assert.That(read, Is.EqualTo(memoryOwner.Memory.Length));
+
+        var bufferWriter = new SequenceBufferWriter<byte>();
+        Assert.That(bufferWriter.Sequence.IsEmpty, Is.True);
+
+        bufferWriter.AppendMemoryOwner(memoryOwner);
+
+        Assert.That(bufferWriter.Sequence.SequenceEqual(memoryOwner.Memory.Span), Is.True);
+
+        var memory = bufferWriter.GetMemory();
+        read = await stream.ReadAtLeastAsync(memory, memory.Length, throwOnEndOfStream: false);
+        Assert.That(read, Is.EqualTo(16));
+        bufferWriter.Advance(read);
+
+        Assert.That(bufferWriter.Sequence.SequenceEqual(bytes), Is.True);
+        bufferWriter.Reset();
+    }
+
+    [Test]
+    public async Task AppendMemory_Test()
+    {
+        var bytes = new byte[32];
+        Random.Shared.NextBytes(bytes);
+        var stream = new MemoryStream(bytes);
+
+        var array = new byte[16];
+
+        var read = await stream.ReadAtLeastAsync(array, array.Length, throwOnEndOfStream: false);
+        Assert.That(read, Is.EqualTo(array.Length));
+
+        var bufferWriter = new SequenceBufferWriter<byte>();
+        Assert.That(bufferWriter.Sequence.IsEmpty, Is.True);
+
+        bufferWriter.AppendMemory(array);
+
+        Assert.That(bufferWriter.Sequence.SequenceEqual(array), Is.True);
+
+        var memory = bufferWriter.GetMemory();
+        read = await stream.ReadAtLeastAsync(memory, memory.Length, throwOnEndOfStream: false);
+        Assert.That(read, Is.EqualTo(16));
+        bufferWriter.Advance(read);
+
+        Assert.That(bufferWriter.Sequence.SequenceEqual(bytes), Is.True);
+        bufferWriter.Reset();
+    }
+
+    [Test]
+    public async Task AppendArray_Test()
+    {
+        var bytes = new byte[32];
+        Random.Shared.NextBytes(bytes);
+        var stream = new MemoryStream(bytes);
+
+        var array = ArrayPool<byte>.Shared.Rent(16);
+
+        var read = await stream.ReadAtLeastAsync(array, array.Length, throwOnEndOfStream: false);
+        Assert.That(read, Is.EqualTo(array.Length));
+
+        var bufferWriter = new SequenceBufferWriter<byte>();
+        Assert.That(bufferWriter.Sequence.IsEmpty, Is.True);
+
+        bufferWriter.AppendArray(array);
+
+        Assert.That(bufferWriter.Sequence.SequenceEqual(array), Is.True);
+
+        var memory = bufferWriter.GetMemory();
+        read = await stream.ReadAtLeastAsync(memory, memory.Length, throwOnEndOfStream: false);
+        Assert.That(read, Is.EqualTo(16));
+        bufferWriter.Advance(read);
+
+        Assert.That(bufferWriter.Sequence.SequenceEqual(bytes), Is.True);
+        bufferWriter.Reset();
+    }
+
+    [Test]
+    public async Task Write_LengthStream_Test()
+    {
+        var bufferWriter = new SequenceBufferWriter<byte>();
+
+        var memory = bufferWriter.GetMemory(11).Slice(0, 11);//max length int
+        memory.Span.Clear();
+        memory.Span[0] = (byte)'$';
+        bufferWriter.Advance(11);
+
+        var stream = new MemoryStream("MyValue"u8.ToArray());
+
+        var length = bufferWriter.Length;
+        await bufferWriter.WriteAsync(stream);
+        var streamLength = bufferWriter.Length - length;
+
+        Assert.That(streamLength.TryFormat(memory.Span.Slice(1), out var written), Is.True);
+        Assert.That(written, Is.EqualTo(1));
+
+        var seq = bufferWriter.Sequence;
+        Assert.That(seq.SequenceEqual("$7\0\0\0\0\0\0\0\0\0MyValue"u8), Is.True);
+    }
+
+    [Test]
+    public void AdvanceTo_Test()
+    {
+        var bufferWriter = new SequenceBufferWriter<byte>();
+        var span = bufferWriter.GetSpan();
+
+        var bytes = new byte[span.Length];
+        Random.Shared.NextBytes(bytes);
+        bytes.CopyTo(span);
+        bufferWriter.Advance(span.Length);
+
+        var seq = bufferWriter.Sequence;
+        Assert.That(seq.SequenceEqual(bytes), Is.True);
+
+        var offset = 1;
+        bufferWriter.AdvanceTo(seq.GetPosition(offset));
+        Assert.That(bufferWriter.Sequence.SequenceEqual(bytes.AsSpan(offset)), Is.True);
+    }
+
+    [Test]
+    public void Write_KB_8_Test()
+    {
+        var bufferWriter = new SequenceBufferWriter<byte>();
+
+        var bytes = new byte[8000 * 2];
+        Random.Shared.NextBytes(bytes);
+
+        bytes.AsSpan(0, 8000).CopyTo(bufferWriter.GetSpan(8000));
+        bufferWriter.Advance(8000);
+
+        bytes.AsSpan(8000).CopyTo(bufferWriter.GetSpan(8000));
+        bufferWriter.Advance(8000);
+
+        var seq = bufferWriter.Sequence;
+        Assert.That(seq.SequenceEqual(bytes), Is.True);
+    }
+
+    [Test]
     public async Task Pool_Test()
     {
         var bufferWriter = new SequenceBufferWriter<byte>();
