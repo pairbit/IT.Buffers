@@ -6,6 +6,29 @@ namespace IT.Buffers.Tests;
 internal class SequenceBufferWriterTest
 {
     [Test]
+    public async Task Write_LengthStream_Test()
+    {
+        var bufferWriter = new SequenceBufferWriter<byte>();
+
+        var memory = bufferWriter.GetMemory(11).Slice(0, 11);//max length int
+        memory.Span.Clear();
+        memory.Span[0] = (byte)'$';
+        bufferWriter.Advance(11);
+
+        var stream = new MemoryStream("MyValue"u8.ToArray());
+
+        var length = bufferWriter.Length;
+        await bufferWriter.WriteAsync(stream);
+        var streamLength = bufferWriter.Length - length;
+
+        Assert.That(streamLength.TryFormat(memory.Span.Slice(1), out var written), Is.True);
+        Assert.That(written, Is.EqualTo(1));
+
+        var seq = bufferWriter.Sequence;
+        Assert.That(seq.SequenceEqual("$7\0\0\0\0\0\0\0\0\0MyValue"u8), Is.True);
+    }
+
+    [Test]
     public void Write_KB_8_Test()
     {
         var bufferWriter = new SequenceBufferWriter<byte>();
