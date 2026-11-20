@@ -420,6 +420,10 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
                 // and we don't want to double-count it here.
                 Memory = Memory.Slice(0, _end);
             }
+            else
+            {
+                Debug.Assert(Memory.Length == _end);
+            }
         }
 
         internal void Advance(int count)
