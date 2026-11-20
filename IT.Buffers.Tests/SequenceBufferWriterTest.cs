@@ -6,6 +6,34 @@ namespace IT.Buffers.Tests;
 internal class SequenceBufferWriterTest
 {
     [Test]
+    public async Task AppendMemoryOwner_Test()
+    {
+        var bytes = new byte[32];
+        Random.Shared.NextBytes(bytes);
+        var stream = new MemoryStream(bytes);
+
+        var memoryOwner = MemoryPool<byte>.Shared.Rent(16);
+
+        var read = await stream.ReadAtLeastAsync(memoryOwner.Memory, memoryOwner.Memory.Length, throwOnEndOfStream: false);
+        Assert.That(read, Is.EqualTo(memoryOwner.Memory.Length));
+
+        var bufferWriter = new SequenceBufferWriter<byte>();
+        Assert.That(bufferWriter.Sequence.IsEmpty, Is.True);
+
+        bufferWriter.AppendMemoryOwner(memoryOwner);
+
+        Assert.That(bufferWriter.Sequence.SequenceEqual(memoryOwner.Memory.Span), Is.True);
+
+        var memory = bufferWriter.GetMemory();
+        read = await stream.ReadAtLeastAsync(memory, memory.Length, throwOnEndOfStream: false);
+        Assert.That(read, Is.EqualTo(16));
+        bufferWriter.Advance(read);
+
+        Assert.That(bufferWriter.Sequence.SequenceEqual(bytes), Is.True);
+        bufferWriter.Reset();
+    }
+
+    [Test]
     public async Task AppendArray_Test()
     {
         var bytes = new byte[32];
