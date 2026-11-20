@@ -158,22 +158,59 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
     public Span<T> GetSpan(int sizeHint = 0) => GetSegment(sizeHint).FreeSpan;
 
-    public void Append(Memory<T> memory)
+    public void AppendArray(T[] array)
+    {
+        if (array == null) throw new ArgumentNullException(nameof(array));
+        var length = array.Length;
+        if (length == 0)
+            throw new ArgumentException("Empty array cannot be rented.", nameof(array));
+
+        var segment = GetOrNewSegment();
+        segment.AssignArray(array);
+        segment.End = length;
+        
+        Append(segment);
+    }
+
+    public void AppendArray(T[] array, int start, int length)
+    {
+        if (array == null) throw new ArgumentNullException(nameof(array));
+        var arrayLength = array.Length;
+        if (arrayLength == 0)
+            throw new ArgumentException("Empty array cannot be rented.", nameof(array));
+
+        if ((uint)start > (uint)arrayLength)
+            throw new ArgumentOutOfRangeException(nameof(start));
+
+        if ((uint)length > (uint)(arrayLength - start))
+            throw new ArgumentOutOfRangeException(nameof(length));
+
+        var segment = GetOrNewSegment();
+        segment.AssignArray(array);
+        segment.End = start + length;
+        segment.AdvanceTo(start);
+
+        Append(segment);
+    }
+
+    public void AppendMemory(Memory<T> memory)
     {
         if (memory.Length > 0)
         {
             var segment = GetOrNewSegment();
-            segment.AssignForeign(memory);
+            segment.AssignMemory(memory);
+            segment.End = memory.Length;
             Append(segment);
         }
     }
 
-    public void Append(IMemoryOwner<T> memoryOwner)
+    public void AppendMemoryOwner(IMemoryOwner<T> memoryOwner)
     {
         if (memoryOwner == null) throw new ArgumentNullException(nameof(memoryOwner));
 
         var segment = GetOrNewSegment();
         segment.AssignMemoryOwner(memoryOwner);
+        segment.End = memoryOwner.Memory.Length;
         Append(segment);
     }
 
@@ -299,7 +336,17 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
         internal int Start => _start;
 
-        internal int End => _end;
+        internal int End
+        {
+            get => _end;
+            set
+            {
+                Debug.Assert(value >= 0);
+                Debug.Assert(value <= Memory.Length);
+
+                _end = value;
+            }
+        }
 
         internal int Length => _end - _start;
 
@@ -317,20 +364,25 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
         internal void AssignArray(T[] array)
         {
+            Debug.Assert(array != null);
+
             _buffer = array;
             Memory = array;
         }
 
         internal void AssignMemoryOwner(IMemoryOwner<T> memoryOwner)
         {
+            Debug.Assert(memoryOwner != null);
+
             _buffer = memoryOwner;
             Memory = memoryOwner.Memory;
         }
 
-        internal void AssignForeign(Memory<T> memory)
+        internal void AssignMemory(Memory<T> memory)
         {
+            Debug.Assert(memory.Length > 0);
+
             Memory = memory;
-            _end = memory.Length;
         }
 
         internal void ResetBuffer(ArrayPool<T>? arrayPool)
