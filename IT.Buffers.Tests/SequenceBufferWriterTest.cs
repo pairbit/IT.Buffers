@@ -34,6 +34,34 @@ internal class SequenceBufferWriterTest
     }
 
     [Test]
+    public async Task AppendMemory_Test()
+    {
+        var bytes = new byte[32];
+        Random.Shared.NextBytes(bytes);
+        var stream = new MemoryStream(bytes);
+
+        var array = new byte[16];
+
+        var read = await stream.ReadAtLeastAsync(array, array.Length, throwOnEndOfStream: false);
+        Assert.That(read, Is.EqualTo(array.Length));
+
+        var bufferWriter = new SequenceBufferWriter<byte>();
+        Assert.That(bufferWriter.Sequence.IsEmpty, Is.True);
+
+        bufferWriter.AppendMemory(array);
+
+        Assert.That(bufferWriter.Sequence.SequenceEqual(array), Is.True);
+
+        var memory = bufferWriter.GetMemory();
+        read = await stream.ReadAtLeastAsync(memory, memory.Length, throwOnEndOfStream: false);
+        Assert.That(read, Is.EqualTo(16));
+        bufferWriter.Advance(read);
+
+        Assert.That(bufferWriter.Sequence.SequenceEqual(bytes), Is.True);
+        bufferWriter.Reset();
+    }
+
+    [Test]
     public async Task AppendArray_Test()
     {
         var bytes = new byte[32];
