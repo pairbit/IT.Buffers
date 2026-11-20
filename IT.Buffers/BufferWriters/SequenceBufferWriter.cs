@@ -171,7 +171,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
         
         Append(segment);
     }
-
+    /*
     public void AppendArray(T[] array, int start, int length)
     {
         if (array == null) throw new ArgumentNullException(nameof(array));
@@ -192,7 +192,7 @@ public class SequenceBufferWriter<T> : IBufferWriter<T>, IResetable//, ISequence
 
         Append(segment);
     }
-
+    */
     public void AppendMemory(Memory<T> memory)
     {
         if (memory.Length > 0)
