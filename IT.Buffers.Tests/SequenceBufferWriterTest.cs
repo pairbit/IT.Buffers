@@ -85,21 +85,22 @@ internal class SequenceBufferWriterTest
     }
 
     [Test]
-    public void Write_KB_8_Test()
+    public void AdvanceTo_Test()
     {
         var bufferWriter = new SequenceBufferWriter<byte>();
+        var span = bufferWriter.GetSpan();
 
-        var bytes = new byte[8000 * 2];
+        var bytes = new byte[span.Length];
         Random.Shared.NextBytes(bytes);
-
-        bytes.AsSpan(0, 8000).CopyTo(bufferWriter.GetSpan(8000));
-        bufferWriter.Advance(8000);
-
-        bytes.AsSpan(8000).CopyTo(bufferWriter.GetSpan(8000));
-        bufferWriter.Advance(8000);
+        bytes.CopyTo(span);
+        bufferWriter.Advance(span.Length);
 
         var seq = bufferWriter.Sequence;
         Assert.That(seq.SequenceEqual(bytes), Is.True);
+
+        var offset = 1;
+        bufferWriter.AdvanceTo(seq.GetPosition(offset));
+        Assert.That(bufferWriter.Sequence.SequenceEqual(bytes.AsSpan(offset)), Is.True);
     }
 
     [Test]
